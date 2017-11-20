@@ -457,7 +457,40 @@ class KentDistribution(object):
           return log_pdf[idx]+frac*(log_pdf[idx+1]-log_pdf[idx])
       else:
           print '{} percentile out of bounds'.format(percentile)
-          return
+          return nan
+
+  def contour(self, percentile=50):
+      """
+      Returns the (spherical) coordinates that correspond to a contour percentile
+
+      Solution is based on Eq 1.4 (Kent 1982)
+      """
+      k = self.kappa
+      b = self.beta
+      ln = self.log_normalize()
+      lev = self.level(percentile)
+
+      # work in coordinate system x' = Gamma*x
+      # range over which x1 remains real is [-x2_max, x2_max]
+      x2_max = sqrt(k**2+4*b*(b-lev+ln))
+      x2 = linspace(-x2_max,x2_max, 1000)
+      x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x1 = concatenate([x1_0, x1_1])
+      x2 = concatenate([x2, -x2])
+      
+      # Since Kent distribution is still defined for points not on a sphere,
+      # possible solutions for x1 and x2 extend beyond surface of sphere. For
+      # the contour evaluation, only use points that lie on sphere.
+      ok = x1**2+x2**2<=1
+      x1_ok = x1[ok]
+      x2_ok = x2[ok]
+      x3_ok = sqrt(1-x1_ok**2-x2_ok**2)
+      x123 = asarray((x1_ok, x2_ok, x3_ok))
+
+      # rotate back into x coordinates
+      x = dot(self.Gamma.T, x123)
+      return KentDistribution.gamma1_to_spherical_coordinates(x)
       
   def __repr__(self):
     return "kent(%s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta)
