@@ -472,24 +472,24 @@ class KentDistribution(object):
 
       # work in coordinate system x' = Gamma*x
       # range over which x1 remains real is [-x2_max, x2_max]
-      x2_max = sqrt(k**2+4*b*(b-lev+ln))
-      x2 = linspace(-x2_max,x2_max, 1000)
+      x2_max = sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b)
+      x2 = linspace(-x2_max,x2_max, 10000)
       x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x1_1 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x3_0 = sqrt(1-x1_0**2-x2**2)
+      x3_1 = -sqrt(1-x1_1**2-x2**2)
       x1 = concatenate([x1_0, x1_1])
       x2 = concatenate([x2, -x2])
+      x3 = concatenate([x3_0, x3_1])
       
       # Since Kent distribution is still defined for points not on a sphere,
       # possible solutions for x1 and x2 extend beyond surface of sphere. For
       # the contour evaluation, only use points that lie on sphere.
       ok = x1**2+x2**2<=1
-      x1_ok = x1[ok]
-      x2_ok = x2[ok]
-      x3_ok = sqrt(1-x1_ok**2-x2_ok**2)
-      x123 = asarray((x1_ok, x2_ok, x3_ok))
+      x123 = asarray((x1[ok], x2[ok], x3[ok]))
 
       # rotate back into x coordinates
-      x = dot(self.Gamma.T, x123)
+      x = dot(self.Gamma, x123)
       return KentDistribution.gamma1_to_spherical_coordinates(x)
       
   def __repr__(self):
