@@ -470,21 +470,23 @@ class KentDistribution(object):
       ln = self.log_normalize()
       lev = self.level(percentile)
 
-      # work in coordinate system x' = Gamma*x
+      # work in coordinate system x' = Gamma'*x
       # range over which x1 remains real is [-x2_max, x2_max]
-      x2_max = sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b)
+      x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
       x2 = linspace(-x2_max,x2_max, 10000)
       x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-      x1_1 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
       x3_0 = sqrt(1-x1_0**2-x2**2)
-      x3_1 = -sqrt(1-x1_1**2-x2**2)
-      x1 = concatenate([x1_0, x1_1])
-      x2 = concatenate([x2, -x2])
-      x3 = concatenate([x3_0, x3_1])
+      x3_1 = -sqrt(1-x1_0**2-x2**2)
+      x3_2 = sqrt(1-x1_1**2-x2**2)
+      x3_3 = -sqrt(1-x1_1**2-x2**2)
+      x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
+      x2 = concatenate([x2, -x2, x2, -x2])
+      x3 = concatenate([x3_0, x3_1, x3_2, x3_3])
       
-      # Since Kent distribution is still defined for points not on a sphere,
-      # possible solutions for x1 and x2 extend beyond surface of sphere. For
-      # the contour evaluation, only use points that lie on sphere.
+      # Since Kent distribution is well-defined for points not on a sphere,
+      # possible solutions for L=-log_pdf(kent) extend beyond surface of
+      # sphere. For the contour evaluation, only use points that lie on sphere.
       ok = x1**2+x2**2<=1
       x123 = asarray((x1[ok], x2[ok], x3[ok]))
 
