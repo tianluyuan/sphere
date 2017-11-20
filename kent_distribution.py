@@ -164,6 +164,9 @@ class KentDistribution(object):
 
     self._cached_rvs = array([], dtype=float64)
     self._cached_rvs.shape = (0, 3)
+
+    # save rvs used to calculated level contours to keep levels self-consistent
+    self._level_log_pdf = array([], dtype=float64)
   
   @property
   def Gamma(self):
@@ -437,6 +440,24 @@ class KentDistribution(object):
       self._cached_rvs = rvs[num_samples:]
       retval = rvs[:num_samples]
       return retval
+
+  def level(self, percentile=50, n_samples=10000):
+      """
+      Returns the -log_pdf level at percentile by generating a set of rvs and their log_pdfs
+      """
+      if 0 <= percentile < 100:
+          curr_len = self._level_log_pdf.size
+          if curr_len < n_samples:
+             new_rvs = self.rvs(n_samples)
+             self._level_log_pdf = -self.log_pdf(new_rvs)
+             self._level_log_pdf.sort()
+          log_pdf = self._level_log_pdf
+          loc = (log_pdf.size-1)*percentile/100.
+          idx, frac = int(loc), loc-int(loc)
+          return log_pdf[idx]+frac*(log_pdf[idx+1]-log_pdf[idx])
+      else:
+          print '{} percentile out of bounds'.format(percentile)
+          return
       
   def __repr__(self):
     return "kent(%s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta)
