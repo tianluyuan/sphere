@@ -236,6 +236,17 @@ class KentDistribution(object):
     else:
       return log(self.normalize())
       
+  def max(self):
+    if self.beta == 0.0:
+      x1 = 1
+    else:
+      x1 = self.kappa/(2*self.beta)
+    if x1 > 1:
+      x1 = 1
+    x2 = sqrt(1-x1**2)
+    x3 = 0
+    x = dot(self.Gamma, asarray((x1, x2, x3)))
+    return KentDistribution.gamma1_to_spherical_coordinates(x)
   
   def pdf_max(self, normalize=True):
     return exp(self.log_pdf_max(normalize))
@@ -442,55 +453,55 @@ class KentDistribution(object):
       return retval
 
   def level(self, percentile=50, n_samples=10000):
-      """
-      Returns the -log_pdf level at percentile by generating a set of rvs and their log_pdfs
-      """
-      if 0 <= percentile < 100:
-          curr_len = self._level_log_pdf.size
-          if curr_len < n_samples:
-             new_rvs = self.rvs(n_samples)
-             self._level_log_pdf = -self.log_pdf(new_rvs)
-             self._level_log_pdf.sort()
-          log_pdf = self._level_log_pdf
-          loc = (log_pdf.size-1)*percentile/100.
-          idx, frac = int(loc), loc-int(loc)
-          return log_pdf[idx]+frac*(log_pdf[idx+1]-log_pdf[idx])
-      else:
-          print '{} percentile out of bounds'.format(percentile)
-          return nan
+    """
+    Returns the -log_pdf level at percentile by generating a set of rvs and their log_pdfs
+    """
+    if 0 <= percentile < 100:
+      curr_len = self._level_log_pdf.size
+      if curr_len < n_samples:
+        new_rvs = self.rvs(n_samples)
+        self._level_log_pdf = -self.log_pdf(new_rvs)
+        self._level_log_pdf.sort()
+      log_pdf = self._level_log_pdf
+      loc = (log_pdf.size-1)*percentile/100.
+      idx, frac = int(loc), loc-int(loc)
+      return log_pdf[idx]+frac*(log_pdf[idx+1]-log_pdf[idx])
+    else:
+      print '{} percentile out of bounds'.format(percentile)
+      return nan
 
   def contour(self, percentile=50):
-      """
-      Returns the (spherical) coordinates that correspond to a contour percentile
+    """
+    Returns the (spherical) coordinates that correspond to a contour percentile
 
-      Solution is based on Eq 1.4 (Kent 1982)
-      """
-      k = self.kappa
-      b = self.beta
-      ln = self.log_normalize()
-      lev = self.level(percentile)
+    Solution is based on Eq 1.4 (Kent 1982)
+    """
+    k = self.kappa
+    b = self.beta
+    ln = self.log_normalize()
+    lev = self.level(percentile)
 
-      # work in coordinate system x' = Gamma'*x
-      # range over which x1 remains real is [-x2_max, x2_max]
-      x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
-      x2 = linspace(-x2_max,x2_max, 100000)
-      x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-      x3_0 = sqrt(1-x1_0**2-x2**2)
-      x3_1 = sqrt(1-x1_1**2-x2**2)
-      x2 = concatenate([x2, -x2, x2, -x2])
-      x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
-      x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
+    # work in coordinate system x' = Gamma'*x
+    # range over which x1 remains real is [-x2_max, x2_max]
+    x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
+    x2 = linspace(-x2_max,x2_max, 100000)
+    x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+    x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+    x3_0 = sqrt(1-x1_0**2-x2**2)
+    x3_1 = sqrt(1-x1_1**2-x2**2)
+    x2 = concatenate([x2, -x2, x2, -x2])
+    x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
+    x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
       
-      # Since Kent distribution is well-defined for points not on a sphere,
-      # possible solutions for L=-log_pdf(kent) extend beyond surface of
-      # sphere. For the contour evaluation, only use points that lie on sphere.
-      ok = x1**2+x2**2<=1
-      x123 = asarray((x1[ok], x2[ok], x3[ok]))
+    # Since Kent distribution is well-defined for points not on a sphere,
+    # possible solutions for L=-log_pdf(kent) extend beyond surface of
+    # sphere. For the contour evaluation, only use points that lie on sphere.
+    ok = x1**2+x2**2<=1
+    x123 = asarray((x1[ok], x2[ok], x3[ok]))
 
-      # rotate back into x coordinates
-      x = dot(self.Gamma, x123)
-      return KentDistribution.gamma1_to_spherical_coordinates(x)
+    # rotate back into x coordinates
+    x = dot(self.Gamma, x123)
+    return KentDistribution.gamma1_to_spherical_coordinates(x)
       
   def __repr__(self):
     return "kent(%s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta)
@@ -862,3 +873,6 @@ if __name__ == "__main__":
   import doctest
   doctest.testmod(optionflags=doctest.ELLIPSIS)
 
+# Local Variables:
+# py-indent-offset: 2
+# End:
