@@ -473,7 +473,7 @@ class KentDistribution(object):
       # work in coordinate system x' = Gamma'*x
       # range over which x1 remains real is [-x2_max, x2_max]
       x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
-      x2 = linspace(-x2_max,x2_max, 10000)
+      x2 = linspace(-x2_max,x2_max, 100000)
       x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
       x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
       x3_0 = sqrt(1-x1_0**2-x2**2)
