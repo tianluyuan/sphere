@@ -477,12 +477,10 @@ class KentDistribution(object):
       x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
       x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
       x3_0 = sqrt(1-x1_0**2-x2**2)
-      x3_1 = -sqrt(1-x1_0**2-x2**2)
-      x3_2 = sqrt(1-x1_1**2-x2**2)
-      x3_3 = -sqrt(1-x1_1**2-x2**2)
-      x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
+      x3_1 = sqrt(1-x1_1**2-x2**2)
       x2 = concatenate([x2, -x2, x2, -x2])
-      x3 = concatenate([x3_0, x3_1, x3_2, x3_3])
+      x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
+      x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
       
       # Since Kent distribution is well-defined for points not on a sphere,
       # possible solutions for L=-log_pdf(kent) extend beyond surface of
