@@ -12,7 +12,7 @@ generates example plots if called directly from the shell.
 """
 
 from numpy import *
-from scipy.optimize import fmin_bfgs, fmin_cobyla, minimize
+from scipy.optimize import minimize
 from scipy.special import gamma as gamma_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
@@ -621,7 +621,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     __kent_mle_output1(k_me, callback)
   
   # here the mle is done
-  # constrain kappa, beta > 0 and 2*beta < kappa
+  # constrain kappa, beta >= 0 and 2*beta <= kappa
   cons = ({"type": "ineq",
            "fun": lambda x: abs(x[-2])-2*abs(x[-1])},
           {"type": "ineq",
@@ -629,8 +629,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
           {"type": "ineq",
            "fun": lambda x: x[-1]})
   all_values = minimize(minus_log_likelihood, x_start, method="COBYLA", constraints=cons,
-                        callback=callback, options={'disp': False, 'catol': 0.0002, 'maxiter': 100000, 'rhobeg': 1.0})
-  # print all_values
+                        options={"disp": False, "catol": 0.0002, "maxiter": 100000, "rhobeg": 1.0})
   
   x_opt = all_values.x
   warnflag = all_values.status

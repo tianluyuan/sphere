@@ -148,7 +148,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
   real_kappas = arange(1.0, max_kappa, stepsize)
   print "Testing various combinations of kappa and beta for", num_samples, "samples."
   bias_var_mse_kappa_me, bias_var_mse_kappa_mle, bias_var_mse_beta_me, bias_var_mse_beta_mle = [list() for i in xrange(4)]
-  beta_ratios = (0.0, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0)
+  beta_ratios = (0.0, 0.05, 0.1, 0.2, 0.3, 0.5)
   for beta_ratio in beta_ratios:
     real_betas = beta_ratio*real_kappas
     kappas_me, kappas_mle, betas_me, betas_mle = [list() for i in xrange(4)]
