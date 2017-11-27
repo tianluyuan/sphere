@@ -12,7 +12,7 @@ generates example plots if called directly from the shell.
 """
 
 from numpy import *
-from scipy.optimize import fmin_bfgs
+from scipy.optimize import fmin_bfgs, fmin_cobyla, minimize
 from scipy.special import gamma as gamma_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
@@ -565,7 +565,7 @@ def __kent_mle_output2(x, minusL, output_count, verbose):
     print ("[%3i]       " + " %s" * 3) % tuple(output_count + str_values)
   output_count[0] = output_count[0] + 1
 
-def kent_mle(xs, verbose=False, return_intermediate_values=False, return_bfgs_values=False, bfgs_kwargs=dict(), warning='warn'):
+def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
   """
   Generates a KentDistribution fitted to xs using maximum likelihood estimation
   For a first approximation kent_me() is used. The function 
@@ -577,13 +577,6 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, return_bfgs_va
     - verbose: if True, output is given for every step
     - return_intermediate_values: if true the values of all intermediate steps
       are returned as well
-    - return_bfgs_values: if true the values from the bfgs_min algorithm are 
-      returned as well
-    - bfgs_args: extra arguments that can be passed to min_bfgs: not all arguments may
-      be overwritten. Default value of 'disp' is 0 but may be set to 1 'full_output'
-      'gtol' is chosen to be 1E-7 but may be set to other values.
-      is 1 (can't be overwritten), 'callback' can't be overwritten and the first 
-      three arguments of min_bfgs can't be overwritten. 
     - warning: choices are 
       - "warn": issues any warning via warning.warn
       - a file object: which results in any warning message being written to a file 
@@ -592,15 +585,11 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, return_bfgs_va
   Output:
     - an instance of the fitted KentDistribution
   Extra output:
-    - if return_intermediate_values and/or return_bfgs_values is specified then
+    - if return_intermediate_values is specified then
     a tuple is returned with the KentDistribution argument as the first element
     and containing the extra requested values in the rest of the elements.
   """
   # first get estimated moments
-  if 'disp' not in bfgs_kwargs:
-    bfgs_kwargs['disp'] = 0
-  if 'gtol' not in bfgs_kwargs:
-    bfgs_kwargs['gtol'] = 1E-7
   k_me = kent_me(xs)
   gamma1, gamma2, gamma3, kappa, beta = k_me.gamma1, k_me.gamma2, k_me.gamma3, k_me.kappa, k_me.beta
   min_kappa = KentDistribution.minimum_value_for_kappa
@@ -630,20 +619,20 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, return_bfgs_va
   x_start = array([kappa - min_kappa, beta])
   if verbose:
     __kent_mle_output1(k_me, callback)
-
   
   # here the mle is done
-  all_values = fmin_bfgs(minus_log_likelihood, x_start, minus_log_likelihood_prime,
-    callback=callback, full_output=1, **bfgs_kwargs)
+  cons = {"type": "ineq",
+          "fun": lambda x: x[0]-2*x[1]}
+  all_values = minimize(minus_log_likelihood, x_start, method="COBYLA", constraints=cons,
+                        callback=callback, options={'disp': False, 'catol': 0.0002, 'maxiter': 10000, 'rhobeg': 1.0})
+  # all_values = fmin_bfgs(minus_log_likelihood, x_start, minus_log_likelihood_prime,
+  #   callback=callback, full_output=1, **bfgs_kwargs)
+  # print all_values
 
-  x_opt = all_values[0]
-  warnflag = all_values[6]
-  if warnflag:
-    warning_message = "Unknownw warning %s" % warnflag
-    if warnflag == 2:
-      warning_message = "Desired error not necessarily achieved due to precision loss."
-    if warnflag == 1:
-      warning_message = "Maximum number of iterations has been exceeded."
+  x_opt = all_values.x
+  warnflag = all_values.status
+  if not all_values.success:
+    warning_message = all_values.message
     if warning == "warn":
       warnings.warn(warning_message, RuntimeWarning)
     if hasattr(warning, "write"):
@@ -652,8 +641,6 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, return_bfgs_va
   k = (generate_k(*x_opt),)
   if return_intermediate_values:
     k += (intermediate_values,)
-  if  return_bfgs_values:
-    k += (all_values,)
   if len(k) == 1:
     k = k[0]
   return k
