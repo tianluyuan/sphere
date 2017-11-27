@@ -591,13 +591,13 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   """
   # first get estimated moments
   k_me = kent_me(xs)
-  gamma1, gamma2, gamma3, kappa, beta = k_me.gamma1, k_me.gamma2, k_me.gamma3, k_me.kappa, k_me.beta
+  theta, phi, psi, kappa, beta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta
   min_kappa = KentDistribution.minimum_value_for_kappa
   
   # method that generates an instance of KentDistribution
-  def generate_k(fudge_kappa, fudge_beta):
+  def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta):
     # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
-    return kent2(gamma1, gamma2, gamma3, min_kappa + abs(fudge_kappa), abs(fudge_beta))
+    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta))
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
@@ -616,19 +616,22 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     imv.append((kappa, beta, minusL))
         
   # starting parameters (small value is subtracted from kappa and add in generatke k)
-  x_start = array([kappa - min_kappa, beta])
+  x_start = array([theta, phi, psi, kappa - min_kappa, beta])
   if verbose:
     __kent_mle_output1(k_me, callback)
   
   # here the mle is done
-  cons = {"type": "ineq",
-          "fun": lambda x: x[0]-2*x[1]}
+  # constrain kappa, beta > 0 and 2*beta < kappa
+  cons = ({"type": "ineq",
+           "fun": lambda x: abs(x[-2])-2*abs(x[-1])},
+          {"type": "ineq",
+           "fun": lambda x: x[-2]},
+          {"type": "ineq",
+           "fun": lambda x: x[-1]})
   all_values = minimize(minus_log_likelihood, x_start, method="COBYLA", constraints=cons,
-                        callback=callback, options={'disp': False, 'catol': 0.0002, 'maxiter': 10000, 'rhobeg': 1.0})
-  # all_values = fmin_bfgs(minus_log_likelihood, x_start, minus_log_likelihood_prime,
-  #   callback=callback, full_output=1, **bfgs_kwargs)
+                        callback=callback, options={'disp': False, 'catol': 0.0002, 'maxiter': 100000, 'rhobeg': 1.0})
   # print all_values
-
+  
   x_opt = all_values.x
   warnflag = all_values.status
   if not all_values.success:
