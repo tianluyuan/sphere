@@ -551,7 +551,7 @@ def __kent_mle_output1(k_me, callback):
   print "kappa =", k_me.kappa
   print "beta  =", k_me.beta
   print "******** Starting the Gradient Descent ********"
-  print "[iteration]   kappa        beta        -L"
+  print "[iteration]   theta   phi   psi   kappa   beta   -L"
 
 def __kent_mle_output2(x, minusL, output_count, verbose):
   interval = verbose if isinstance(verbose, int) else 1
@@ -610,10 +610,12 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   intermediate_values = list()
   def callback(x, output_count=[0]):
     minusL = -generate_k(*x).log_likelihood(xs)
-    fudge_kappa, fudge_beta = x
+    theta, phi, psi, fudge_kappa, fudge_beta = x
     kappa, beta = min_kappa + abs(fudge_kappa), abs(fudge_beta)
     imv = intermediate_values
-    imv.append((kappa, beta, minusL))
+    imv.append((theta, phi, psi, kappa, beta, minusL))
+    if verbose:
+      print len(imv), theta, phi, psi, kappa, beta, minusL
         
   # starting parameters (small value is subtracted from kappa and add in generatke k)
   x_start = array([theta, phi, psi, kappa - min_kappa, beta])
@@ -628,8 +630,13 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
            "fun": lambda x: x[-2]},
           {"type": "ineq",
            "fun": lambda x: x[-1]})
-  all_values = minimize(minus_log_likelihood, x_start, method="COBYLA", constraints=cons,
-                        options={"disp": False, "catol": 0.0002, "maxiter": 100000, "rhobeg": 1.0})
+  all_values = minimize(minus_log_likelihood,
+                        x_start,
+                        method="SLSQP",
+                        constraints=cons,
+                        callback=callback,
+                        options={"disp": False, "eps": 1e-08,
+                                 "maxiter": 100, "ftol": 1e-08})
   
   x_opt = all_values.x
   warnflag = all_values.status
