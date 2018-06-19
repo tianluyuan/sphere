@@ -19,8 +19,8 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
   print "Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f+j*1" % (scale, scale)
   with warnings.catch_warnings():
     warnings.simplefilter("error")
-    c_grid, dck_grid, dcb_grid = [zeros((gridsize, gridsize))-1.0 for z in xrange(3)]
-    cnum_grid, dcnum_grid = [zeros((gridsize, gridsize), dtype=int32)-1 for z in xrange(2)]
+    c_grid = zeros((gridsize, gridsize))-1.0
+    cnum_grid = zeros((gridsize, gridsize), dtype=int32)-1
     sys.stdout.write("Calculating normalization factor for combinations of kappa and beta: ")
     for i in xrange(gridsize):
       if verbose:
@@ -31,16 +31,9 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
         beta = scale*j + 1.0
         f = kent(0.0, 0.0, 0.0, kappa, beta) 
         try:
-          c, cnum = f.log_normalize(return_num_iterations=True)
-          c_grid[i, j] = c
+          c, cnum = f.normalize(return_num_iterations=True)
+          c_grid[i, j] = log(c)
           cnum_grid[i, j] = cnum
-        except (OverflowError, RuntimeWarning):
-          pass
-        try:
-          (dck, dcb), cnum = f.log_normalize_prime(return_num_iterations=True)
-          dck_grid[i, j] = dck
-          dcb_grid[i, j] = dcb
-          dcnum_grid[i, j] = cnum  
         except (OverflowError, RuntimeWarning):
           pass
     if showplots:
@@ -48,12 +41,9 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
       for name, grid in zip(
         [
           r"$\mathrm{Calculated\ values\ of\ }c(\kappa,\beta)$", 
-          r"$\mathrm{Calculated\ values\ of\ }{\frac{\partial}{\partial \kappa}}c(\kappa,\beta)$",
-          r"$\mathrm{Calculated\ values\ of\ }{\frac{\partial}{\partial \beta}}c(\kappa,\beta)$",
           r"$\mathrm{Iterations\ necessary\ to\ calculate\ }c(\kappa,\beta)$",
-          r"$\mathrm{Iterations\ necessary\ to\ calculate\ }{\nabla}c(\kappa,\beta)$",
         ],
-        [ c_grid,   dck_grid,   dcb_grid,   cnum_grid,   dcnum_grid]
+        [ c_grid,   cnum_grid]
       ):
         f = figure()
         ax = f.add_subplot(111)
@@ -68,7 +58,6 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
   if print_grid:
     for message, grid in [
       ("Iterations necessary to calculate normalize(kappa, beta):", cnum_grid),
-      ("Iterations necessary to calculate the gradient of normalize(kappa, beta):", dcnum_grid)
     ]:
       print message
       for i, line in enumerate(grid):

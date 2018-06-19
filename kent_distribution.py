@@ -217,7 +217,7 @@ class KentDistribution(object):
           result += a
           
           j += 1
-          if (abs(a) < abs(result)*1E-12 and j > 5) or isinf(result):
+          if (abs(a) < abs(result)*1E-12 and j > 5):
             break
               
       cache[k, b] = 2*pi*result
@@ -230,15 +230,15 @@ class KentDistribution(object):
     """
     Returns the logarithm of the normalization constant.
     """
-    normalize = self.normalize()
-
-    k = self.kappa
-    b = self.beta
-    if isinf(normalize):
-      lnormalize = log(2*pi)+k-log((k-b)*(k+b))/2.
-    else:
-      lnormalize = log(normalize)
-    return lnormalize
+    with warnings.catch_warnings():
+      warnings.simplefilter('error')
+      try:
+        lnormalize = log(self.normalize())
+      except (OverflowError, RuntimeWarning):
+        k = self.kappa
+        b = self.beta
+        lnormalize = log(2*pi)+k-log((k-b)*(k+b))/2.
+      return lnormalize
 
       
   def max(self):
@@ -311,121 +311,13 @@ class KentDistribution(object):
       return f - self.log_normalize()
     else:
       return f
-      
-  def pdf_prime(self, xs, normalize=True):
-    """
-    Returns the derivative of the pdf with respect to kappa and beta. 
-    """
-    return self.pdf(xs, normalize)*self.log_pdf_prime(xs, normalize)
     
-  def log_pdf_prime(self, xs, normalize=True):
-    """
-    Returns the derivative of the log(pdf) with respect to kappa and beta.
-    """
-    axis = len(shape(xs))-1
-    g1x = sum(self.gamma1*xs, axis)
-    g2x = sum(self.gamma2*xs, axis)
-    g3x = sum(self.gamma3*xs, axis)
-    k, b = self.kappa, self.beta
-
-    dfdk = g1x
-    dfdb = g2x**2 - g3x**2
-    df = array([dfdk, dfdb])
-    if normalize:
-      return transpose(transpose(df) - self.log_normalize_prime())
-    else:
-      return df
-          
-  def normalize_prime(self, cache=dict(), return_num_iterations=False):
-    """
-    Returns the derivative of the normalization factor with respect to kappa and beta.
-    """
-    k, b = self.kappa, self.beta
-    if not (k, b) in cache:
-      G = gamma_fun
-      I = modified_bessel_2ndkind
-      dIdk = lambda v, z : modified_bessel_2ndkind_derivative(v, z, 1)
-      dcdk, dcdb = 0.0, 0.0
-      j = 0
-      if b == 0:
-        dcdk = (
-          ( G(j+0.5)/G(j+1) )*
-          ( (-0.5*j-0.125)*(k)**(-2*j-1.5) )*
-          ( I(2*j+0.5, k) )
-        )
-        dcdk += (
-          ( G(j+0.5)/G(j+1) )*
-          ( (0.5*k)**(-2*j-0.5) )*
-          ( dIdk(2*j+0.5, k) )
-        )   
-
-        dcdb = 0.0 
-      else:
-        while True:
-          dk = (
-            (-1*j-0.25)*exp(
-              log(b)*2*j + 
-              log(0.5*k)*(-2*j-1.5)
-            )*I(2*j+0.5, k)
-          )
-          dk += (
-            exp(
-              log(b)*2*j +
-              log(0.5*k)*(-2*j-0.5)
-            )*dIdk(2*j+0.5, k)
-          )        
-          dk /= G(j+1)
-          dk *= G(j+0.5)                        
-
-          db = (
-            2*j*exp(
-              log(b)*(2*j-1) +
-              log(0.5*k)*(-2*j-0.5)
-            ) * I(2*j+0.5, k)
-          )
-          db /= G(j+1)
-          db *= G(j+0.5)                     
-          dcdk += dk
-          dcdb += db
-        
-          j += 1
-          if abs(dk) < abs(dcdk)*1E-12 and abs(db) < abs(dcdb)*1E-12  and j > 5:
-            break
-      
-        # print "dc", dcdk, dcdb, "(", k, b
-      
-      cache[k, b] = 2*pi*array([dcdk, dcdb])
-    if return_num_iterations:
-      return cache[k, b], j
-    else:
-      return cache[k, b]
-    
-  def log_normalize_prime(self, return_num_iterations=False):
-    """
-    Returns the derivative of the logarithm of the normalization factor.
-    """
-    if return_num_iterations:
-      normalize_prime, num_iter = self.normalize_prime(return_num_iterations=True)
-      return normalize_prime/self.normalize(), num_iter
-    else:
-      return self.normalize_prime()/self.normalize()
-
   def log_likelihood(self, xs):
     """
     Returns the log likelihood for xs.
     """
     retval = self.log_pdf(xs)
     return sum(retval, len(shape(retval)) - 1)
-    
-  def log_likelihood_prime(self, xs):
-    """
-    Returns the derivative with respect to kappa and beta of the log likelihood for xs.
-    """
-    retval = self.log_pdf_prime(xs)
-    if len(shape(retval)) == 1:
-      return retval
-    else:
-      return sum(retval, len(shape(retval)) - 1)
     
   def _rvs_helper(self):
     num_samples = 10000
@@ -609,9 +501,6 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   def minus_log_likelihood(x):
     return -generate_k(*x).log_likelihood(xs)/len(xs)
     
-  def minus_log_likelihood_prime(x):
-    return -generate_k(*x).log_likelihood_prime(xs)/len(xs)
-  
   # callback for keeping track of the values
   intermediate_values = list()
   def callback(x, output_count=[0]):
@@ -676,17 +565,6 @@ if __name__ == "__main__":
     6  15  42 126 172 172 172   x   x   x
     6  13  29  86 172 172   x   x   x   x
     6  12  23  55 141   x   x   x   x   x
-    x   x   x   x   x   x   x   x   x   x
-    x   x   x   x   x   x   x   x   x   x
-  Iterations necessary to calculate the gradient of normalize(kappa, beta):
-    9   x   x   x   x   x   x   x   x   x
-    6  82 150 172 172   x   x   x   x   x
-    6  54 135 172 172 172 172 172 172   x
-    6  31 109 172 172 172 172 172 172   x
-    6  22  75 160 172 172 172 172   x   x
-    6  18  47 128 172 172 172   x   x   x
-    6  15  34  91 172 172   x   x   x   x
-    6  14  27  61 143   x   x   x   x   x
     x   x   x   x   x   x   x   x   x   x
     x   x   x   x   x   x   x   x   x   x
   >>> seed(888)
@@ -846,30 +724,6 @@ if __name__ == "__main__":
   ...   k = kent3(A, B)
   ...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
   ...   test_orth(k)
-  ... 
-  >>> # testing the derivatives
-  >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
-  ...   k0 = kent(theta, phi, psi, kappa, beta)
-  ...   eps = 1E-7
-  ...   kk = kent(theta, phi, psi, kappa+eps, beta)
-  ...   kb = kent(theta, phi, psi, kappa, beta+eps)
-  ...   num_samples = 101
-  ...   xs = gauss(0, 1).rvs((num_samples, 3))
-  ...   xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-  ...   for ys in [xs[0], xs[1:], k0.rvs(), k0.rvs(100)]:
-  ...     f = False
-  ...     for name, f0, fk, fb, fprime in (
-  ...       ("k0.pdf(ys),            ", k0.pdf(ys),            kk.pdf(ys),            kb.pdf(ys),            k0.pdf_prime(ys)           ),
-  ...       ("k0.pdf(ys, f),         ", k0.pdf(ys, f),         kk.pdf(ys, f),         kb.pdf(ys, f),         k0.pdf_prime(ys, f)        ),
-  ...       ("k0.log_pdf(ys),        ", k0.log_pdf(ys),        kk.log_pdf(ys),        kb.log_pdf(ys),        k0.log_pdf_prime(ys)       ),
-  ...       ("k0.log_pdf(ys, f),     ", k0.log_pdf(ys, f),     kk.log_pdf(ys, f),     kb.log_pdf(ys, f),     k0.log_pdf_prime(ys, f)    ),
-  ...       ("k0.normalize(),        ", k0.normalize(),        kk.normalize(),        kb.normalize(),        k0.normalize_prime()       ),
-  ...       ("k0.log_normalize(),    ", k0.log_normalize(),    kk.log_normalize(),    kb.log_normalize(),    k0.log_normalize_prime()   ),
-  ...       ("k0.log_likelihood(ys), ", k0.log_likelihood(ys), kk.log_likelihood(ys), kb.log_likelihood(ys), k0.log_likelihood_prime(ys)),
-  ...     ):
-  ...       fprime_approx = array([(fk-f0)/eps, (fb-f0)/eps])
-  ...       assert all(abs(fprime_approx - fprime) < 1E-2*(abs(fprime_approx)+abs(fprime)))
-  ...       assert sum(abs(fprime_approx - fprime) > 1E-4*(abs(fprime_approx)+abs(fprime))) < 5
   ...  
   """
 
