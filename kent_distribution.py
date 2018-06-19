@@ -431,9 +431,10 @@ class KentDistribution(object):
     num_samples = 10000
     xs = gauss(0, 1).rvs((num_samples, 3))
     xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-    pvalues = self.pdf(xs)
-    fmax = self.pdf_max()
-    return xs[uniform(0, fmax).rvs(num_samples) < pvalues]
+    lpvalues = self.log_pdf(xs, normalize=False)
+    lfmax = self.log_pdf_max(normalize=False)
+    shifted = lpvalues-lfmax    
+    return xs[uniform(0, 1).rvs(num_samples) < exp(shifted)]
   
   def rvs(self, n_samples=None):
     """
