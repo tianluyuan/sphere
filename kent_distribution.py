@@ -239,7 +239,6 @@ class KentDistribution(object):
         b = self.beta
         lnormalize = log(2*pi)+k-log((k-b)*(k+b))/2.
       return lnormalize
-
       
   def max(self):
     if self.beta == 0.0:
