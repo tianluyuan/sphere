@@ -217,7 +217,7 @@ class KentDistribution(object):
           result += a
           
           j += 1
-          if abs(a) < abs(result)*1E-12 and j > 5:
+          if (abs(a) < abs(result)*1E-12 and j > 5) or isinf(result):
             break
               
       cache[k, b] = 2*pi*result
@@ -226,15 +226,20 @@ class KentDistribution(object):
     else:
       return cache[k, b]
 
-  def log_normalize(self, return_num_iterations=False):
+  def log_normalize(self):
     """
     Returns the logarithm of the normalization constant.
     """
-    if return_num_iterations:
-      normalize, num_iter = self.normalize(return_num_iterations=True)
-      return log(normalize), num_iter
+    normalize = self.normalize()
+
+    k = self.kappa
+    b = self.beta
+    if isinf(normalize):
+      lnormalize = log(2*pi)+k-log((k-b)*(k+b))/2.
     else:
-      return log(self.normalize())
+      lnormalize = log(normalize)
+    return lnormalize
+
       
   def max(self):
     if self.beta == 0.0:
@@ -426,8 +431,8 @@ class KentDistribution(object):
     num_samples = 10000
     xs = gauss(0, 1).rvs((num_samples, 3))
     xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-    pvalues = self.pdf(xs, normalize=False)
-    fmax = self.pdf_max(normalize=False)
+    pvalues = self.pdf(xs)
+    fmax = self.pdf_max()
     return xs[uniform(0, fmax).rvs(num_samples) < pvalues]
   
   def rvs(self, n_samples=None):
