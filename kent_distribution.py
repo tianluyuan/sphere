@@ -34,16 +34,16 @@ def norm(x, axis=None):
     x = array(x)
   return sqrt(sum(x*x, axis=axis))
   
-def kent(theta, phi, psi, kappa, beta):
+def kent(theta, phi, psi, kappa, beta, bm4=1.):
   """
   Generates the Kent distribution based on the spherical coordinates theta, phi, psi
   with the concentration parameter kappa and the ovalness beta
   """
   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
-  k = KentDistribution(gamma1, gamma2, gamma3, kappa, beta)
+  k = KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
   return k
 
-def kent2(gamma1, gamma2, gamma3, kappa, beta):
+def kent2(gamma1, gamma2, gamma3, kappa, beta, bm4=1.):
   """
   Generates the Kent distribution using the orthonormal vectors gamma1, 
   gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
@@ -51,9 +51,9 @@ def kent2(gamma1, gamma2, gamma3, kappa, beta):
   assert abs(inner(gamma1, gamma2)) < 1E-10
   assert abs(inner(gamma2, gamma3)) < 1E-10
   assert abs(inner(gamma3, gamma1)) < 1E-10
-  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta)
+  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
     
-def kent3(A, B):
+def kent3(A, B, bm4=1.):
   """
   Generates the Kent distribution using the orthogonal vectors A and B
   where A = gamma1*kappa and B = gamma2*beta (gamma3 is inferred)
@@ -70,16 +70,16 @@ def kent3(A, B):
     gamma2 = B/beta
   theta, phi, psi = KentDistribution.gammas_to_spherical_coordinates(gamma1, gamma2)
   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
-  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta)
+  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
   
-def kent4(Gamma, kappa, beta):
+def kent4(Gamma, kappa, beta, bm4=1.):
   """
   Generates the kent distribution
   """
   gamma1 = Gamma[:,0]
   gamma2 = Gamma[:,1]
   gamma3 = Gamma[:,2]
-  return kent2(gamma1, gamma2, gamma3, kappa, beta)
+  return kent2(gamma1, gamma2, gamma3, kappa, beta, bm4)
 
 def __generate_arbitrary_orthogonal_unit_vector(x):
   v1 = cross(x, array([1.0, 0.0, 0.0]))
@@ -150,12 +150,14 @@ class KentDistribution(object):
     return theta, phi, psi
 
   
-  def __init__(self, gamma1, gamma2, gamma3, kappa, beta):
+  def __init__(self, gamma1, gamma2, gamma3, kappa, beta, bm4=1.):
     self.gamma1 = array(gamma1, dtype=float64)
     self.gamma2 = array(gamma2, dtype=float64)
     self.gamma3 = array(gamma3, dtype=float64)
     self.kappa = float(kappa)
     self.beta = float(beta)
+    # Bingham-Mardia, 4-param, small-circle distribution has bm4=-1
+    self.bm4 = bm4
     
     self.theta, self.phi, self.psi = KentDistribution.gammas_to_spherical_coordinates(self.gamma1, self.gamma2)
     
@@ -167,8 +169,6 @@ class KentDistribution(object):
 
     # save rvs used to calculated level contours to keep levels self-consistent
     self._level_log_pdf = array([], dtype=float64)
-    # use Bingham-Mardia, 4-param, small-circle distribution
-    self.bm4 = False
   
   @property
   def Gamma(self):
@@ -305,10 +305,9 @@ class KentDistribution(object):
     g1x = sum(self.gamma1*xs, axis)
     g2x = sum(self.gamma2*xs, axis)
     g3x = sum(self.gamma3*xs, axis)
-    k, b = self.kappa, self.beta
+    k, b, m = self.kappa, self.beta, self.bm4
 
-    g23x = g2x**2 + g3x**2 if self.bm4 else g2x**2-g3x**2
-    f = k*g1x + b*g23x
+    f = k*g1x + b*(g2x**2 - m*g3x**2)
     if normalize:
       return f - self.log_normalize()
     else:
@@ -378,6 +377,7 @@ class KentDistribution(object):
     """
     k = self.kappa
     b = self.beta
+    m = self.bm4
     ln = self.log_normalize()
     lev = self.level(percentile)
 
@@ -385,12 +385,8 @@ class KentDistribution(object):
     # range over which x1 remains real is [-x2_max, x2_max]
     x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
     x2 = linspace(-x2_max,x2_max, 100000)
-    if self.bm4:
-      x1_0 = -(-k+sqrt(k**2-4*b*(-b-lev+ln-2*b*zeros(x2.shape)**2)))/(2*b)
-      x1_1 = -(-k-sqrt(k**2-4*b*(-b-lev+ln-2*b*zeros(x2.shape)**2)))/(2*b)
-    else:
-      x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+    x1_0 = (-k+sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
+    x1_1 = (-k-sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
     x3_0 = sqrt(1-x1_0**2-x2**2)
     x3_1 = sqrt(1-x1_1**2-x2**2)
     x2 = concatenate([x2, -x2, x2, -x2])
@@ -501,9 +497,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # method that generates an instance of KentDistribution
   def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta):
     # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
-    dist = kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta))
-    dist.bm4 = bm4
-    return dist
+    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta), bm4)
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
@@ -529,11 +523,9 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
   curr = inf
-  for bm4, beta_kappa in zip(
-      [False, True],
-      [lambda x:abs(x[-2])-2*abs(x[-1]), lambda x:-abs(x[-2])+2*abs(x[-1])]):
+  for bm4 in [1., -1.]:
     cons = ({"type": "ineq",
-             "fun": beta_kappa},
+             "fun": lambda x:bm4*(abs(x[-2])-2*abs(x[-1]))},
             {"type": "ineq",
              "fun": lambda x: x[-2]},
             {"type": "ineq",
@@ -546,13 +538,17 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
                    callback=callback,
                    options={"disp": False, "eps": 1e-08,
                             "maxiter": 100, "ftol": 1e-08})
-      if _.fun < curr:
-        all_values = _
-        curr = _.fun
     except RuntimeWarning:
       continue
+    if _.fun < curr:
+      all_values = _
+      k = (generate_k(*all_values.x),)
+      if return_intermediate_values:
+        k += (intermediate_values,)
+      if len(k) == 1:
+        k = k[0]
+      curr = _.fun
   
-  x_opt = all_values.x
   warnflag = all_values.status
   if not all_values.success:
     warning_message = all_values.message
@@ -561,11 +557,6 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     if hasattr(warning, "write"):
       warning.write("Warning: "+warning_message+"\n")
   
-  k = (generate_k(*x_opt),)
-  if return_intermediate_values:
-    k += (intermediate_values,)
-  if len(k) == 1:
-    k = k[0]
   return k
   
 if __name__ == "__main__":
