@@ -260,6 +260,7 @@ class KentDistribution(object):
           lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
         else:
           # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
+          # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper
           lnormalize = 0.5*(log(pi)-log(b))+log(4*pi)+b*(1+(k/(2*b))**2)
       return lnormalize
       
