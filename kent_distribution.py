@@ -167,6 +167,8 @@ class KentDistribution(object):
 
     # save rvs used to calculated level contours to keep levels self-consistent
     self._level_log_pdf = array([], dtype=float64)
+    # use Bingham-Mardia, 4-param, small-circle distribution
+    self.bm4 = False
   
   @property
   def Gamma(self):
@@ -305,7 +307,8 @@ class KentDistribution(object):
     g3x = sum(self.gamma3*xs, axis)
     k, b = self.kappa, self.beta
 
-    f = k*g1x + b*(g2x**2 - g3x**2)
+    g23x = g2x**2 + g3x**2 if self.bm4 else g2x**2-g3x**2
+    f = k*g1x + b*g23x
     if normalize:
       return f - self.log_normalize()
     else:
@@ -382,8 +385,12 @@ class KentDistribution(object):
     # range over which x1 remains real is [-x2_max, x2_max]
     x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
     x2 = linspace(-x2_max,x2_max, 100000)
-    x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
-    x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+    if self.bm4:
+      x1_0 = -(-k+sqrt(k**2-4*b*(-b-lev+ln-2*b*zeros(x2.shape)**2)))/(2*b)
+      x1_1 = -(-k-sqrt(k**2-4*b*(-b-lev+ln-2*b*zeros(x2.shape)**2)))/(2*b)
+    else:
+      x1_0 = (-k+sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
+      x1_1 = (-k-sqrt(k**2+4*b*(b-lev+ln-2*b*x2**2)))/(2*b)
     x3_0 = sqrt(1-x1_0**2-x2**2)
     x3_1 = sqrt(1-x1_1**2-x2**2)
     x2 = concatenate([x2, -x2, x2, -x2])
@@ -494,12 +501,14 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # method that generates an instance of KentDistribution
   def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta):
     # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
-    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta))
+    dist = kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta))
+    dist.bm4 = bm4
+    return dist
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
     return -generate_k(*x).log_likelihood(xs)/len(xs)
-    
+  
   # callback for keeping track of the values
   intermediate_values = list()
   def callback(x, output_count=[0]):
@@ -517,20 +526,31 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     __kent_mle_output1(k_me, callback)
   
   # here the mle is done
-  # constrain kappa, beta >= 0 and 2*beta <= kappa
-  cons = ({"type": "ineq",
-           "fun": lambda x: abs(x[-2])-2*abs(x[-1])},
-          {"type": "ineq",
-           "fun": lambda x: x[-2]},
-          {"type": "ineq",
-           "fun": lambda x: x[-1]})
-  all_values = minimize(minus_log_likelihood,
-                        x_start,
-                        method="SLSQP",
-                        constraints=cons,
-                        callback=callback,
-                        options={"disp": False, "eps": 1e-08,
-                                 "maxiter": 100, "ftol": 1e-08})
+  # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
+  # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
+  curr = inf
+  for bm4, beta_kappa in zip(
+      [False, True],
+      [lambda x:abs(x[-2])-2*abs(x[-1]), lambda x:-abs(x[-2])+2*abs(x[-1])]):
+    cons = ({"type": "ineq",
+             "fun": beta_kappa},
+            {"type": "ineq",
+             "fun": lambda x: x[-2]},
+            {"type": "ineq",
+             "fun": lambda x: x[-1]})
+    try:
+      _ = minimize(minus_log_likelihood,
+                   x_start,
+                   method="SLSQP",
+                   constraints=cons,
+                   callback=callback,
+                   options={"disp": False, "eps": 1e-08,
+                            "maxiter": 100, "ftol": 1e-08})
+      if _.fun < curr:
+        all_values = _
+        curr = _.fun
+    except RuntimeWarning:
+      continue
   
   x_opt = all_values.x
   warnflag = all_values.status
