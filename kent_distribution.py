@@ -237,7 +237,7 @@ class KentDistribution(object):
             if (abs(a) < abs(result)*1E-12 and j > 5):
               break
         else:
-          raise RuntimeWarning('WARN: Normalize() not implemented for bm4={}'.format(m))
+          raise RuntimeError('ERROR: Normalize() not implemented for bm4={}'.format(m))
               
       cache[k, b] = 2*pi*result
     if return_num_iterations:
@@ -253,10 +253,14 @@ class KentDistribution(object):
       warnings.simplefilter('error')
       try:
         lnormalize = log(self.normalize())
-      except (OverflowError, RuntimeWarning):
+      except (OverflowError, RuntimeWarning) as e:
         k = self.kappa
         b = self.beta
-        lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
+        if k > 2*b:
+          lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
+        else:
+          # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
+          lnormalize = 0.5*(log(pi)-log(b))+log(4*pi)+b*(1+(k/(2*b))**2)
       return lnormalize
       
   def max(self):
@@ -542,6 +546,8 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   curr = inf
   for bm4 in [1., -1.]:
     cons = ({"type": "ineq",
+             "fun": lambda x:bm4*(abs(x[-2])-2*abs(x[-1]))},
+            {"type": "ineq",
              "fun": lambda x: x[-2]},
             {"type": "ineq",
              "fun": lambda x: x[-1]})
