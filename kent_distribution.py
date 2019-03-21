@@ -472,6 +472,7 @@ def __kent_mle_output1(k_me, callback):
   print "psi   =", k_me.psi
   print "kappa =", k_me.kappa
   print "beta  =", k_me.beta
+  print "bm4   =", k_me.bm4
   print "******** Starting the Gradient Descent ********"
   print "[iteration]   theta   phi   psi   kappa   beta   -L"
 
@@ -511,11 +512,6 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     a tuple is returned with the KentDistribution argument as the first element
     and containing the extra requested values in the rest of the elements.
   """
-  # first get estimated moments
-  k_me = kent_me(xs)
-  theta, phi, psi, kappa, beta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta
-  min_kappa = KentDistribution.minimum_value_for_kappa
-  
   # method that generates an instance of KentDistribution
   def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta):
     # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
@@ -542,16 +538,24 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     if verbose:
       print len(imv), theta, phi, psi, kappa, beta, minusL
         
+  # first get estimated moments
+  # these don't depend on BM4
+  k_me = kent_me(xs)
+  theta, phi, psi, kappa, beta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta
+  min_kappa = KentDistribution.minimum_value_for_kappa
+
   # starting parameters (small value is subtracted from kappa and add in generatke k)
   x_start = array([theta, phi, psi, kappa - min_kappa, beta])
-  if verbose:
-    __kent_mle_output1(k_me, callback)
-  
+
   # here the mle is done
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
   curr = inf
   for bm4 in [1., -1.]:
+    k_me.bm4 = bm4
+    if verbose:
+      __kent_mle_output1(k_me, callback)
+
     cons = ({"type": "ineq",
              "fun": lambda x:bm4*(abs(x[-2])-2*abs(x[-1]))},
             {"type": "ineq",
