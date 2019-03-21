@@ -523,11 +523,17 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
+    if isnan(x).any():
+      return inf
     return -generate_k(*x).log_likelihood(xs)/len(xs)
   
   # callback for keeping track of the values
   intermediate_values = list()
   def callback(x, output_count=[0]):
+    if isnan(x).any():
+      if verbose:
+        print x
+      return
     minusL = -generate_k(*x).log_likelihood(xs)
     theta, phi, psi, fudge_kappa, fudge_beta = x
     kappa, beta = min_kappa + abs(fudge_kappa), abs(fudge_beta)
