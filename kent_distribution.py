@@ -192,7 +192,7 @@ class KentDistribution(object):
     ... 
     True True True True True True True True
     """
-    k, b = self.kappa, self.beta
+    k, b, m = self.kappa, self.beta, self.bm4
     if not (k, b) in cache:
       G = gamma_fun
       I = modified_bessel_2ndkind
@@ -207,20 +207,37 @@ class KentDistribution(object):
         result *= G(j+0.5)
         
       else:
-        while True:
-          a = (
-            exp(
-              log(b)*2*j +
-              log(0.5*k)*(-2*j-0.5)
-            )*I(2*j+0.5, k)
-          )
-          a /= G(j+1)
-          a *= G(j+0.5)
-          result += a
-          
-          j += 1
-          if (abs(a) < abs(result)*1E-12 and j > 5):
-            break
+        if m == 1:
+          while True:
+            a = (
+              exp(
+                log(b)*2*j +
+                log(0.5*k)*(-2*j-0.5)
+              )*I(2*j+0.5, k)
+            )
+            a /= G(j+1)
+            a *= G(j+0.5)
+            result += a
+
+            j += 1
+            if (abs(a) < abs(result)*1E-12 and j > 5):
+              break
+        elif m == -1:
+          while True:
+            a = (
+              exp(
+                log(b)*j +
+                log(0.5*k)*(-j-0.5)
+              )*I(j+0.5, k)
+            )
+            a *= sqrt(pi)
+            result += a
+
+            j += 1
+            if (abs(a) < abs(result)*1E-12 and j > 5):
+              break
+        else:
+          raise RuntimeWarning('WARN: Normalize() not implemented for bm4={}'.format(m))
               
       cache[k, b] = 2*pi*result
     if return_num_iterations:
@@ -239,7 +256,7 @@ class KentDistribution(object):
       except (OverflowError, RuntimeWarning):
         k = self.kappa
         b = self.beta
-        lnormalize = log(2*pi)+k-log((k-b)*(k+b))/2.
+        lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
       return lnormalize
       
   def max(self):
@@ -525,21 +542,16 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   curr = inf
   for bm4 in [1., -1.]:
     cons = ({"type": "ineq",
-             "fun": lambda x:bm4*(abs(x[-2])-2*abs(x[-1]))},
-            {"type": "ineq",
              "fun": lambda x: x[-2]},
             {"type": "ineq",
              "fun": lambda x: x[-1]})
-    try:
-      _ = minimize(minus_log_likelihood,
-                   x_start,
-                   method="SLSQP",
-                   constraints=cons,
-                   callback=callback,
-                   options={"disp": False, "eps": 1e-08,
-                            "maxiter": 100, "ftol": 1e-08})
-    except RuntimeWarning:
-      continue
+    _ = minimize(minus_log_likelihood,
+                 x_start,
+                 method="SLSQP",
+                 constraints=cons,
+                 callback=callback,
+                 options={"disp": False, "eps": 1e-08,
+                          "maxiter": 100, "ftol": 1e-08})
     if _.fun < curr:
       all_values = _
       k = (generate_k(*all_values.x),)
