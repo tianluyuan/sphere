@@ -519,17 +519,11 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
-    if isnan(x).any():
-      return inf
     return -generate_k(*x).log_likelihood(xs)/len(xs)
   
   # callback for keeping track of the values
   intermediate_values = list()
   def callback(x, output_count=[0]):
-    if isnan(x).any():
-      if verbose:
-        print x
-      return
     minusL = -generate_k(*x).log_likelihood(xs)
     theta, phi, psi, fudge_kappa, fudge_beta = x
     kappa, beta = min_kappa + abs(fudge_kappa), abs(fudge_beta)
@@ -541,18 +535,18 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # first get estimated moments
   # these don't depend on BM4
   k_me = kent_me(xs)
-  theta, phi, psi, kappa, beta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta
-  min_kappa = KentDistribution.minimum_value_for_kappa
-
-  # starting parameters (small value is subtracted from kappa and add in generatke k)
-  x_start = array([theta, phi, psi, kappa - min_kappa, beta])
+  theta, phi, psi = k_me.theta, k_me.phi, k_me.psi
 
   # here the mle is done
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
   curr = inf
   for bm4 in [1., -1.]:
-    k_me.bm4 = bm4
+    # enforce constraint on xstart
+    kappa, beta = (k_me.kappa, k_me.beta) if bm4==1. else (k_me.beta, k_me.kappa)
+    min_kappa = KentDistribution.minimum_value_for_kappa
+    # starting parameters (small value is subtracted from kappa and add in generatke k)
+    x_start = array([theta, phi, psi, kappa - min_kappa, beta])
     if verbose:
       __kent_mle_output1(k_me, callback)
 
@@ -570,6 +564,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
                  options={"disp": False, "eps": 1e-08,
                           "maxiter": 100, "ftol": 1e-08})
     if _.fun < curr:
+      # print bm4, 'won'
       all_values = _
       k = (generate_k(*all_values.x),)
       if return_intermediate_values:
