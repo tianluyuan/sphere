@@ -14,9 +14,11 @@ generates example plots if called directly from the shell.
 from numpy import *
 from scipy.optimize import minimize
 from scipy.special import gamma as gamma_fun
+from scipy.special import gammaln as gammaln_fun
 from scipy.special import iv as modified_bessel_2ndkind
 from scipy.special import ivp as modified_bessel_2ndkind_derivative
 from scipy.stats import uniform
+from scipy.special import comb
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss 
 from scipy.linalg import eig
@@ -193,8 +195,9 @@ class KentDistribution(object):
     True True True True True True True True
     """
     k, b, m = self.kappa, self.beta, self.bm4
-    if not (k, b) in cache:
+    if not (k, b, m) in cache:
       G = gamma_fun
+      LG = gammaln_fun
       I = modified_bessel_2ndkind
       result = 0.0
       j = 0
@@ -207,43 +210,30 @@ class KentDistribution(object):
         result *= G(j+0.5)
         
       else:
-        if m == 1:
-          while True:
-            a = (
-              exp(
-                log(b)*2*j +
-                log(0.5*k)*(-2*j-0.5)
-              )*I(2*j+0.5, k)
-            )
-            a /= G(j+1)
-            a *= G(j+0.5)
-            result += a
+        while True:
+          # int sin(theta) dtheta
+          a = (
+            exp(
+              log(b)*j +
+              log(0.5*k)*(-j-0.5)
+            )*I(j+0.5, k)
+          )
+          # int dphi
+          irange = arange(j+1)
+          aj = ((-m)**irange*exp(LG(irange+0.5)+LG(j-irange+0.5)-LG(irange+1)-LG(j-irange+1))).sum()
+          a /= sqrt(pi)
+          a *= aj
+          result += a
 
-            j += 1
-            if (abs(a) < abs(result)*1E-12 and j > 5):
-              break
-        elif m == -1:
-          while True:
-            a = (
-              exp(
-                log(b)*j +
-                log(0.5*k)*(-j-0.5)
-              )*I(j+0.5, k)
-            )
-            a *= sqrt(pi)
-            result += a
-
-            j += 1
-            if (abs(a) < abs(result)*1E-12 and j > 5):
-              break
-        else:
-          raise RuntimeError('ERROR: Normalize() not implemented for bm4={}'.format(m))
+          j += 1
+          if (j%2==1 and abs(a) < abs(result)*1E-12 and j > 5):
+            break
               
-      cache[k, b] = 2*pi*result
+      cache[k, b, m] = 2*pi*result
     if return_num_iterations:
-      return cache[k, b], j
+      return cache[k, b, m], j
     else:
-      return cache[k, b]
+      return cache[k, b, m]
 
   def log_normalize(self):
     """
