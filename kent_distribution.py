@@ -36,16 +36,16 @@ def norm(x, axis=None):
     x = array(x)
   return sqrt(sum(x*x, axis=axis))
   
-def kent(theta, phi, psi, kappa, beta, bm4=1.):
+def kent(theta, phi, psi, kappa, beta, eta=1.):
   """
   Generates the Kent distribution based on the spherical coordinates theta, phi, psi
   with the concentration parameter kappa and the ovalness beta
   """
   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
-  k = KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
+  k = KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
   return k
 
-def kent2(gamma1, gamma2, gamma3, kappa, beta, bm4=1.):
+def kent2(gamma1, gamma2, gamma3, kappa, beta, eta=1.):
   """
   Generates the Kent distribution using the orthonormal vectors gamma1, 
   gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
@@ -53,9 +53,9 @@ def kent2(gamma1, gamma2, gamma3, kappa, beta, bm4=1.):
   assert abs(inner(gamma1, gamma2)) < 1E-10
   assert abs(inner(gamma2, gamma3)) < 1E-10
   assert abs(inner(gamma3, gamma1)) < 1E-10
-  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
+  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
     
-def kent3(A, B, bm4=1.):
+def kent3(A, B, eta=1.):
   """
   Generates the Kent distribution using the orthogonal vectors A and B
   where A = gamma1*kappa and B = gamma2*beta (gamma3 is inferred)
@@ -72,16 +72,16 @@ def kent3(A, B, bm4=1.):
     gamma2 = B/beta
   theta, phi, psi = KentDistribution.gammas_to_spherical_coordinates(gamma1, gamma2)
   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
-  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, bm4)
+  return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
   
-def kent4(Gamma, kappa, beta, bm4=1.):
+def kent4(Gamma, kappa, beta, eta=1.):
   """
   Generates the kent distribution
   """
   gamma1 = Gamma[:,0]
   gamma2 = Gamma[:,1]
   gamma3 = Gamma[:,2]
-  return kent2(gamma1, gamma2, gamma3, kappa, beta, bm4)
+  return kent2(gamma1, gamma2, gamma3, kappa, beta, eta)
 
 def __generate_arbitrary_orthogonal_unit_vector(x):
   v1 = cross(x, array([1.0, 0.0, 0.0]))
@@ -152,14 +152,14 @@ class KentDistribution(object):
     return theta, phi, psi
 
   
-  def __init__(self, gamma1, gamma2, gamma3, kappa, beta, bm4=1.):
+  def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1.):
     self.gamma1 = array(gamma1, dtype=float64)
     self.gamma2 = array(gamma2, dtype=float64)
     self.gamma3 = array(gamma3, dtype=float64)
     self.kappa = float(kappa)
     self.beta = float(beta)
-    # Bingham-Mardia, 4-param, small-circle distribution has bm4=-1
-    self.bm4 = bm4
+    # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
+    self.eta = eta
     
     self.theta, self.phi, self.psi = KentDistribution.gammas_to_spherical_coordinates(self.gamma1, self.gamma2)
     
@@ -194,7 +194,7 @@ class KentDistribution(object):
     ... 
     True True True True True True True True
     """
-    k, b, m = self.kappa, self.beta, self.bm4
+    k, b, m = self.kappa, self.beta, self.eta
     if not (k, b, m) in cache:
       G = gamma_fun
       LG = gammaln_fun
@@ -317,7 +317,7 @@ class KentDistribution(object):
     g1x = sum(self.gamma1*xs, axis)
     g2x = sum(self.gamma2*xs, axis)
     g3x = sum(self.gamma3*xs, axis)
-    k, b, m = self.kappa, self.beta, self.bm4
+    k, b, m = self.kappa, self.beta, self.eta
 
     f = k*g1x + b*(g2x**2 - m*g3x**2)
     if normalize:
@@ -389,7 +389,7 @@ class KentDistribution(object):
     """
     k = self.kappa
     b = self.beta
-    m = self.bm4
+    m = self.eta
     ln = self.log_normalize()
     lev = self.level(percentile)
 
@@ -423,7 +423,7 @@ class KentDistribution(object):
     return KentDistribution.gamma1_to_spherical_coordinates(x)
       
   def __repr__(self):
-    return "kent(%s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.bm4)
+    return "kent(%s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta)
       
 def kent_me(xs):
   """Generates and returns a KentDistribution based on a moment estimation."""
@@ -469,9 +469,9 @@ def __kent_mle_output1(k_me, callback):
   print "psi   =", k_me.psi
   print "kappa =", k_me.kappa
   print "beta  =", k_me.beta
-  print "bm4   =", k_me.bm4
+  print "eta   =", k_me.eta
   print "******** Starting the Gradient Descent ********"
-  print "[iteration]   theta   phi   psi   kappa   beta   bm4   -L"
+  print "[iteration]   theta   phi   psi   kappa   beta   eta   -L"
 
 def __kent_mle_output2(x, minusL, output_count, verbose):
   interval = verbose if isinstance(verbose, int) else 1
@@ -509,49 +509,43 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     a tuple is returned with the KentDistribution argument as the first element
     and containing the extra requested values in the rest of the elements.
   """
-  # method that generates an instance of KentDistribution
-  def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta, fudge_bm4):
-    # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
-    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta), fudge_bm4)
-
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
-    return -generate_k(*x).log_likelihood(xs)/len(xs)
+    kx = kent(*x)
+    if abs(kx.eta)>10**1E-6:
+      return inf
+    return -kx.log_likelihood(xs)/len(xs)
   
   # callback for keeping track of the values
   intermediate_values = list()
   def callback(x, output_count=[0]):
-    minusL = -generate_k(*x).log_likelihood(xs)
-    theta, phi, psi, fudge_kappa, fudge_beta, bm4 = x
-    kappa, beta = min_kappa + abs(fudge_kappa), abs(fudge_beta)
+    kx = kent(*x)
+    minusL = -kx.log_likelihood(xs)
     imv = intermediate_values
-    imv.append((theta, phi, psi, kappa, beta, bm4, minusL))
+    imv.append((x, minusL))
     if verbose:
-      print len(imv), theta, phi, psi, kappa, beta, bm4, minusL
+      print len(imv), kx.theta, kx.phi, kx.psi, kx.kappa, kx.beta, kx.eta, minusL
         
   # first get estimated moments
   # these don't depend on BM4
   k_me = kent_me(xs)
-  theta, phi, psi, kappa, beta, bm4 = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.bm4
+  theta, phi, psi, kappa, beta, eta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta
   min_kappa = KentDistribution.minimum_value_for_kappa
 
   # here the mle is done
   # starting parameters (small value is subtracted from kappa and add in generatke k)
-  x_start = array([theta, phi, psi, kappa - min_kappa, beta, 0.5])
-  y_start = array([theta, phi, psi, beta - min_kappa, kappa, -0.5])
+  x_start = array([theta, phi, psi, kappa, beta])
+  y_start = array([theta, phi, psi, beta, kappa, -1.])
   if verbose:
     __kent_mle_output1(k_me, callback)
 
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
-  # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
   cons = ({"type": "ineq",
-           "fun": lambda x: x[-1]*(x[-3]-2*x[-2])},
+           "fun": lambda x: x[3]-2*x[4]},
           {"type": "ineq",
-           "fun": lambda x: x[-3]},
+           "fun": lambda x: x[3]},
           {"type": "ineq",
-           "fun": lambda x: x[-2]},
-          {"type": "ineq",
-           "fun": lambda x: 1-abs(x[-1])})
+           "fun": lambda x: x[4]})
   _x = minimize(minus_log_likelihood,
                 x_start,
                 method="SLSQP",
@@ -561,6 +555,15 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
                          "maxiter": 100, "ftol": 1e-08})
   if verbose:
     __kent_mle_output1(k_me, callback)
+  # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978) while allowing eta to float to allow for multiple modes
+  cons = ({"type": "ineq",
+           "fun": lambda x: -(x[3]-2*x[4])},
+          {"type": "ineq",
+           "fun": lambda x: x[3]},
+          {"type": "ineq",
+           "fun": lambda x: x[4]},
+          {"type": "ineq",
+           "fun": lambda x: 1-abs(x[-1])})
   _y = minimize(minus_log_likelihood,
                 y_start,
                 method="SLSQP",
@@ -578,7 +581,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     if hasattr(warning, "write"):
       warning.write("Warning: "+warning_message+"\n")
   
-  k = (generate_k(*all_values.x),)
+  k = (kent(*all_values.x),)
   if return_intermediate_values:
     k += (intermediate_values,)
   if len(k) == 1:
