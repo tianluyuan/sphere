@@ -535,7 +535,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # here the mle is done
   # starting parameters (small value is subtracted from kappa and add in generatke k)
   x_start = array([theta, phi, psi, kappa, beta])
-  y_start = array([theta, phi, psi, beta, kappa, -1.])
+  y_start = array([theta, phi, psi, beta, kappa, -0.99])
   if verbose:
     __kent_mle_output1(k_me, callback)
 
@@ -557,7 +557,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     __kent_mle_output1(k_me, callback)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978) while allowing eta to float to allow for multiple modes
   cons = ({"type": "ineq",
-           "fun": lambda x: -(x[3]-2*x[4])},
+           "fun": lambda x: x[-1]*(x[3]-2*x[4])},
           {"type": "ineq",
            "fun": lambda x: x[3]},
           {"type": "ineq",
