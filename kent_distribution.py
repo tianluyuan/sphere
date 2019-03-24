@@ -15,8 +15,8 @@ from numpy import *
 from scipy.optimize import minimize
 from scipy.special import gamma as gamma_fun
 from scipy.special import gammaln as gammaln_fun
-from scipy.special import iv as modified_bessel_2ndkind
-from scipy.special import ivp as modified_bessel_2ndkind_derivative
+from scipy.special import iv as modified_bessel_1stkind
+from scipy.special import ivp as modified_bessel_1stkind_derivative
 from scipy.stats import uniform
 from scipy.special import comb
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
@@ -198,7 +198,7 @@ class KentDistribution(object):
     if not (k, b, m) in cache:
       G = gamma_fun
       LG = gammaln_fun
-      I = modified_bessel_2ndkind
+      I = modified_bessel_1stkind
       result = 0.0
       j = 0
       if b == 0.0:
@@ -246,12 +246,17 @@ class KentDistribution(object):
       except (OverflowError, RuntimeWarning) as e:
         k = self.kappa
         b = self.beta
+        m = self.eta
+        I = modified_bessel_1stkind
         if k > 2*b:
           lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
         else:
           # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
-          # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper
-          lnormalize = 0.5*(log(pi)-log(b))+log(4*pi)+b*(1+(k/(2*b))**2)
+          # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper, with a correction factor for floating eta
+          lnormalize = (
+            0.5*(log(pi)-log(b))+log(4*pi)+b*(1+(k/(2*b))**2)+
+            log(I(0, 0.5*(1+m)*pi*b))-0.5*(1+m)*pi*b
+            )
       return lnormalize
       
   def max(self):
