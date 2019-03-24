@@ -250,6 +250,8 @@ class KentDistribution(object):
         I = modified_bessel_1stkind
         if k > 2*b:
           lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
+        elif b < 0:
+          return inf
         else:
           # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
           # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper, with a correction factor for floating eta
@@ -516,10 +518,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   """
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
-    kx = kent(*x)
-    if abs(kx.eta)>10**1E-6:
-      return inf
-    return -kx.log_likelihood(xs)/len(xs)
+    return -kent(*x).log_likelihood(xs)/len(xs)
   
   # callback for keeping track of the values
   intermediate_values = list()
@@ -544,7 +543,7 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   if verbose:
     __kent_mle_output1(k_me, callback)
 
-  # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
+  # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
   cons = ({"type": "ineq",
            "fun": lambda x: x[3]-2*x[4]},
           {"type": "ineq",
@@ -560,10 +559,9 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
                          "maxiter": 100, "ftol": 1e-08})
   if verbose:
     __kent_mle_output1(k_me, callback)
-  # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978) while allowing eta to float to allow for multiple modes
+  # constrain kappa, beta >= 0 while allowing eta to float to allow for multiple modes
+  # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978) 
   cons = ({"type": "ineq",
-           "fun": lambda x: x[-1]*(x[3]-2*x[4])},
-          {"type": "ineq",
            "fun": lambda x: x[3]},
           {"type": "ineq",
            "fun": lambda x: x[4]},
