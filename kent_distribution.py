@@ -399,7 +399,7 @@ class KentDistribution(object):
     x2_max = min(abs(sqrt(k**2+4*b*m*(b*m-lev+ln))/(2*sqrt(m*(1+m))*b)),1)
     if isnan(x2_max):
       x2_max = 1
-    x2 = linspace(-x2_max,x2_max, 100000)
+    x2 = linspace(-x2_max,x2_max, 10000)
     if abs(m) < 1E-4:
       x1_0 = -(lev-ln+b*x2**2)/k
       x1_1 = x1_0
