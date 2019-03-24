@@ -545,6 +545,8 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
   cons = ({"type": "ineq",
+           "fun": lambda x: x[-1]*(x[-3]-2*x[-2])},
+          {"type": "ineq",
            "fun": lambda x: x[-3]},
           {"type": "ineq",
            "fun": lambda x: x[-2]},
