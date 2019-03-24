@@ -396,7 +396,7 @@ class KentDistribution(object):
     # work in coordinate system x' = Gamma'*x
     # range over which x1 remains real is [-x2_max, x2_max]
     # assume -1 < m < 1
-    x2_max = min(sqrt(k**2+4*b*m*(b*m-lev+ln))/(2*sqrt(m*(1+m))*b),1)
+    x2_max = min(abs(sqrt(k**2+4*b*m*(b*m-lev+ln))/(2*sqrt(m*(1+m))*b)),1)
     if isnan(x2_max):
       x2_max = 1
     x2 = linspace(-x2_max,x2_max, 100000)
