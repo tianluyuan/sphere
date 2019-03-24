@@ -226,7 +226,7 @@ class KentDistribution(object):
           result += a
 
           j += 1
-          if (j%2==1 and abs(a) < abs(result)*1E-12 and j > 5):
+          if (j%2 and abs(a) < abs(result)*1E-12 and j > 5):
             break
               
       cache[k, b, m] = 2*pi*result
@@ -395,10 +395,17 @@ class KentDistribution(object):
 
     # work in coordinate system x' = Gamma'*x
     # range over which x1 remains real is [-x2_max, x2_max]
-    x2_max = min(sqrt(k**2+4*b*(b-lev+ln))/(2*sqrt(2)*b),1)
+    # assume -1 < m < 1
+    x2_max = min(sqrt(k**2+4*b*m*(b*m-lev+ln))/(2*sqrt(m*(1+m))*b),1)
+    if isnan(x2_max):
+      x2_max = 1
     x2 = linspace(-x2_max,x2_max, 100000)
-    x1_0 = (-k+sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
-    x1_1 = (-k-sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
+    if abs(m) < 1E-4:
+      x1_0 = -(lev-ln+b*x2**2)/k
+      x1_1 = x1_0
+    else:
+      x1_0 = (-k+sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
+      x1_1 = (-k-sqrt(k**2+4*m*b*(m*b-lev+ln-(1+m)*b*x2**2)))/(2*b*m)
     x3_0 = sqrt(1-x1_0**2-x2**2)
     x3_1 = sqrt(1-x1_1**2-x2**2)
     x2 = concatenate([x2, -x2, x2, -x2])
@@ -416,7 +423,7 @@ class KentDistribution(object):
     return KentDistribution.gamma1_to_spherical_coordinates(x)
       
   def __repr__(self):
-    return "kent(%s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta)
+    return "kent(%s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.bm4)
       
 def kent_me(xs):
   """Generates and returns a KentDistribution based on a moment estimation."""
@@ -464,7 +471,7 @@ def __kent_mle_output1(k_me, callback):
   print "beta  =", k_me.beta
   print "bm4   =", k_me.bm4
   print "******** Starting the Gradient Descent ********"
-  print "[iteration]   theta   phi   psi   kappa   beta   -L"
+  print "[iteration]   theta   phi   psi   kappa   beta   bm4   -L"
 
 def __kent_mle_output2(x, minusL, output_count, verbose):
   interval = verbose if isinstance(verbose, int) else 1
@@ -503,9 +510,9 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     and containing the extra requested values in the rest of the elements.
   """
   # method that generates an instance of KentDistribution
-  def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta):
+  def generate_k(fudge_theta, fudge_phi, fudge_psi, fudge_kappa, fudge_beta, fudge_bm4):
     # small value is added to kappa = min_kappa + abs(fudge_kappa) > min_kappa
-    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta), bm4)
+    return kent(fudge_theta, fudge_phi, fudge_psi, min_kappa + abs(fudge_kappa), abs(fudge_beta), fudge_bm4)
 
   # method that generates the minus L to be minimized
   def minus_log_likelihood(x):
@@ -515,54 +522,52 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
   intermediate_values = list()
   def callback(x, output_count=[0]):
     minusL = -generate_k(*x).log_likelihood(xs)
-    theta, phi, psi, fudge_kappa, fudge_beta = x
+    theta, phi, psi, fudge_kappa, fudge_beta, bm4 = x
     kappa, beta = min_kappa + abs(fudge_kappa), abs(fudge_beta)
     imv = intermediate_values
-    imv.append((theta, phi, psi, kappa, beta, minusL))
+    imv.append((theta, phi, psi, kappa, beta, bm4, minusL))
     if verbose:
-      print len(imv), theta, phi, psi, kappa, beta, minusL
+      print len(imv), theta, phi, psi, kappa, beta, bm4, minusL
         
   # first get estimated moments
   # these don't depend on BM4
   k_me = kent_me(xs)
-  theta, phi, psi = k_me.theta, k_me.phi, k_me.psi
+  theta, phi, psi, kappa, beta, bm4 = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.bm4
+  min_kappa = KentDistribution.minimum_value_for_kappa
 
   # here the mle is done
+  # starting parameters (small value is subtracted from kappa and add in generatke k)
+  x_start = array([theta, phi, psi, kappa - min_kappa, beta, bm4])
+  y_start = array([theta, phi, psi, beta - min_kappa, kappa, -bm4])
+  if verbose:
+    __kent_mle_output1(k_me, callback)
+
   # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (i.e. Kent)
   # constrain kappa, beta >= 0 and 2*beta >= kappa for BM4 (i.e. small-circle Bingham-Mardia 1978)
-  curr = inf
-  for bm4 in [1., -1.]:
-    # enforce constraint on xstart
-    kappa, beta = (k_me.kappa, k_me.beta) if bm4==1. else (k_me.beta, k_me.kappa)
-    min_kappa = KentDistribution.minimum_value_for_kappa
-    # starting parameters (small value is subtracted from kappa and add in generatke k)
-    x_start = array([theta, phi, psi, kappa - min_kappa, beta])
-    if verbose:
-      __kent_mle_output1(k_me, callback)
+  cons = ({"type": "ineq",
+           "fun": lambda x: x[-3]},
+          {"type": "ineq",
+           "fun": lambda x: x[-2]},
+          {"type": "ineq",
+           "fun": lambda x: 1-abs(x[-1])})
+  _x = minimize(minus_log_likelihood,
+                x_start,
+                method="SLSQP",
+                constraints=cons,
+                callback=callback,
+                options={"disp": False, "eps": 1e-08,
+                         "maxiter": 100, "ftol": 1e-08})
+  if verbose:
+    __kent_mle_output1(k_me, callback)
+  _y = minimize(minus_log_likelihood,
+                y_start,
+                method="SLSQP",
+                constraints=cons,
+                callback=callback,
+                options={"disp": False, "eps": 1e-08,
+                         "maxiter": 100, "ftol": 1e-08})
 
-    cons = ({"type": "ineq",
-             "fun": lambda x:bm4*(abs(x[-2])-2*abs(x[-1]))},
-            {"type": "ineq",
-             "fun": lambda x: x[-2]},
-            {"type": "ineq",
-             "fun": lambda x: x[-1]})
-    _ = minimize(minus_log_likelihood,
-                 x_start,
-                 method="SLSQP",
-                 constraints=cons,
-                 callback=callback,
-                 options={"disp": False, "eps": 1e-08,
-                          "maxiter": 100, "ftol": 1e-08})
-    if _.fun < curr:
-      # print bm4, 'won'
-      all_values = _
-      k = (generate_k(*all_values.x),)
-      if return_intermediate_values:
-        k += (intermediate_values,)
-      if len(k) == 1:
-        k = k[0]
-      curr = _.fun
-  
+  all_values = _x if _x.fun < _y.fun else _y
   warnflag = all_values.status
   if not all_values.success:
     warning_message = all_values.message
@@ -571,6 +576,11 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
     if hasattr(warning, "write"):
       warning.write("Warning: "+warning_message+"\n")
   
+  k = (generate_k(*all_values.x),)
+  if return_intermediate_values:
+    k += (intermediate_values,)
+  if len(k) == 1:
+    k = k[0]
   return k
   
 if __name__ == "__main__":
