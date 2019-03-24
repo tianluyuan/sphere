@@ -537,8 +537,8 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
 
   # here the mle is done
   # starting parameters (small value is subtracted from kappa and add in generatke k)
-  x_start = array([theta, phi, psi, kappa - min_kappa, beta, bm4])
-  y_start = array([theta, phi, psi, beta - min_kappa, kappa, -bm4])
+  x_start = array([theta, phi, psi, kappa - min_kappa, beta, 0.5])
+  y_start = array([theta, phi, psi, beta - min_kappa, kappa, -0.5])
   if verbose:
     __kent_mle_output1(k_me, callback)
 
