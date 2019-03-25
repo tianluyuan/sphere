@@ -201,7 +201,9 @@ class KentDistribution(object):
       I = modified_bessel_1stkind
       result = 0.0
       j = 0
-      if b == 0.0:
+      if k < 0 or b < 0:
+        result = inf
+      elif b == 0.0:
         result = (
           ( (0.5*k)**(-2*j-0.5) )*
           ( I(2*j+0.5, k) )
@@ -250,8 +252,6 @@ class KentDistribution(object):
         I = modified_bessel_1stkind
         if k > 2*b:
           lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
-        elif b < 0:
-          return inf
         else:
           # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
           # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper, with a correction factor for floating eta
