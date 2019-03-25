@@ -201,9 +201,7 @@ class KentDistribution(object):
       I = modified_bessel_1stkind
       result = 0.0
       j = 0
-      if k < 0 or b < 0:
-        result = inf
-      elif b == 0.0:
+      if b == 0.0:
         result = (
           ( (0.5*k)**(-2*j-0.5) )*
           ( I(2*j+0.5, k) )
@@ -250,7 +248,9 @@ class KentDistribution(object):
         b = self.beta
         m = self.eta
         I = modified_bessel_1stkind
-        if k > 2*b:
+        if k < 0 or b < 0:
+          lnormalize = 1e10
+        elif k > 2*b:
           lnormalize = log(2*pi)+k-log((k-2*b)*(k+2*b))/2.
         else:
           # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
