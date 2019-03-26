@@ -1,4 +1,4 @@
-kent_distribution
+sphere
 =================
 
 Implements calculation of the density and fitting (using maximum likelihood estimate) of the Kent distribution based on Kent ([1982](https://doi.org/10.1111/j.2517-6161.1982.tb01189.x)).
