@@ -9,3 +9,5 @@ Implements the "BM4" distribution whose mode is a small-circle on the sphere bas
 Implements a mixture model that allows for an additional parameter to tune between FB5 and BM4.
 
 Also calculates directional, percentile contours which can be used to indicate the N% highest-posterior-density regions in the sky.
+
+![maps](/fig/example.png?raw=true)
