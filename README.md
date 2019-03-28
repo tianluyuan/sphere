@@ -13,11 +13,11 @@ Also calculates directional, percentile contours which can be used to indicate t
 
 Additional references
 =================
-[_Directional distributions in tracking of space debris_](https://ieeexplore.ieee.org/abstract/document/7528139) 
+Kent, Hussein, Jah, [_Directional distributions in tracking of space debris_](https://ieeexplore.ieee.org/abstract/document/7528139) 
 
-[_Simulation and visualization of spherical distributions_](https://www.researchgate.net/profile/Gyorgy_Terdik/publication/324605982_Simulation_and_Visualization_of_Spherical_Distributions/links/5ad8edceaca272fdaf81fe04/Simulation-and-Visualization-of-Spherical-Distributions.pdf)
+Terdik, Jammalamadaka, Wainwright, [_Simulation and visualization of spherical distributions_](https://www.researchgate.net/profile/Gyorgy_Terdik/publication/324605982_Simulation_and_Visualization_of_Spherical_Distributions/links/5ad8edceaca272fdaf81fe04/Simulation-and-Visualization-of-Spherical-Distributions.pdf)
 
-[_Directional statistics_](https://www.doi.org/10.1002/9780470316979)
+Mardia, Jupp, [_Directional statistics_](https://www.doi.org/10.1002/9780470316979)
 
 Contributors
 =================
