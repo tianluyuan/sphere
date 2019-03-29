@@ -295,20 +295,11 @@ class FB8Distribution(object):
             return lnormalize
 
     def max(self):
-        if self.nu[0] == 1.:
-            if self.beta == 0.0:
-                x1 = 1
-            else:
-                x1 = self.kappa / (2 * self.beta)
-            if x1 > 1:
-                x1 = 1
-            x3 = 0
-        else:
-            x1 = linspace(-1,1,1000)
-            x3 = x1 * self.kappa * self.nu[2]/(2*self.eta*self.beta*x1+self.kappa*self.nu[0])
-            good = x1**2+x3**2<=1.
-            x1 = x1[good]
-            x3 = x3[good]
+        x1 = linspace(-1,1,1000)
+        x3 = x1 * self.kappa * self.nu[2]/(2*self.eta*self.beta*x1+self.kappa*self.nu[0])
+        good = x1**2+x3**2<=1.
+        x1 = x1[good]
+        x3 = x3[good]
 
         x2 = sqrt(1-x1**2-x3**2)
         x = dot(self.Gamma, asarray((x1, x2, x3))).T
