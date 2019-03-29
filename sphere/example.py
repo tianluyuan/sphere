@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-The example code below shows various examples of the Kent distribution
+The example code below shows various examples of the Fb8 distribution
 some random samples are drawn from the distribution and new estimates
 are generated using a moment estimation and a maximum likelihood fit.
 Plots will be shown unless this script is called with the --no-plots
@@ -32,7 +32,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
             kappa = scale * i + 1.0
             for j in xrange(gridsize):
                 beta = scale * j + 1.0
-                f = kent(0.0, 0.0, 0.0, kappa, beta)
+                f = fb8(0.0, 0.0, 0.0, kappa, beta)
                 try:
                     c, cnum = f.normalize(return_num_iterations=True)
                     c_grid[i, j] = log(c)
@@ -71,12 +71,12 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
 
 def test_example_mle(showplots=False):
     for k in [
-        kent(0.0,       0.0,     0.0,    1.0,  0.0),
-        kent(-0.75,    -0.75,   -0.75,   20.0, 0.0),
-        kent(-0.25 * pi, -0.25 * pi, pi / 10,  20.0, 2.0),
-        kent(-0.25 * pi, -0.25 * pi, pi / 16,  20.0, 5.0),
-        kent(-0.35 * pi, -0.25 * pi, pi / 32,  50.0, 25.0),
-        kent(0.0, 0.0, pi / 32,  50.0, 25.0),
+        fb8(0.0,       0.0,     0.0,    1.0,  0.0),
+        fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
+        fb8(-0.25 * pi, -0.25 * pi, pi / 10,  20.0, 2.0),
+        fb8(-0.25 * pi, -0.25 * pi, pi / 16,  20.0, 5.0),
+        fb8(-0.35 * pi, -0.25 * pi, pi / 32,  50.0, 25.0),
+        fb8(0.0, 0.0, pi / 32,  50.0, 25.0),
     ]:
         print "Original Distribution: k =", k
         gridsize = 200
@@ -99,7 +99,7 @@ def test_example_mle(showplots=False):
         xs = k.rvs(10000)
         k_me = kent_me(xs)
         print "Moment estimation:  k_me =", k_me
-        k_mle = mle(xs, warning=sys.stdout)
+        k_mle = fb8_mle(xs, warning=sys.stdout)
         print "Fitted with MLE:   k_mle =", k_mle
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
 
@@ -161,11 +161,11 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
                 print "%.1f" % kappa,
                 sys.stdout.flush()
             beta = kappa * beta_ratio
-            k = kent(uniform(0, pi), uniform(0, 2 * pi),
-                     uniform(0, 2 * pi), kappa, beta)
+            k = fb8(uniform(0, pi), uniform(0, 2 * pi),
+                    uniform(0, 2 * pi), kappa, beta)
             samples = k.rvs(num_samples)
             k_me = kent_me(samples)
-            k_mle = mle(samples, warning=sys.stdout)
+            k_mle = fb8_mle(samples, warning=sys.stdout)
             assert k_me.log_likelihood(samples) < k_mle.log_likelihood(samples)
             kappas_me.append(k_me.kappa)
             betas_me.append(k_me.beta)

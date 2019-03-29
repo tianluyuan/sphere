@@ -41,31 +41,31 @@ def norm(x, axis=None):
     return sqrt(sum(x * x, axis=axis))
 
 
-def kent(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
+def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
     """
-    Generates the Kent distribution based on the spherical coordinates theta, phi, psi
+    Generates the FB8 distribution based on the spherical coordinates theta, phi, psi
     with the concentration parameter kappa and the ovalness beta
     """
-    gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(
+    gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
-    nu = KentDistribution.spherical_coordinates_to_nu(alpha, rho)
-    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    nu = FB8Distribution.spherical_coordinates_to_nu(alpha, rho)
+    return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent2(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
+def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     """
-    Generates the Kent distribution using the orthonormal vectors gamma1, 
+    Generates the FB8 distribution using the orthonormal vectors gamma1, 
     gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
     """
     assert abs(inner(gamma1, gamma2)) < 1E-10
     assert abs(inner(gamma2, gamma3)) < 1E-10
     assert abs(inner(gamma3, gamma1)) < 1E-10
-    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent3(A, B, eta=1., nu=None):
+def fb83(A, B, eta=1., nu=None):
     """
-    Generates the Kent distribution using the orthogonal vectors A and B
+    Generates the FB8 distribution using the orthogonal vectors A and B
     where A = gamma1*kappa and B = gamma2*beta (gamma3 is inferred)
     A may have not have length zero but may be arbitrarily close to zero
     B may have length zero however. If so, then an arbitrary value for gamma2
@@ -78,21 +78,21 @@ def kent3(A, B, eta=1., nu=None):
         gamma2 = __generate_arbitrary_orthogonal_unit_vector(gamma1)
     else:
         gamma2 = B / beta
-    theta, phi, psi = KentDistribution.gammas_to_spherical_coordinates(
+    theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(
         gamma1, gamma2)
-    gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(
+    gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
-    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent4(Gamma, kappa, beta, eta=1., nu=None):
+def fb84(Gamma, kappa, beta, eta=1., nu=None):
     """
-    Generates the kent distribution
+    Generates the fb8 distribution
     """
     gamma1 = Gamma[:, 0]
     gamma2 = Gamma[:, 1]
     gamma3 = Gamma[:, 2]
-    return kent2(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    return fb82(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
 def __generate_arbitrary_orthogonal_unit_vector(x):
@@ -106,7 +106,7 @@ def __generate_arbitrary_orthogonal_unit_vector(x):
     return v / norm(v)
 
 
-class KentDistribution(object):
+class FB8Distribution(object):
     minimum_value_for_kappa = 1E-6
 
     @staticmethod
@@ -119,7 +119,7 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
-        return transpose(KentDistribution.create_matrix_H(theta, phi))
+        return transpose(FB8Distribution.create_matrix_H(theta, phi))
 
     @staticmethod
     def create_matrix_K(psi):
@@ -131,21 +131,21 @@ class KentDistribution(object):
 
     @staticmethod
     def create_matrix_Kt(psi):
-        return transpose(KentDistribution.create_matrix_K(psi))
+        return transpose(FB8Distribution.create_matrix_K(psi))
 
     @staticmethod
     def create_matrix_Gamma(theta, phi, psi):
-        H = KentDistribution.create_matrix_H(theta, phi)
-        K = KentDistribution.create_matrix_K(psi)
+        H = FB8Distribution.create_matrix_H(theta, phi)
+        K = FB8Distribution.create_matrix_K(psi)
         return MMul(H, K)
 
     @staticmethod
     def create_matrix_Gammat(theta, phi, psi):
-        return transpose(KentDistribution.create_matrix_Gamma(theta, phi, psi))
+        return transpose(FB8Distribution.create_matrix_Gamma(theta, phi, psi))
 
     @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
-        Gamma = KentDistribution.create_matrix_Gamma(theta, phi, psi)
+        Gamma = FB8Distribution.create_matrix_Gamma(theta, phi, psi)
         gamma1 = Gamma[:, 0]
         gamma2 = Gamma[:, 1]
         gamma3 = Gamma[:, 2]
@@ -153,7 +153,7 @@ class KentDistribution(object):
 
     @staticmethod
     def spherical_coordinates_to_nu(alpha, rho):
-        return KentDistribution.create_matrix_Gamma(alpha, rho, 0)[:, 0]
+        return FB8Distribution.create_matrix_Gamma(alpha, rho, 0)[:, 0]
 
     @staticmethod
     def gamma1_to_spherical_coordinates(gamma1):
@@ -163,8 +163,8 @@ class KentDistribution(object):
 
     @staticmethod
     def gammas_to_spherical_coordinates(gamma1, gamma2):
-        theta, phi = KentDistribution.gamma1_to_spherical_coordinates(gamma1)
-        Ht = KentDistribution.create_matrix_Ht(theta, phi)
+        theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
+        Ht = FB8Distribution.create_matrix_Ht(theta, phi)
         u = MMul(Ht, reshape(gamma2, (3, 1)))
         psi = arctan2(u[2][0], u[1][0])
         return theta, phi, psi
@@ -179,13 +179,13 @@ class KentDistribution(object):
         self.eta = eta
         # FB8 param nu
         if nu is None:
-            nu = KentDistribution.spherical_coordinates_to_nu(0,0)
+            nu = FB8Distribution.spherical_coordinates_to_nu(0,0)
         self.nu = nu
 
-        self.theta, self.phi, self.psi = KentDistribution.gammas_to_spherical_coordinates(
+        self.theta, self.phi, self.psi = FB8Distribution.gammas_to_spherical_coordinates(
             self.gamma1, self.gamma2)
 
-        self.alpha, self.rho = KentDistribution.gamma1_to_spherical_coordinates(self.nu)
+        self.alpha, self.rho = FB8Distribution.gamma1_to_spherical_coordinates(self.nu)
 
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
@@ -202,7 +202,7 @@ class KentDistribution(object):
 
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
-        Returns the normalization constant of the Kent distribution.
+        Returns the normalization constant of the FB8 distribution.
         The proportional error may be expected not to be greater than 
         1E-11.
 
@@ -210,11 +210,11 @@ class KentDistribution(object):
         >>> gamma1 = array([1.0, 0.0, 0.0])
         >>> gamma2 = array([0.0, 1.0, 0.0])
         >>> gamma3 = array([0.0, 0.0, 1.0])
-        >>> tiny = KentDistribution.minimum_value_for_kappa
-        >>> abs(kent2(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*pi) < 4*pi*1E-12
+        >>> tiny = FB8Distribution.minimum_value_for_kappa
+        >>> abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*pi) < 4*pi*1E-12
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
-        ...     print abs(kent2(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*pi*sinh(kappa)/kappa) < 1E-15*4*pi*sinh(kappa)/kappa,
+        ...     print abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*pi*sinh(kappa)/kappa) < 1E-15*4*pi*sinh(kappa)/kappa,
         ... 
         True True True True True True True True
         """
@@ -298,13 +298,13 @@ class KentDistribution(object):
         if self.beta == 0.0:
             x1 = 1
         else:
-            x1 = self.kappa / (2 * self.beta)
+            x1 = self.kappa * self.nu[0]/ (2 * self.beta)
         if x1 > 1:
             x1 = 1
         x2 = sqrt(1 - x1**2)
         x3 = 0
         x = dot(self.Gamma, asarray((x1, x2, x3)))
-        return KentDistribution.gamma1_to_spherical_coordinates(x)
+        return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def pdf_max(self, normalize=True):
         return exp(self.log_pdf_max(normalize))
@@ -316,10 +316,10 @@ class KentDistribution(object):
         if self.beta == 0.0:
             x = 1
         else:
-            x = self.kappa * 1.0 / (2 * self.beta)
+            x = self.kappa * self.nu[0] / (2 * self.beta)
         if x > 1.0:
             x = 1
-        fmax = self.kappa * x + self.beta * (1 - x**2)
+        fmax = self.kappa * (self.nu[0]*x+self.nu[1]*sqrt(1-x**2)) + self.beta * (1 - x**2)
         if normalize:
             return fmax - self.log_normalize()
         else:
@@ -327,7 +327,7 @@ class KentDistribution(object):
 
     def pdf(self, xs, normalize=True):
         """
-        Returns the pdf of the kent distribution for 3D vectors that
+        Returns the pdf of the fb8 distribution for 3D vectors that
         are stored in xs which must be an array of N x 3 or N x M x 3
         N x M x P x 3 etc.
 
@@ -341,16 +341,16 @@ class KentDistribution(object):
         >>> num_samples = 400000
         >>> xs = gauss(0, 1).rvs((num_samples, 3))
         >>> xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-        >>> assert abs(4*pi*average(kent(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(kent(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*pi*average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
         """
         return exp(self.log_pdf(xs, normalize))
 
     def log_pdf(self, xs, normalize=True):
         """
-        Returns the log(pdf) of the kent distribution.
+        Returns the log(pdf) of the fb8 distribution.
         """
         axis = len(shape(xs)) - 1
         g1x = sum(self.gamma1 * xs, axis)
@@ -383,7 +383,7 @@ class KentDistribution(object):
 
     def rvs(self, n_samples=None):
         """
-        Returns random samples from the Kent distribution by rejection sampling. 
+        Returns random samples from the FB8 distribution by rejection sampling. 
         May become inefficient for large kappas.
 
         The returned random samples are 3D unit vectors.
@@ -465,17 +465,17 @@ class KentDistribution(object):
 
             # rotate back into x coordinates
             x = dot(self.Gamma, x123)
-            return KentDistribution.gamma1_to_spherical_coordinates(x)
+            return FB8Distribution.gamma1_to_spherical_coordinates(x)
         # FB8 approximate
         else:
             npts = 1000
             thetas, phis = [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
-            ok = abs(lev+self.log_pdf(KentDistribution.spherical_coordinates_to_nu(thetas, phis)))<0.1*lev
+            ok = abs(lev+self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(thetas, phis)))<0.1*lev
             return thetas[ok], phis[ok]
 
 
     def __repr__(self):
-        return "kent(%s, %s, %s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
+        return "fb8(%s, %s, %s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
 
 
 def kent_me(xs):
@@ -486,10 +486,10 @@ def kent_me(xs):
     S = average(xs.reshape((lenxs, 3, 1)) * xs.reshape((lenxs, 1, 3)), 0)
     # has unit length and is in the same direction and parallel to xbar
     gamma1 = xbar / norm(xbar)
-    theta, phi = KentDistribution.gamma1_to_spherical_coordinates(gamma1)
+    theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
 
-    H = KentDistribution.create_matrix_H(theta, phi)
-    Ht = KentDistribution.create_matrix_Ht(theta, phi)
+    H = FB8Distribution.create_matrix_H(theta, phi)
+    Ht = FB8Distribution.create_matrix_Ht(theta, phi)
     B = MMul(Ht, MMul(S, H))
 
     eigvals, eigvects = eig(B[1:, 1:])
@@ -509,15 +509,15 @@ def kent_me(xs):
     r2 = t22 - t33
 
     # kappa and beta can be estimated but may not lie outside their permitted ranges
-    min_kappa = KentDistribution.minimum_value_for_kappa
+    min_kappa = FB8Distribution.minimum_value_for_kappa
     kappa = max(min_kappa, 1.0 / (2.0 - 2.0 * r1 - r2) +
                 1.0 / (2.0 - 2.0 * r1 + r2))
     beta = 0.5 * (1.0 / (2.0 - 2.0 * r1 - r2) - 1.0 / (2.0 - 2.0 * r1 + r2))
 
-    return kent4(G, kappa, beta)
+    return fb84(G, kappa, beta)
 
 
-def __kent_mle_output1(k_me, callback):
+def __fb8_mle_output1(k_me, callback):
     print
     print "******** Maximum Likelihood Estimation ********"
     print "Initial moment estimates are:"
@@ -533,7 +533,7 @@ def __kent_mle_output1(k_me, callback):
     print "[iteration]   theta   phi   psi   kappa   beta   eta   alpha   rho   -L"
 
 
-def __kent_mle_output2(x, minusL, output_count, verbose):
+def __fb8_mle_output2(x, minusL, output_count, verbose):
     interval = verbose if isinstance(verbose, int) else 1
     str_values = list()
     for value in (tuple(x) + (minusL,)):
@@ -546,11 +546,11 @@ def __kent_mle_output2(x, minusL, output_count, verbose):
     output_count[0] = output_count[0] + 1
 
 
-def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
+def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
     """
-    Generates a KentDistribution fitted to xs using maximum likelihood estimation
+    Generates a FB8Distribution fitted to xs using maximum likelihood estimation
     For a first approximation kent_me() is used. The function 
-    -k.log_likelihood(xs)/len(xs) (where k is an instance of KentDistribution) is 
+    -k.log_likelihood(xs)/len(xs) (where k is an instance of FB8Distribution) is 
     minimized.
 
     Input:
@@ -564,21 +564,21 @@ def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
           (e.g. stdout) 
         - "none": or any other value for this argument results in no warnings to be issued
     Output:
-      - an instance of the fitted KentDistribution
+      - an instance of the fitted FB8Distribution
     Extra output:
       - if return_intermediate_values is specified then
-      a tuple is returned with the KentDistribution argument as the first element
+      a tuple is returned with the FB8Distribution argument as the first element
       and containing the extra requested values in the rest of the elements.
     """
     # method that generates the minus L to be minimized
     def minus_log_likelihood(x):
-        return -kent(*x).log_likelihood(xs) / len(xs)
+        return -fb8(*x).log_likelihood(xs) / len(xs)
 
     # callback for keeping track of the values
     intermediate_values = list()
 
     def callback(x, output_count=[0]):
-        kx = kent(*x)
+        kx = fb8(*x)
         minusL = -kx.log_likelihood(xs)
         imv = intermediate_values
         imv.append((x, minusL))
@@ -589,13 +589,13 @@ def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
     # these don't depend on BM4
     k_me = kent_me(xs)
     theta, phi, psi, kappa, beta, eta, alpha, rho = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta, k_me.alpha, k_me.rho
-    min_kappa = KentDistribution.minimum_value_for_kappa
+    min_kappa = FB8Distribution.minimum_value_for_kappa
 
     # here the mle is done
     x_start = array([theta, phi, psi, kappa, beta])
     y_start = array([theta, phi, psi, beta, kappa, -0.9, 0.5, 0])
     if verbose:
-        __kent_mle_output1(k_me, callback)
+        __fb8_mle_output1(k_me, callback)
 
     # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
     cons = ({"type": "ineq",
@@ -612,7 +612,7 @@ def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
                   options={"disp": False, "eps": 1e-08,
                            "maxiter": 100, "ftol": 1e-08})
     if verbose:
-        __kent_mle_output1(k_me, callback)
+        __fb8_mle_output1(k_me, callback)
     # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
     cons = ({"type": "ineq", # kappa >= 0
              "fun": lambda x: x[3]},
@@ -643,7 +643,7 @@ def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
         if hasattr(warning, "write"):
             warning.write("Warning: " + warning_message + "\n")
 
-    k = (kent(*all_values.x),)
+    k = (fb8(*all_values.x),)
     if return_intermediate_values:
         k += (intermediate_values,)
     if len(k) == 1:
@@ -671,30 +671,30 @@ x   x   x   x   x   x   x   x   x   x
 x   x   x   x   x   x   x   x   x   x
 >>> seed(888)
 >>> test_example_mle()
-Original Distribution: k = kent(0.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+Original Distribution: k = fb8(0.0, 0.0, 0.0, 1.0, 0.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(0.007720841890575154, -1.5740824920888568, -1.4375584223239652, 1.43492053209, 0.0044675770317, 1.0)
-Fitted with MLE:   k_mle = kent(0.007459189777403647, -1.5740811153814367, -1.437558656621312, 0.964197999109, 0.0354161152778, 1.0)
-Original Distribution: k = kent(0.75, 2.391592653589793, 2.3915926535897936, 20.0, 0.0, 1.0)
+Moment estimation:  k_me = fb8(0.007720841890575154, -1.5740824920888568, -1.4375584223239652, 1.43492053209, 0.0044675770317, 1.0)
+Fitted with MLE:   k_mle = fb8(0.007459189777403647, -1.5740811153814367, -1.437558656621312, 0.964197999109, 0.0354161152778, 1.0)
+Original Distribution: k = fb8(0.75, 2.391592653589793, 2.3915926535897936, 20.0, 0.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(0.7474012488747638, 2.3956473758798102, -1.5107404958092123, 20.1062024974, 0.158640323669, 1.0)
-Fitted with MLE:   k_mle = kent(0.7474018360417302, 2.3956506602230427, -1.5113301600900508, 20.3358029783, 0.316186752336, 0.1951429860460265)
-Original Distribution: k = kent(0.7853981633974483, 2.356194490192345, -2.827433388230814, 20.0, 2.0, 1.0)
+Moment estimation:  k_me = fb8(0.7474012488747638, 2.3956473758798102, -1.5107404958092123, 20.1062024974, 0.158640323669, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7474018360417302, 2.3956506602230427, -1.5113301600900508, 20.3358029783, 0.316186752336, 0.1951429860460265)
+Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.827433388230814, 20.0, 2.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(0.7830806816854289, 2.3566994796348273, 0.30374453765385184, 20.2392003233, 1.75374534349, 1.0)
-Fitted with MLE:   k_mle = kent(0.7829809342195447, 2.3567108200918363, 0.3038350185089338, 20.2872562797, 2.05942839445, 1.0)
-Original Distribution: k = kent(0.7853981633974483, 2.356194490192345, -2.945243112740431, 20.0, 5.0, 1.0)
+Moment estimation:  k_me = fb8(0.7830806816854289, 2.3566994796348273, 0.30374453765385184, 20.2392003233, 1.75374534349, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7829809342195447, 2.3567108200918363, 0.3038350185089338, 20.2872562797, 2.05942839445, 1.0)
+Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.945243112740431, 20.0, 5.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(0.7878716936286756, 2.358370795028891, 0.17634802796746255, 19.5541770417, 3.8469672309, 1.0)
-Fitted with MLE:   k_mle = kent(0.7880385025649629, 2.358491916826943, 0.17625765017119674, 19.9372091782, 4.77383865091, 1.0)
-Original Distribution: k = kent(1.0995574287564276, 2.356194490192345, -3.043417883165112, 50.0, 25.0, 1.0)
+Moment estimation:  k_me = fb8(0.7878716936286756, 2.358370795028891, 0.17634802796746255, 19.5541770417, 3.8469672309, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7880385025649629, 2.358491916826943, 0.17625765017119674, 19.9372091782, 4.77383865091, 1.0)
+Original Distribution: k = fb8(1.0995574287564276, 2.356194490192345, -3.043417883165112, 50.0, 25.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(1.102718086827844, 2.3558887019102808, 0.09774818228688721, 37.5233247341, 14.8542512779, 1.0)
-Fitted with MLE:   k_mle = kent(1.1017455790512998, 2.3558270872470137, 0.09777101616795454, 50.1918525143, 24.9807555374, 1.0)
-Original Distribution: k = kent(0.0, 0.0, 0.09817477042468103, 50.0, 25.0, 1.0)
+Moment estimation:  k_me = fb8(1.102718086827844, 2.3558887019102808, 0.09774818228688721, 37.5233247341, 14.8542512779, 1.0)
+Fitted with MLE:   k_mle = fb8(1.1017455790512998, 2.3558270872470137, 0.09777101616795454, 50.1918525143, 24.9807555374, 1.0)
+Original Distribution: k = fb8(0.0, 0.0, 0.09817477042468103, 50.0, 25.0, 1.0)
 Drawing 10000 samples from k
-Moment estimation:  k_me = kent(0.004005040503695006, 0.2396182325912848, -0.14364867043005725, 37.7138963117, 14.9491168355, 1.0)
-Fitted with MLE:   k_mle = kent(0.005098617598271794, 0.20858549213401353, -0.11261422537952466, 50.5466339851, 25.1819351371, 1.0)
+Moment estimation:  k_me = fb8(0.004005040503695006, 0.2396182325912848, -0.14364867043005725, 37.7138963117, 14.9491168355, 1.0)
+Fitted with MLE:   k_mle = fb8(0.005098617598271794, 0.20858549213401353, -0.11261422537952466, 50.5466339851, 25.1819351371, 1.0)
 >>> seed(2323)
 >>> assert test_example_mle2(300)
 Testing various combinations of kappa and beta for 300 samples.
@@ -704,13 +704,13 @@ MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> for k in [
-...   kent(0.0,      0.0,      0.0,    20.0, 0.0),
-...   kent(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0),
-...   kent(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0),
-...   kent(0.0,      0.0,      0.5*pi, 10.0, 7.0),
-...   kent(0.0,      0.0,      0.5*pi, 0.1,  0.0),
-...   kent(0.0,      0.0,      0.5*pi, 0.1,  0.1),
-...   kent(0.0,      0.0,      0.5*pi, 0.1,  8.0),
+...   fb8(0.0,      0.0,      0.0,    20.0, 0.0),
+...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0),
+...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0),
+...   fb8(0.0,      0.0,      0.5*pi, 10.0, 7.0),
+...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.0),
+...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.1),
+...   fb8(0.0,      0.0,      0.5*pi, 0.1,  8.0),
 ... ]:
 ...   assert(abs(sum(k.gamma1 * k.gamma2)) < 1E-14)
 ...   assert(abs(sum(k.gamma1 * k.gamma3)) < 1E-14)
@@ -725,13 +725,13 @@ correctly.
 >>> from scipy.stats import norm as gauss
 >>> seed(666)
 >>> for k, pdf_value in [
-...   (kent(0.0,      0.0,      0.0,    20.0, 0.0), 3.18309886184),
-...   (kent(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0), 0.00909519370),
-...   (kent(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0), 0.09865564569),
-...   (kent(0.0,      0.0,      0.5*pi, 10.0, 7.0), 0.59668931662),
-...   (kent(0.0,      0.0,      0.5*pi, 0.1,  0.0), 0.08780030026),
-...   (kent(0.0,      0.0,      0.5*pi, 0.1,  0.1), 0.08768344462),
-...   (kent(0.0,      0.0,      0.5*pi, 0.1,  8.0), 0.00063128997),
+...   (fb8(0.0,      0.0,      0.0,    20.0, 0.0), 3.18309886184),
+...   (fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0), 0.00909519370),
+...   (fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0), 0.09865564569),
+...   (fb8(0.0,      0.0,      0.5*pi, 10.0, 7.0), 0.59668931662),
+...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  0.0), 0.08780030026),
+...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  0.1), 0.08768344462),
+...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  8.0), 0.00063128997),
 ... ]:
 ...   assert abs(k.pdf(array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
 ...   assert abs(k.log_pdf(array([1.0, 0.0, 0.0])) - log(pdf_value)) < 1E-8
@@ -748,7 +748,7 @@ correctly.
 ...   assert any(values > fmax*0.999)
 
 These are tests to ensure that the coordinate transformations are done correctly
-that the functions that generate instances of KentDistribution are consistent and
+that the functions that generate instances of FB8Distribution are consistent and
 that the derivatives are calculated correctly. In addition some more orthogonality 
 testing is done.
 
@@ -777,7 +777,7 @@ testing is done.
 ... 
 >>> # testing consintency of angles (specifically kent())
 >>> for theta, phi, psi in zip(thetas, phis, psis):
-...   k = kent(theta, phi, psi, 1.0, 1.0)
+...   k = fb8(theta, phi, psi, 1.0, 1.0)
 ...   assert abs(theta - k.theta) < 1E-12
 ...   a = abs(phi - k.phi)
 ...   b = abs(psi - k.psi)
@@ -787,23 +787,23 @@ testing is done.
 ...   test_orth(k)
 ... 
 >>> # testing consistency of gammas and consistency of back and forth
->>> # calculations between gammas and angles (specifically kent2(), kent3() and kent4())
+>>> # calculations between gammas and angles (specifically fb82(), fb83() and fb84())
 >>> kappas = gauss(0, 2).rvs(1000)**2
 >>> betas = gauss(0, 2).rvs(1000)**2
 >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
-...   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
-...   theta, phi, psi = KentDistribution.gammas_to_spherical_coordinates(gamma1, gamma2)
-...   gamma1a, gamma2a, gamma3a = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
+...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
+...   theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(gamma1, gamma2)
+...   gamma1a, gamma2a, gamma3a = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   assert all(abs(gamma1a-gamma1) < 1E-12) 
 ...   assert all(abs(gamma2a-gamma2) < 1E-12) 
 ...   assert all(abs(gamma3a-gamma3) < 1E-12) 
-...   k2 = kent2(gamma1, gamma2, gamma3, kappa, beta)
+...   k2 = fb82(gamma1, gamma2, gamma3, kappa, beta)
 ...   assert all(abs(gamma1 - k2.gamma1) < 1E-12) 
 ...   assert all(abs(gamma2 - k2.gamma2) < 1E-12) 
 ...   assert all(abs(gamma3 - k2.gamma3) < 1E-12)
 ...   A = gamma1*kappa
 ...   B = gamma2*beta
-...   k3 = kent3(A, B)
+...   k3 = fb83(A, B)
 ...   assert all(abs(gamma1 - k3.gamma1) < 1E-12) 
 ...   assert all(abs(gamma2 - k3.gamma2) < 1E-12) 
 ...   assert all(abs(gamma3 - k3.gamma3) < 1E-12)
@@ -813,17 +813,17 @@ testing is done.
 ...     [gamma1[1], gamma2[1], gamma3[1]], 
 ...     [gamma1[2], gamma2[2], gamma3[2]], 
 ...   ])
-...   k4 = kent4(gamma, kappa, beta)
+...   k4 = fb84(gamma, kappa, beta)
 ...   assert all(k2.gamma1 == k4.gamma1) 
 ...   assert all(k2.gamma2 == k4.gamma2) 
 ...   assert all(k2.gamma3 == k4.gamma3) 
 ... 
->>> # testing special case for B with zero length (kent3())
+>>> # testing special case for B with zero length (fb83())
 >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
-...   gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(theta, phi, psi)
+...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   A = gamma1*kappa
 ...   B = gamma2*0.0
-...   k = kent3(A, B)
+...   k = fb83(A, B)
 ...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
 ...   test_orth(k)
 ...  
