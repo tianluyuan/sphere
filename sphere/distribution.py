@@ -302,7 +302,6 @@ class FB8Distribution(object):
                 x1 = self.kappa / (2 * self.beta)
             if x1 > 1:
                 x1 = 1
-            x2 = sqrt(1 - x1**2)
             x3 = 0
         else:
             x1 = linspace(-1,1,1000)
@@ -310,8 +309,8 @@ class FB8Distribution(object):
             good = x1**2+x3**2<=1.
             x1 = x1[good]
             x3 = x3[good]
-            x2 = sqrt(1-x1**2-x3**2)
 
+        x2 = sqrt(1-x1**2-x3**2)
         x = dot(self.Gamma, asarray((x1, x2, x3))).T
         return FB8Distribution.gamma1_to_spherical_coordinates(
             x[self.log_pdf(x).argmax()])
