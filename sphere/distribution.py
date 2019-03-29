@@ -13,12 +13,13 @@ generates example plots if called directly from the shell.
 
 from numpy import *
 from scipy.optimize import minimize
-from scipy.special import gamma as gamma_fun
-from scipy.special import gammaln as gammaln_fun
-from scipy.special import iv as modified_bessel_1stkind
-from scipy.special import ivp as modified_bessel_1stkind_derivative
+from scipy.special import gamma as G
+from scipy.special import gammaln as LG
+from scipy.special import iv as I
+from scipy.special import ivp as DI
 from scipy.stats import uniform
 from scipy.special import comb
+from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 from scipy.linalg import eig
@@ -40,18 +41,18 @@ def norm(x, axis=None):
     return sqrt(sum(x * x, axis=axis))
 
 
-def kent(theta, phi, psi, kappa, beta, eta=1.):
+def kent(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
     """
     Generates the Kent distribution based on the spherical coordinates theta, phi, psi
     with the concentration parameter kappa and the ovalness beta
     """
     gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
-    k = KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
-    return k
+    nu = KentDistribution.spherical_coordinates_to_nu(alpha, rho)
+    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent2(gamma1, gamma2, gamma3, kappa, beta, eta=1.):
+def kent2(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     """
     Generates the Kent distribution using the orthonormal vectors gamma1, 
     gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
@@ -59,10 +60,10 @@ def kent2(gamma1, gamma2, gamma3, kappa, beta, eta=1.):
     assert abs(inner(gamma1, gamma2)) < 1E-10
     assert abs(inner(gamma2, gamma3)) < 1E-10
     assert abs(inner(gamma3, gamma1)) < 1E-10
-    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
+    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent3(A, B, eta=1.):
+def kent3(A, B, eta=1., nu=None):
     """
     Generates the Kent distribution using the orthogonal vectors A and B
     where A = gamma1*kappa and B = gamma2*beta (gamma3 is inferred)
@@ -81,17 +82,17 @@ def kent3(A, B, eta=1.):
         gamma1, gamma2)
     gamma1, gamma2, gamma3 = KentDistribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
-    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta)
+    return KentDistribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
-def kent4(Gamma, kappa, beta, eta=1.):
+def kent4(Gamma, kappa, beta, eta=1., nu=None):
     """
     Generates the kent distribution
     """
     gamma1 = Gamma[:, 0]
     gamma2 = Gamma[:, 1]
     gamma3 = Gamma[:, 2]
-    return kent2(gamma1, gamma2, gamma3, kappa, beta, eta)
+    return kent2(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
 def __generate_arbitrary_orthogonal_unit_vector(x):
@@ -151,6 +152,10 @@ class KentDistribution(object):
         return gamma1, gamma2, gamma3
 
     @staticmethod
+    def spherical_coordinates_to_nu(alpha, rho):
+        return KentDistribution.create_matrix_Gamma(alpha, rho, 0)[:, 0]
+
+    @staticmethod
     def gamma1_to_spherical_coordinates(gamma1):
         theta = arccos(gamma1[0])
         phi = arctan2(gamma1[2], gamma1[1])
@@ -164,7 +169,7 @@ class KentDistribution(object):
         psi = arctan2(u[2][0], u[1][0])
         return theta, phi, psi
 
-    def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1.):
+    def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         self.gamma1 = array(gamma1, dtype=float64)
         self.gamma2 = array(gamma2, dtype=float64)
         self.gamma3 = array(gamma3, dtype=float64)
@@ -172,9 +177,15 @@ class KentDistribution(object):
         self.beta = float(beta)
         # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
         self.eta = eta
+        # FB8 param nu
+        if nu is None:
+            nu = KentDistribution.spherical_coordinates_to_nu(0,0)
+        self.nu = nu
 
         self.theta, self.phi, self.psi = KentDistribution.gammas_to_spherical_coordinates(
             self.gamma1, self.gamma2)
+
+        self.alpha, self.rho = KentDistribution.gamma1_to_spherical_coordinates(self.nu)
 
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
@@ -208,46 +219,53 @@ class KentDistribution(object):
         True True True True True True True True
         """
         k, b, m = self.kappa, self.beta, self.eta
-        if not (k, b, m) in cache:
-            G = gamma_fun
-            LG = gammaln_fun
-            I = modified_bessel_1stkind
-            result = 0.0
-            j = 0
-            if b == 0.0:
-                result = (
-                    ((0.5 * k)**(-2 * j - 0.5)) *
-                    (I(2 * j + 0.5, k))
-                )
-                result /= G(j + 1)
-                result *= G(j + 0.5)
-
-            else:
-                while True:
-                    # int sin(theta) dtheta
-                    a = (
-                        exp(
-                            log(b) * j +
-                            log(0.5 * k) * (-j - 0.5)
-                        ) * I(j + 0.5, k)
+        n1, n2, n3 = self.nu
+        j = 0
+        if not (k, b, m, n1, n2) in cache:
+            result = 0.
+            # FB6 case
+            if n1 == 1.:
+                # exact solution (vmF)
+                if b == 0.0:
+                    result = (
+                        ((0.5 * k)**(-2 * j - 0.5)) *
+                        (I(2 * j + 0.5, k))
                     )
-                    # int dphi
-                    irange = arange(j + 1)
-                    aj = ((-m)**irange * exp(LG(irange + 0.5) + LG(j -
-                                                                   irange + 0.5) - LG(irange + 1) - LG(j - irange + 1))).sum()
-                    a /= sqrt(pi)
-                    a *= aj
-                    result += a
+                    result /= G(j + 1)
+                    result *= G(j + 0.5)
 
-                    j += 1
-                    if (j % 2 and abs(a) < abs(result) * 1E-12 and j > 5):
-                        break
+                else:
+                    while True:
+                        # int sin(theta) dtheta
+                        a = (
+                            exp(
+                                log(b) * j +
+                                log(0.5 * k) * (-j - 0.5)
+                            ) * I(j + 0.5, k)
+                        )
+                        # int dphi
+                        irange = arange(j + 1)
+                        aj = ((-m)**irange * exp(LG(irange + 0.5) + LG(j -
+                                                                       irange + 0.5) - LG(irange + 1) - LG(j - irange + 1))).sum()
+                        a /= sqrt(pi)
+                        a *= aj
+                        result += a
 
-            cache[k, b, m] = 2 * pi * result
+                        j += 1
+                        if (j % 2 and abs(a) < abs(result) * 1E-12 and j > 5):
+                            break
+
+            # FB8 numerical integration
+            else:
+                result = dblquad(lambda th, ph: sin(th)*exp(k * (n1 * cos(th) + n2 * sin(th)*cos(ph) + n3 * sin(th)*sin(ph)) + b * sin(th)**2*(cos(ph)**2 - m * sin(ph)**2)),
+                                 0., 2.*pi, lambda x: 0., lambda x: pi, epsabs=1e-3, epsrel=1e-3)[0]/(2.*pi)
+
+            cache[k, b, m, n1, n2] = 2 * pi * result
+
         if return_num_iterations:
-            return cache[k, b, m], j
+            return cache[k, b, m, n1, n2], j
         else:
-            return cache[k, b, m]
+            return cache[k, b, m, n1, n2]
 
     def log_normalize(self):
         """
@@ -261,7 +279,6 @@ class KentDistribution(object):
                 k = self.kappa
                 b = self.beta
                 m = self.eta
-                I = modified_bessel_1stkind
                 if k < 0 or b < 0:
                     lnormalize = 1e10
                 elif k > 2 * b:
@@ -340,8 +357,9 @@ class KentDistribution(object):
         g2x = sum(self.gamma2 * xs, axis)
         g3x = sum(self.gamma3 * xs, axis)
         k, b, m = self.kappa, self.beta, self.eta
+        ngx = self.nu.dot(asarray([g1x, g2x, g3x]))
 
-        f = k * g1x + b * (g2x**2 - m * g3x**2)
+        f = k * ngx + b * (g2x**2 - m * g3x**2)
         if normalize:
             return f - self.log_normalize()
         else:
@@ -415,40 +433,49 @@ class KentDistribution(object):
         ln = self.log_normalize()
         lev = self.level(percentile)
 
-        # work in coordinate system x' = Gamma'*x
-        # range over which x1 remains real is [-x2_max, x2_max]
-        # assume -1 < m < 1
-        x2_max = min(abs(sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
-                              ) / (2 * sqrt(m * (1 + m)) * b)), 1)
-        if isnan(x2_max):
-            x2_max = 1
-        x2 = linspace(-x2_max, x2_max, 10000)
-        if abs(m) < 1E-4:
-            x1_0 = -(lev - ln + b * x2**2) / k
-            x1_1 = x1_0
+        # FB6, exact
+        if self.nu[0] == 1.:
+            # work in coordinate system x' = Gamma'*x
+            # range over which x1 remains real is [-x2_max, x2_max]
+            # assume -1 < m < 1
+            x2_max = min(abs(sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
+                                  ) / (2 * sqrt(m * (1 + m)) * b)), 1)
+            if isnan(x2_max):
+                x2_max = 1
+            x2 = linspace(-x2_max, x2_max, 10000)
+            if abs(m) < 1E-4:
+                x1_0 = -(lev - ln + b * x2**2) / k
+                x1_1 = x1_0
+            else:
+                x1_0 = (-k + sqrt(k**2 + 4 * m * b * (m * b - lev +
+                                                      ln - (1 + m) * b * x2**2))) / (2 * b * m)
+                x1_1 = (-k - sqrt(k**2 + 4 * m * b * (m * b - lev +
+                                                      ln - (1 + m) * b * x2**2))) / (2 * b * m)
+            x3_0 = sqrt(1 - x1_0**2 - x2**2)
+            x3_1 = sqrt(1 - x1_1**2 - x2**2)
+            x2 = concatenate([x2, -x2, x2, -x2])
+            x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
+            x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
+
+            # Since Kent distribution is well-defined for points not on a sphere,
+            # possible solutions for L=-log_pdf(kent) extend beyond surface of
+            # sphere. For the contour evaluation, only use points that lie on sphere.
+            ok = x1**2 + x2**2 <= 1
+            x123 = asarray((x1[ok], x2[ok], x3[ok]))
+
+            # rotate back into x coordinates
+            x = dot(self.Gamma, x123)
+            return KentDistribution.gamma1_to_spherical_coordinates(x)
+        # FB8 approximate
         else:
-            x1_0 = (-k + sqrt(k**2 + 4 * m * b * (m * b - lev +
-                                                  ln - (1 + m) * b * x2**2))) / (2 * b * m)
-            x1_1 = (-k - sqrt(k**2 + 4 * m * b * (m * b - lev +
-                                                  ln - (1 + m) * b * x2**2))) / (2 * b * m)
-        x3_0 = sqrt(1 - x1_0**2 - x2**2)
-        x3_1 = sqrt(1 - x1_1**2 - x2**2)
-        x2 = concatenate([x2, -x2, x2, -x2])
-        x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
-        x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
+            npts = 1000
+            thetas, phis = [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
+            ok = abs(lev+self.log_pdf(KentDistribution.spherical_coordinates_to_nu(thetas, phis)))<0.1*lev
+            return thetas[ok], phis[ok]
 
-        # Since Kent distribution is well-defined for points not on a sphere,
-        # possible solutions for L=-log_pdf(kent) extend beyond surface of
-        # sphere. For the contour evaluation, only use points that lie on sphere.
-        ok = x1**2 + x2**2 <= 1
-        x123 = asarray((x1[ok], x2[ok], x3[ok]))
-
-        # rotate back into x coordinates
-        x = dot(self.Gamma, x123)
-        return KentDistribution.gamma1_to_spherical_coordinates(x)
 
     def __repr__(self):
-        return "kent(%s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta)
+        return "kent(%s, %s, %s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
 
 
 def kent_me(xs):
@@ -500,8 +527,10 @@ def __kent_mle_output1(k_me, callback):
     print "kappa =", k_me.kappa
     print "beta  =", k_me.beta
     print "eta   =", k_me.eta
+    print "alpha =", k_me.alpha
+    print "rho   =", k_me.rho
     print "******** Starting the Gradient Descent ********"
-    print "[iteration]   theta   phi   psi   kappa   beta   eta   -L"
+    print "[iteration]   theta   phi   psi   kappa   beta   eta   alpha   rho   -L"
 
 
 def __kent_mle_output2(x, minusL, output_count, verbose):
@@ -517,7 +546,7 @@ def __kent_mle_output2(x, minusL, output_count, verbose):
     output_count[0] = output_count[0] + 1
 
 
-def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
+def mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
     """
     Generates a KentDistribution fitted to xs using maximum likelihood estimation
     For a first approximation kent_me() is used. The function 
@@ -554,18 +583,17 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
         imv = intermediate_values
         imv.append((x, minusL))
         if verbose:
-            print len(imv), kx.theta, kx.phi, kx.psi, kx.kappa, kx.beta, kx.eta, minusL
+            print len(imv), kx.theta, kx.phi, kx.psi, kx.kappa, kx.beta, kx.eta, kx.alpha, kx.rho, minusL
 
     # first get estimated moments
     # these don't depend on BM4
     k_me = kent_me(xs)
-    theta, phi, psi, kappa, beta, eta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta
+    theta, phi, psi, kappa, beta, eta, alpha, rho = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta, k_me.alpha, k_me.rho
     min_kappa = KentDistribution.minimum_value_for_kappa
 
     # here the mle is done
-    # starting parameters (small value is subtracted from kappa and add in generatke k)
     x_start = array([theta, phi, psi, kappa, beta])
-    y_start = array([theta, phi, psi, beta, kappa, -0.99])
+    y_start = array([theta, phi, psi, beta, kappa, -0.9, 0.5, 0])
     if verbose:
         __kent_mle_output1(k_me, callback)
 
@@ -585,23 +613,28 @@ def kent_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'
                            "maxiter": 100, "ftol": 1e-08})
     if verbose:
         __kent_mle_output1(k_me, callback)
-    # constrain kappa, beta >= 0 while allowing eta to float to allow for multiple modes
     # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
-    cons = ({"type": "ineq",
+    cons = ({"type": "ineq", # kappa >= 0
              "fun": lambda x: x[3]},
-            {"type": "ineq",
+            {"type": "ineq", # beta >= 0
              "fun": lambda x: x[4]},
-            {"type": "ineq",
-             "fun": lambda x: 1 - abs(x[-1])})
-    _y = minimize(minus_log_likelihood,
-                  y_start,
-                  method="SLSQP",
-                  constraints=cons,
-                  callback=callback,
-                  options={"disp": False, "eps": 1e-08,
-                           "maxiter": 100, "ftol": 1e-08})
+            {"type": "ineq", # -1 <= eta <=1
+             "fun": lambda x: 1 - abs(x[5])})
+            # {"type": "ineq",
+            #  "fun": lambda x: -x[3] + 2 * x[4]})
+    try:
+        _y = minimize(minus_log_likelihood,
+                      y_start,
+                      method="SLSQP",
+                      constraints=cons,
+                      callback=callback,
+                      options={"disp": False, "eps": 1e-08,
+                               "maxiter": 100, "ftol": 1e-08})
 
-    all_values = _x if _x.fun < _y.fun else _y
+        all_values = _x if _x.fun < _y.fun else _y
+    except IntegrationWarning as w:
+        print(w)
+        all_values = _x
     warnflag = all_values.status
     if not all_values.success:
         warning_message = all_values.message
