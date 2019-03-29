@@ -295,16 +295,26 @@ class FB8Distribution(object):
             return lnormalize
 
     def max(self):
-        if self.beta == 0.0:
-            x1 = 1
+        if self.nu[0] == 1.:
+            if self.beta == 0.0:
+                x1 = 1
+            else:
+                x1 = self.kappa / (2 * self.beta)
+            if x1 > 1:
+                x1 = 1
+            x2 = sqrt(1 - x1**2)
+            x3 = 0
         else:
-            x1 = self.kappa * self.nu[0]/ (2 * self.beta)
-        if x1 > 1:
-            x1 = 1
-        x2 = sqrt(1 - x1**2)
-        x3 = 0
-        x = dot(self.Gamma, asarray((x1, x2, x3)))
-        return FB8Distribution.gamma1_to_spherical_coordinates(x)
+            x1 = linspace(-1,1,1000)
+            x3 = x1 * self.kappa * self.nu[2]/(2*self.eta*self.beta*x1+self.kappa*self.nu[0])
+            good = x1**2+x3**2<=1.
+            x1 = x1[good]
+            x3 = x3[good]
+            x2 = sqrt(1-x1**2-x3**2)
+
+        x = dot(self.Gamma, asarray((x1, x2, x3))).T
+        return FB8Distribution.gamma1_to_spherical_coordinates(
+            x[self.log_pdf(x).argmax()])
 
     def pdf_max(self, normalize=True):
         return exp(self.log_pdf_max(normalize))
@@ -313,17 +323,8 @@ class FB8Distribution(object):
         """
         Returns the maximum value of the log(pdf)
         """
-        if self.beta == 0.0:
-            x = 1
-        else:
-            x = self.kappa * self.nu[0] / (2 * self.beta)
-        if x > 1.0:
-            x = 1
-        fmax = self.kappa * (self.nu[0]*x+self.nu[1]*sqrt(1-x**2)) + self.beta * (1 - x**2)
-        if normalize:
-            return fmax - self.log_normalize()
-        else:
-            return fmax
+        return self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(
+            *self.max()),normalize)
 
     def pdf(self, xs, normalize=True):
         """
@@ -378,6 +379,7 @@ class FB8Distribution(object):
         xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
+        # print lfmax, lpvalues.max()
         shifted = lpvalues - lfmax
         return xs[uniform(0, 1).rvs(num_samples) < exp(shifted)]
 
@@ -470,7 +472,7 @@ class FB8Distribution(object):
         else:
             npts = 1000
             thetas, phis = [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
-            ok = abs(lev+self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(thetas, phis)))<0.1*lev
+            ok = abs(lev+self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(thetas, phis)))<0.01
             return thetas[ok], phis[ok]
 
 
