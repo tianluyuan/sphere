@@ -598,6 +598,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
     if verbose:
         __fb8_mle_output1(k_me, callback)
 
+    # First try a FB5 fit
     # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
     cons = ({"type": "ineq",
              "fun": lambda x: x[3] - 2 * x[4]},

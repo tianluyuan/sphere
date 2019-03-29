@@ -1,7 +1,9 @@
 sphere
 =================
 
-Implements the FB6 distribution that is first introduced in Rivest ([1984](https://www.doi.org/10.1214/aos/1176346724)). This is a generalization of the FB5 (Kent) and FB4 (Bingham-Mardia) distributions described below.
+Implments the FB8 distribution on a sphere, which is a generalization of the FB6, FB5 (Kent), and FB4 (Bingham-Mardia) distributions described below.
+
+Implements the FB6 distribution that is first introduced in Rivest ([1984](https://www.doi.org/10.1214/aos/1176346724)).
 
 Implements calculation of the density and fitting (using maximum likelihood estimate) of the Kent distribution based on Kent ([1982](https://doi.org/10.1111/j.2517-6161.1982.tb01189.x)). A unittest is performed if distribution.py is called from the command line.
 
