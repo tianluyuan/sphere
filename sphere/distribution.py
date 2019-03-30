@@ -632,8 +632,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
                   method="SLSQP",
                   constraints=cons,
                   callback=callback,
-                  options={"disp": False, "eps": 1e-08,
-                           "maxiter": 200, "ftol": 1e-08})
+                  options={"disp": False, "ftol": 1e-08,
+                           "maxiter": 100})
     if verbose:
         __fb8_mle_output1(k_me, callback)
     # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
@@ -651,8 +651,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
                       method="SLSQP",
                       constraints=cons,
                       callback=callback,
-                      options={"disp": False, "eps": 1e-08,
-                               "maxiter": 100, "ftol": 1e-08})
+                      options={"disp": False, "ftol": 1e-08,
+                               "maxiter": 100})
 
         all_values = _x if _x.fun < _y.fun else _y
     except IntegrationWarning as w:
