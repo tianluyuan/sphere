@@ -12,7 +12,7 @@ generates example plots if called directly from the shell.
 """
 
 from numpy import *
-from scipy.optimize import minimize
+from scipy.optimize import minimize, basinhopping
 from scipy.special import gamma as G
 from scipy.special import gammaln as LG
 from scipy.special import iv as I
@@ -321,10 +321,9 @@ class FB8Distribution(object):
             # return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
             ## END
             f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
-            _x = minimize(f,
-                          array([0,0]),
-                          method="L-BFGS-B")
-            if not _x.success:
+            _x = basinhopping(f,
+                              array([0,0]))
+            if not _x.lowest_optimization_result.success:
                 warning_message = _x.message
                 warnings.warn(warning_message, RuntimeWarning)
             x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
@@ -634,7 +633,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
                   constraints=cons,
                   callback=callback,
                   options={"disp": False, "eps": 1e-08,
-                           "maxiter": 100, "ftol": 1e-08})
+                           "maxiter": 200, "ftol": 1e-08})
     if verbose:
         __fb8_mle_output1(k_me, callback)
     # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
