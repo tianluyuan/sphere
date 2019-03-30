@@ -310,52 +310,27 @@ class FB8Distribution(object):
                 x1 = 1
             x2 = sqrt(1 - x1**2)
             x3 = 0
-            x = dot(self.Gamma, asarray((x1, x2, x3)))
-            return FB8Distribution.gamma1_to_spherical_coordinates(x)
+        else:
+            # FB8
+            ## DEBUG
+            # npts = 1000
+            # thetas, phis = FB8Distribution.gridded(npts)
+            # lpdfs = self.log_pdf(
+            #     FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
+            #     normalize=False)
+            # return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
+            ## END
+            f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
+            _x = minimize(f,
+                          array([pi/2,-pi/2]),
+                          method="L-BFGS-B")
+            if not _x.success:
+                warning_message = _x.message
+                warnings.warn(warning_message, RuntimeWarning)
+            x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
 
-        npts = 1000
-        thetas, phis = FB8Distribution.gridded(npts)
-        lpdfs = self.log_pdf(
-            FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
-            normalize=False)
-        return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
-        
-        # ntests = 100001
-        # radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
-        # radicalx = lambda x: 4*(1+m)**2*x**4*b**2-4*(1+m)*x*b*k*n2+4*(1+m)*x**3*b*k*n2-k**2*n2**2+x**2*(-4*(1+m)**2*b**2+k**2*(n2**2+n3**2))
-        # radicaly = lambda y: 4*(1+m)**2*y**4*b**2+4*(1+m)*y*b*k*n3-4*(1+m)*y**3*b*k*n3-k**2*n3**2+y**2*(-4*(1+m)**2*b**2+k**2*(n2**2+n3**2))
-        # radicala = lambda z: 4*z**4*b**2+4*z*b*k*n1-4*z**3*b*k*n1-k**2*n1**2+z**2*(-4*b**2+k**2*(n2**2+n1**2))
-        
-        # curr_max = -inf
-        # x_max = None
-        # for sgn in [-1,1]:
-        #     for i in range(4):
-        #         if i == 0:
-        #             x1 = linspace(-1,1,ntests)
-        #             x2 = sgn*sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
-        #             x3 = sqrt(1-x1**2-x2**2)
-        #         elif i == 1:
-        #             x2 = linspace(-1,1,ntests)
-        #             x1 = sgn*sqrt(-radicalx(x2))/(2*(1+m)*x2*b+k*n2)
-        #             x3 = sqrt(1-x1**2-x2**2)
-        #         elif i == 2:
-        #             x1 = linspace(-1,1,ntests)
-        #             x3 = sgn*sqrt(-radicala(x1))/(2*x1*b-k*n1)
-        #             x2 = sqrt(1-x1**2-x3**2)
-        #         else:
-        #             x3 = linspace(-1,1,ntests)
-        #             x1 = sgn*sqrt(-radicaly(x3))/(2*(1+m)*x3*b-k*n3)
-        #             x2 = sqrt(1-x1**2-x3**2)
-                    
-        #         x = dot(self.Gamma, asarray((x1, x2, x3))).T
-        #         lpdfs = self.log_pdf(x, normalize=False)
-        #         lpdfs_max = nanmax(lpdfs)
-        #         print lpdfs_max
-        #         if lpdfs_max > curr_max:
-        #             x_max = x[nanargmax(lpdfs)]
-        #             curr_max = lpdfs_max
-                
-        # return FB8Distribution.gamma1_to_spherical_coordinates(x_max)
+        x = dot(self.Gamma, asarray((x1, x2, x3)))
+        return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def pdf_max(self, normalize=True):
         return exp(self.log_pdf_max(normalize))
