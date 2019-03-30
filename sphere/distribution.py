@@ -518,12 +518,12 @@ class FB8Distribution(object):
                 thetas, phis, arange(len(thetas))),
                 dtype=[('dev', 'f'), ('theta', 'f'), ('phi', 'f'), ('index', 'i')])
             deviations = sort(deviations, order='dev')
-            top = deviations['index'][:2000]
+            top = deviations['index'][:1000]
             return thetas[top], phis[top]
 
 
     def __repr__(self):
-        return "fb8(%s, %s, %s, %s, %s, %s, %s, %s)" % (self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
+        return 'fb8({:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f})'.format(self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
 
 
 def kent_me(xs):
