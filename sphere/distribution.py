@@ -322,7 +322,7 @@ class FB8Distribution(object):
             ## END
             f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
             _x = minimize(f,
-                          array([pi/2,-pi/2]),
+                          array([0,0]),
                           method="L-BFGS-B")
             if not _x.success:
                 warning_message = _x.message
