@@ -169,6 +169,10 @@ class FB8Distribution(object):
         psi = arctan2(u[2][0], u[1][0])
         return theta, phi, psi
 
+    @staticmethod
+    def gridded(npts):
+        return [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
+    
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         self.gamma1 = array(gamma1, dtype=float64)
         self.gamma2 = array(gamma2, dtype=float64)
@@ -199,7 +203,7 @@ class FB8Distribution(object):
     @property
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
-
+    
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
         Returns the normalization constant of the FB8 distribution.
@@ -295,16 +299,63 @@ class FB8Distribution(object):
             return lnormalize
 
     def max(self):
-        x1 = linspace(-1,1,1000)
-        x3 = x1 * self.kappa * self.nu[2]/(2*self.eta*self.beta*x1+self.kappa*self.nu[0])
-        good = x1**2+x3**2<=1.
-        x1 = x1[good]
-        x3 = x3[good]
+        k, b, m = self.kappa, self.beta, self.eta
+        n1, n2, n3 = self.nu
+        if n1 == 1.:
+            if self.beta == 0.0:
+                x1 = 1
+            else:
+                x1 = self.kappa / (2 * self.beta)
+            if x1 > 1:
+                x1 = 1
+            x2 = sqrt(1 - x1**2)
+            x3 = 0
+            x = dot(self.Gamma, asarray((x1, x2, x3)))
+            return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
-        x2 = sqrt(1-x1**2-x3**2)
-        x = dot(self.Gamma, asarray((x1, x2, x3))).T
-        return FB8Distribution.gamma1_to_spherical_coordinates(
-            x[self.log_pdf(x).argmax()])
+        npts = 1000
+        thetas, phis = FB8Distribution.gridded(npts)
+        lpdfs = self.log_pdf(
+            FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
+            normalize=False)
+        return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
+        
+        # ntests = 100001
+        # radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
+        # radicalx = lambda x: 4*(1+m)**2*x**4*b**2-4*(1+m)*x*b*k*n2+4*(1+m)*x**3*b*k*n2-k**2*n2**2+x**2*(-4*(1+m)**2*b**2+k**2*(n2**2+n3**2))
+        # radicaly = lambda y: 4*(1+m)**2*y**4*b**2+4*(1+m)*y*b*k*n3-4*(1+m)*y**3*b*k*n3-k**2*n3**2+y**2*(-4*(1+m)**2*b**2+k**2*(n2**2+n3**2))
+        # radicala = lambda z: 4*z**4*b**2+4*z*b*k*n1-4*z**3*b*k*n1-k**2*n1**2+z**2*(-4*b**2+k**2*(n2**2+n1**2))
+        
+        # curr_max = -inf
+        # x_max = None
+        # for sgn in [-1,1]:
+        #     for i in range(4):
+        #         if i == 0:
+        #             x1 = linspace(-1,1,ntests)
+        #             x2 = sgn*sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
+        #             x3 = sqrt(1-x1**2-x2**2)
+        #         elif i == 1:
+        #             x2 = linspace(-1,1,ntests)
+        #             x1 = sgn*sqrt(-radicalx(x2))/(2*(1+m)*x2*b+k*n2)
+        #             x3 = sqrt(1-x1**2-x2**2)
+        #         elif i == 2:
+        #             x1 = linspace(-1,1,ntests)
+        #             x3 = sgn*sqrt(-radicala(x1))/(2*x1*b-k*n1)
+        #             x2 = sqrt(1-x1**2-x3**2)
+        #         else:
+        #             x3 = linspace(-1,1,ntests)
+        #             x1 = sgn*sqrt(-radicaly(x3))/(2*(1+m)*x3*b-k*n3)
+        #             x2 = sqrt(1-x1**2-x3**2)
+                    
+        #         x = dot(self.Gamma, asarray((x1, x2, x3))).T
+        #         lpdfs = self.log_pdf(x, normalize=False)
+        #         lpdfs_max = nanmax(lpdfs)
+        #         print lpdfs_max
+        #         if lpdfs_max > curr_max:
+        #             x_max = x[nanargmax(lpdfs)]
+        #             curr_max = lpdfs_max
+                
+        # return FB8Distribution.gamma1_to_spherical_coordinates(x_max)
 
     def pdf_max(self, normalize=True):
         return exp(self.log_pdf_max(normalize))
@@ -369,7 +420,7 @@ class FB8Distribution(object):
         xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
-        # print lfmax, lpvalues.max()
+        assert lfmax > lpvalues.max()
         shifted = lpvalues - lfmax
         return xs[uniform(0, 1).rvs(num_samples) < exp(shifted)]
 
@@ -461,9 +512,14 @@ class FB8Distribution(object):
         # FB8 approximate
         else:
             npts = 1000
-            thetas, phis = [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
-            ok = abs(lev+self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(thetas, phis)))<0.01
-            return thetas[ok], phis[ok]
+            thetas, phis = FB8Distribution.gridded(npts)
+            deviations = array(zip(abs(lev+self.log_pdf(
+                FB8Distribution.spherical_coordinates_to_nu(thetas, phis))),
+                thetas, phis, arange(len(thetas))),
+                dtype=[('dev', 'f'), ('theta', 'f'), ('phi', 'f'), ('index', 'i')])
+            deviations = sort(deviations, order='dev')
+            top = deviations['index'][:2000]
+            return thetas[top], phis[top]
 
 
     def __repr__(self):
@@ -471,7 +527,7 @@ class FB8Distribution(object):
 
 
 def kent_me(xs):
-    """Generates and returns a KentDistribution based on a moment estimation."""
+    """Generates and returns a FB8Distribution based on a FB5 (Kent) moment estimation."""
     lenxs = len(xs)
     xbar = average(xs, 0)  # average direction of samples from origin
     # dispersion (or covariance) matrix around origin
