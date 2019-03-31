@@ -169,10 +169,6 @@ class FB8Distribution(object):
         psi = arctan2(u[2][0], u[1][0])
         return theta, phi, psi
 
-    @staticmethod
-    def gridded(npts):
-        return [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
-    
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         self.gamma1 = array(gamma1, dtype=float64)
         self.gamma2 = array(gamma2, dtype=float64)
@@ -313,6 +309,8 @@ class FB8Distribution(object):
         else:
             # FB8
             ## Brute force grid
+            # def gridded(npts):
+            #     return [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
             # npts = 1000
             # thetas, phis = FB8Distribution.gridded(npts)
             # lpdfs = self.log_pdf(
@@ -515,19 +513,12 @@ class FB8Distribution(object):
 
             # rotate back into x coordinates
             x = dot(self.Gamma, x123)
-            return FB8Distribution.gamma1_to_spherical_coordinates(x)
         # FB8 approximate
         else:
-            npts = 1000
-            thetas, phis = FB8Distribution.gridded(npts)
-            deviations = array(zip(abs(lev+self.log_pdf(
-                FB8Distribution.spherical_coordinates_to_nu(thetas, phis))),
-                thetas, phis, arange(len(thetas))),
-                dtype=[('dev', 'f'), ('theta', 'f'), ('phi', 'f'), ('index', 'i')])
-            deviations = sort(deviations, order='dev')
-            top = deviations['index'][:1000]
-            return thetas[top], phis[top]
-
+            npts = 10000
+            rvs = self.rvs(npts)
+            x = rvs[argsort(abs(lev+self.log_pdf(rvs)))[:200]]
+        return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def __repr__(self):
         return 'fb8({:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f}, {:.2f})'.format(self.theta, self.phi, self.psi, self.kappa, self.beta, self.eta, self.alpha, self.rho)
