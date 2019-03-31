@@ -170,31 +170,132 @@ class FB8Distribution(object):
         return theta, phi, psi
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
-        self.gamma1 = array(gamma1, dtype=float64)
-        self.gamma2 = array(gamma2, dtype=float64)
-        self.gamma3 = array(gamma3, dtype=float64)
-        self.kappa = float(kappa)
-        self.beta = float(beta)
-        # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
-        self.eta = eta
-        # FB8 param nu
-        if nu is None:
-            nu = FB8Distribution.spherical_coordinates_to_nu(0,0)
-        self.nu = nu
-
-        self.theta, self.phi, self.psi = FB8Distribution.gammas_to_spherical_coordinates(
-            self.gamma1, self.gamma2)
-
-        self.alpha, self.rho = FB8Distribution.gamma1_to_spherical_coordinates(self.nu)
-
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
 
-        self._cached_rvs = array([], dtype=float64)
-        self._cached_rvs.shape = (0, 3)
+        self._gamma1 = array(gamma1, dtype=float64)
+        self._gamma2 = array(gamma2, dtype=float64)
+        self._gamma3 = array(gamma3, dtype=float64)
+        self._kappa = float(kappa)
+        self._beta = float(beta)
+        # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
+        self._eta = eta
+        # FB8 param nu
+        if nu is None:
+            nu = FB8Distribution.spherical_coordinates_to_nu(0,0)
+        self._nu = nu
+
+        self._theta, self._phi, self._psi = FB8Distribution.gammas_to_spherical_coordinates(
+            self._gamma1, self._gamma2)
+        self._alpha, self._rho = FB8Distribution.gamma1_to_spherical_coordinates(self._nu)
+
+        self._cached_rvs = empty((0,3))
 
         # save rvs used to calculated level contours to keep levels self-consistent
-        self._level_log_pdf = array([], dtype=float64)
+        self._level_log_pdf = empty((0,))
+
+    @property
+    def gamma1(self):
+        return self._gamma1
+
+    @property
+    def gamma2(self):
+        return self._gamma2
+
+    @property
+    def gamma3(self):
+        return self._gamma3
+
+    @property
+    def nu(self):
+        return self._nu
+
+    @property
+    def kappa(self):
+        return self._kappa
+
+    @kappa.setter
+    def kappa(self, val):
+        self._kappa = val
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def beta(self):
+        return self._beta
+
+    @beta.setter
+    def beta(self, val):
+        self._beta = val
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def eta(self):
+        return self._eta
+
+    @eta.setter
+    def eta(self, val):
+        self._eta = val
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def theta(self):
+        return self._theta
+
+    @theta.setter
+    def theta(self, val):
+        self._theta = val
+        self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def phi(self):
+        return self._phi
+
+    @phi.setter
+    def phi(self, val):
+        self._phi = val
+        self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def psi(self):
+        return self._psi
+
+    @psi.setter
+    def psi(self, val):
+        self._psi = val
+        self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, val):
+        self._alpha = val
+        self._nu = FB8Distribution.spherical_coordinates_to_nu(
+            self._alpha, self._rho)
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
+
+    @property
+    def rho(self):
+        return self._rho
+
+    @rho.setter
+    def rho(self, val):
+        self._rho = val
+        self._nu = FB8Distribution.spherical_coordinates_to_nu(
+            self._alpha, self._rho)
+        self._level_log_pdf = empty((0,))
+        self._cached_rvs = empty((0,3))
 
     @property
     def Gamma(self):
@@ -257,8 +358,12 @@ class FB8Distribution(object):
 
             # FB8 numerical integration
             else:
-                result = dblquad(lambda th, ph: sin(th)*exp(k * (n1 * cos(th) + n2 * sin(th)*cos(ph) + n3 * sin(th)*sin(ph)) + b * sin(th)**2*(cos(ph)**2 - m * sin(ph)**2)),
-                                 0., 2.*pi, lambda x: 0., lambda x: pi, epsabs=1e-3, epsrel=1e-3)[0]/(2.*pi)
+                result = dblquad(
+                    lambda th, ph: sin(th)*\
+                    exp(k*(n1*cos(th)+n2*sin(th)*cos(ph)+n3*sin(th)*sin(ph))+\
+                        b*sin(th)**2*(cos(ph)**2-m*sin(ph)**2)),
+                                 0., 2.*pi, lambda x: 0., lambda x: pi,
+                    epsabs=1e-3, epsrel=1e-3)[0]/(2.*pi)
 
             cache[k, b, m, n1, n2] = 2 * pi * result
 
@@ -285,8 +390,10 @@ class FB8Distribution(object):
                     lnormalize = log(2 * pi) + k - \
                         log((k - 2 * b) * (k + 2 * b)) / 2.
                 else:
-                    # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2))
-                    # this is the approximation in Bingham-Mardia (1978), converting F to c, where c is the normalization in the Kent paper, with a correction factor for floating eta
+                    # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
+                    # approximation in Bingham-Mardia (1978), converting F to
+                    # c, where c is the normalization in the Kent paper, with
+                    # a correction factor for floating eta
                     lnormalize = (
                         0.5 * (log(pi) - log(b)) + log(4 * pi) + b * (1 + (k / (2 * b))**2) +
                         log(I(0, 0.5 * (1 + m) * pi * b)) -
@@ -326,7 +433,6 @@ class FB8Distribution(object):
             #     warnings.warn(warning_message, RuntimeWarning)
             # x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
             ##
-
             ntests = 1001
             radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+\
               4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
@@ -716,38 +822,6 @@ Iterations necessary to calculate normalize(kappa, beta):
 6  12  23  55 141   x   x   x   x   x
 x   x   x   x   x   x   x   x   x   x
 x   x   x   x   x   x   x   x   x   x
->>> seed(888)
->>> test_example_mle()
-Original Distribution: k = fb8(0.0, 0.0, 0.0, 1.0, 0.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.007720841890575154, -1.5740824920888568, -1.4375584223239652, 1.43492053209, 0.0044675770317, 1.0)
-Fitted with MLE:   k_mle = fb8(0.007459189777403647, -1.5740811153814367, -1.437558656621312, 0.964197999109, 0.0354161152778, 1.0)
-Original Distribution: k = fb8(0.75, 2.391592653589793, 2.3915926535897936, 20.0, 0.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7474012488747638, 2.3956473758798102, -1.5107404958092123, 20.1062024974, 0.158640323669, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7474018360417302, 2.3956506602230427, -1.5113301600900508, 20.3358029783, 0.316186752336, 0.1951429860460265)
-Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.827433388230814, 20.0, 2.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7830806816854289, 2.3566994796348273, 0.30374453765385184, 20.2392003233, 1.75374534349, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7829809342195447, 2.3567108200918363, 0.3038350185089338, 20.2872562797, 2.05942839445, 1.0)
-Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.945243112740431, 20.0, 5.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7878716936286756, 2.358370795028891, 0.17634802796746255, 19.5541770417, 3.8469672309, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7880385025649629, 2.358491916826943, 0.17625765017119674, 19.9372091782, 4.77383865091, 1.0)
-Original Distribution: k = fb8(1.0995574287564276, 2.356194490192345, -3.043417883165112, 50.0, 25.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(1.102718086827844, 2.3558887019102808, 0.09774818228688721, 37.5233247341, 14.8542512779, 1.0)
-Fitted with MLE:   k_mle = fb8(1.1017455790512998, 2.3558270872470137, 0.09777101616795454, 50.1918525143, 24.9807555374, 1.0)
-Original Distribution: k = fb8(0.0, 0.0, 0.09817477042468103, 50.0, 25.0, 1.0)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.004005040503695006, 0.2396182325912848, -0.14364867043005725, 37.7138963117, 14.9491168355, 1.0)
-Fitted with MLE:   k_mle = fb8(0.005098617598271794, 0.20858549213401353, -0.11261422537952466, 50.5466339851, 25.1819351371, 1.0)
->>> seed(2323)
->>> assert test_example_mle2(300)
-Testing various combinations of kappa and beta for 300 samples.
-MSE of MLE is higher than 0.7 times the moment estimate for beta/kappa <= 0.2
-MSE of MLE is higher than moment estimate for beta/kappa >= 0.3
-MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> for k in [
@@ -873,7 +947,39 @@ testing is done.
 ...   k = fb83(A, B)
 ...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
 ...   test_orth(k)
-...  
+
+>>> seed(888)
+>>> test_example_mle()
+Original Distribution: k = fb8(0.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(0.007720841890575154, -1.5740824920888568, -1.4375584223239652, 1.43492053209, 0.0044675770317, 1.0)
+Fitted with MLE:   k_mle = fb8(0.007459189777403647, -1.5740811153814367, -1.437558656621312, 0.964197999109, 0.0354161152778, 1.0)
+Original Distribution: k = fb8(0.75, 2.391592653589793, 2.3915926535897936, 20.0, 0.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(0.7474012488747638, 2.3956473758798102, -1.5107404958092123, 20.1062024974, 0.158640323669, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7474018360417302, 2.3956506602230427, -1.5113301600900508, 20.3358029783, 0.316186752336, 0.1951429860460265)
+Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.827433388230814, 20.0, 2.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(0.7830806816854289, 2.3566994796348273, 0.30374453765385184, 20.2392003233, 1.75374534349, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7829809342195447, 2.3567108200918363, 0.3038350185089338, 20.2872562797, 2.05942839445, 1.0)
+Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.945243112740431, 20.0, 5.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(0.7878716936286756, 2.358370795028891, 0.17634802796746255, 19.5541770417, 3.8469672309, 1.0)
+Fitted with MLE:   k_mle = fb8(0.7880385025649629, 2.358491916826943, 0.17625765017119674, 19.9372091782, 4.77383865091, 1.0)
+Original Distribution: k = fb8(1.0995574287564276, 2.356194490192345, -3.043417883165112, 50.0, 25.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(1.102718086827844, 2.3558887019102808, 0.09774818228688721, 37.5233247341, 14.8542512779, 1.0)
+Fitted with MLE:   k_mle = fb8(1.1017455790512998, 2.3558270872470137, 0.09777101616795454, 50.1918525143, 24.9807555374, 1.0)
+Original Distribution: k = fb8(0.0, 0.0, 0.09817477042468103, 50.0, 25.0, 1.0)
+Drawing 10000 samples from k
+Moment estimation:  k_me = fb8(0.004005040503695006, 0.2396182325912848, -0.14364867043005725, 37.7138963117, 14.9491168355, 1.0)
+Fitted with MLE:   k_mle = fb8(0.005098617598271794, 0.20858549213401353, -0.11261422537952466, 50.5466339851, 25.1819351371, 1.0)
+>>> seed(2323)
+>>> assert test_example_mle2(300)
+Testing various combinations of kappa and beta for 300 samples.
+MSE of MLE is higher than 0.7 times the moment estimate for beta/kappa <= 0.2
+MSE of MLE is higher than moment estimate for beta/kappa >= 0.3
+MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 """
 
     import doctest
