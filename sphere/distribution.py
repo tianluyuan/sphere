@@ -672,7 +672,7 @@ def kent_me(xs):
 def __fb8_mle_output1(k_me, callback):
     print
     print "******** Maximum Likelihood Estimation ********"
-    print "Initial moment estimates are:"
+    print "Initial estimates are:"
     print "theta =", k_me.theta
     print "phi   =", k_me.phi
     print "psi   =", k_me.psi
@@ -745,12 +745,12 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
 
     # here the mle is done
     x_start = array([theta, phi, psi, kappa, beta])
-    y_start = array([theta, phi, psi, beta, kappa, -0.9, 0.5, 0])
-    if verbose:
-        __fb8_mle_output1(k_me, callback)
+    y_start = array([theta, phi, psi, beta, kappa, -0.9])
 
     # First try a FB5 fit
     # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
+    if verbose:
+        __fb8_mle_output1(fb8(*x_start), callback)
     cons = ({"type": "ineq",
              "fun": lambda x: x[3] - 2 * x[4]},
             {"type": "ineq",
@@ -764,9 +764,11 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
                   callback=callback,
                   options={"disp": False, "ftol": 1e-08,
                            "maxiter": 100})
-    if verbose:
-        __fb8_mle_output1(k_me, callback)
+
+    # Then try a FB6 fit with seed: eta = -0.9 and 2*beta > kappa
     # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
+    if verbose:
+        __fb8_mle_output1(fb8(*y_start), callback)    
     cons = ({"type": "ineq", # kappa >= 0
              "fun": lambda x: x[3]},
             {"type": "ineq", # beta >= 0
@@ -775,19 +777,39 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
              "fun": lambda x: 1 - abs(x[5])})
             # {"type": "ineq",
             #  "fun": lambda x: -x[3] + 2 * x[4]})
+    _y = minimize(minus_log_likelihood,
+                  y_start,
+                  method="SLSQP",
+                  constraints=cons,
+                  callback=callback,
+                  options={"disp": False,
+                           "maxiter": 100, "ftol": 1e-08})
+
+    # Choose better of FB5 vs FB6 as seed for FB8
+    # Last three parameters determine if FB5, FB6, or FB8
+    if _y.fun < _x.fun:
+        all_values = _y
+        z_start = concatenate((_y.x, [0,0]))
+    else:
+        all_values = _x
+        z_start = concatenate((_x.x, [1,0,0]))
+        
     try:
-        _y = minimize(minus_log_likelihood,
-                      y_start,
+        if verbose:
+            __fb8_mle_output1(fb8(*z_start), callback)
+        _z = minimize(minus_log_likelihood,
+                      z_start,
                       method="SLSQP",
                       constraints=cons,
                       callback=callback,
                       options={"disp": False, "ftol": 1e-08,
                                "maxiter": 100})
 
-        all_values = _x if _x.fun < _y.fun else _y
+        if _z.fun < all_values.fun:
+            all_values = _z
     except IntegrationWarning as w:
         print(w)
-        all_values = _x
+
     warnflag = all_values.status
     if not all_values.success:
         warning_message = all_values.message
@@ -812,16 +834,16 @@ if __name__ == "__main__":
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0+j*1
 Calculating normalization factor for combinations of kappa and beta: 
 Iterations necessary to calculate normalize(kappa, beta):
-8   x   x   x   x   x   x   x   x   x
-6  81 150 172 172   x   x   x   x   x
-6  51 134 172 172 172 172 172 172   x
-6  27 108 172 172 172 172 172 172   x
-6  19  71 159 172 172 172 172   x   x
-6  15  42 126 172 172 172   x   x   x
-6  13  29  86 172 172   x   x   x   x
-6  12  23  55 141   x   x   x   x   x
-x   x   x   x   x   x   x   x   x   x
-x   x   x   x   x   x   x   x   x   x
+ 15   x   x   x   x   x   x   x   x   x
+  9 161 299   x   x   x   x   x   x   x
+  7 101 267 403   x   x   x   x   x   x
+  7  53 215 367 501   x   x   x   x   x
+  7  37 141 317 463 595   x   x   x   x
+  7  29  83 251 413 555 687   x   x   x
+  7  25  57 171 353 507   x   x   x   x
+  7  23  45 109 281   x   x   x   x   x
+  x   x   x   x   x   x   x   x   x   x
+  x   x   x   x   x   x   x   x   x   x
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> ks = [
@@ -950,7 +972,7 @@ testing is done.
 ...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
 ...   test_orth(k)
 
->>> # testing property handlers
+>>> # testing property handlers and cache
 >>> for k in ks:
 ...    G = k.Gamma
 ...    for attr in 'theta phi psi kappa beta eta alpha rho'.split():
