@@ -310,26 +310,47 @@ class FB8Distribution(object):
                 x1 = 1
             x2 = sqrt(1 - x1**2)
             x3 = 0
-        else:
-            # FB8
-            ## DEBUG
-            # npts = 1000
-            # thetas, phis = FB8Distribution.gridded(npts)
-            # lpdfs = self.log_pdf(
-            #     FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
-            #     normalize=False)
-            # return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
-            ## END
-            f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
-            _x = basinhopping(f,
-                              array([0,0]))
-            if not _x.lowest_optimization_result.success:
-                warning_message = _x.message
-                warnings.warn(warning_message, RuntimeWarning)
-            x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
+            x = dot(self.Gamma, asarray((x1, x2, x3)))
+            return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
-        x = dot(self.Gamma, asarray((x1, x2, x3)))
-        return FB8Distribution.gamma1_to_spherical_coordinates(x)
+        # FB8
+        ## Brute force grid
+        # npts = 1000
+        # thetas, phis = FB8Distribution.gridded(npts)
+        # lpdfs = self.log_pdf(
+        #     FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
+        #     normalize=False)
+        # return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
+        ## basinhopping
+        # f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
+        # _x = basinhopping(f,
+        #                   array([0,0]))
+        # if not _x.lowest_optimization_result.success:
+        #     warning_message = _x.message
+        #     warnings.warn(warning_message, RuntimeWarning)
+        # x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
+        ##
+
+        ntests = 100001
+        radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
+
+        curr_max = -inf
+        x_max = None
+        for sgn_0 in [-1,1]:
+            for sgn_1 in [-1,1]:
+                x1 = linspace(-1,1,ntests)
+                x2 = sgn_0*sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
+                x3 = sgn_1*sqrt(1-x1**2-x2**2)
+
+                x = dot(self.Gamma, asarray((x1, x2, x3))).T
+                lpdfs = self.log_pdf(x, normalize=False)
+                lpdfs_max = nanmax(lpdfs)
+                # print lpdfs_max
+                if lpdfs_max > curr_max:
+                    x_max = x[nanargmax(lpdfs)]
+                    curr_max = lpdfs_max
+
+        return FB8Distribution.gamma1_to_spherical_coordinates(x_max)
 
     def pdf_max(self, normalize=True):
         return exp(self.log_pdf_max(normalize))
@@ -394,7 +415,10 @@ class FB8Distribution(object):
         xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
-        assert lfmax > lpvalues.max()
+        ## DEBUG
+        # print lfmax, lpvalues.max()
+        # assert lfmax > lpvalues.max()
+        ## END
         shifted = lpvalues - lfmax
         return xs[uniform(0, 1).rvs(num_samples) < exp(shifted)]
 
