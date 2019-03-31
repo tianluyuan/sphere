@@ -99,7 +99,7 @@ def test_example_mle(showplots=False):
         xs = k.rvs(10000)
         k_me = kent_me(xs)
         print "Moment estimation:  k_me =", k_me
-        k_mle = fb8_mle(xs, warning=sys.stdout)
+        k_mle = fb8_mle(xs, warning=sys.stdout, fb5_only=True)
         print "Fitted with MLE:   k_mle =", k_mle
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
 
@@ -165,7 +165,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
                     uniform(0, 2 * pi), kappa, beta)
             samples = k.rvs(num_samples)
             k_me = kent_me(samples)
-            k_mle = fb8_mle(samples, warning=sys.stdout, verbose=verbose)
+            k_mle = fb8_mle(samples, warning=sys.stdout, fb5_only=True)
             assert k_me.log_likelihood(samples) < k_mle.log_likelihood(samples)
             kappas_me.append(k_me.kappa)
             betas_me.append(k_me.beta)

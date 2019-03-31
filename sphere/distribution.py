@@ -698,7 +698,7 @@ def __fb8_mle_output2(x, minusL, output_count, verbose):
     output_count[0] = output_count[0] + 1
 
 
-def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn'):
+def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn', fb5_only=False):
     """
     Generates a FB8Distribution fitted to xs using maximum likelihood estimation
     For a first approximation kent_me() is used. The function 
@@ -757,58 +757,58 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
              "fun": lambda x: x[3]},
             {"type": "ineq",
              "fun": lambda x: x[4]})
-    _x = minimize(minus_log_likelihood,
-                  x_start,
-                  method="SLSQP",
-                  constraints=cons,
-                  callback=callback,
-                  options={"disp": False, "ftol": 1e-08,
-                           "maxiter": 100})
+    all_values = minimize(minus_log_likelihood,
+                          x_start,
+                          method="SLSQP",
+                          constraints=cons,
+                          callback=callback,
+                          options={"disp": False, "ftol": 1e-08,
+                                   "maxiter": 100})
 
-    # Then try a FB6 fit with seed: eta = -0.9 and 2*beta > kappa
-    # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
-    if verbose:
-        __fb8_mle_output1(fb8(*y_start), callback)    
-    cons = ({"type": "ineq", # kappa >= 0
-             "fun": lambda x: x[3]},
-            {"type": "ineq", # beta >= 0
-             "fun": lambda x: x[4]},
-            {"type": "ineq", # -1 <= eta <=1
-             "fun": lambda x: 1 - abs(x[5])})
-            # {"type": "ineq",
-            #  "fun": lambda x: -x[3] + 2 * x[4]})
-    _y = minimize(minus_log_likelihood,
-                  y_start,
-                  method="SLSQP",
-                  constraints=cons,
-                  callback=callback,
-                  options={"disp": False,
-                           "maxiter": 100, "ftol": 1e-08})
-
-    # Choose better of FB5 vs FB6 as seed for FB8
-    # Last three parameters determine if FB5, FB6, or FB8
-    if _y.success and _y.fun < _x.fun:
-        all_values = _y
-        z_start = concatenate((_y.x, [0.,0.]))
-    else:
-        all_values = _x
-        z_start = concatenate((_x.x, [0.9,0.,0.]))
-        
-    try:
+    if not fb5_only:
+        # Then try a FB6 fit with seed: eta = -0.9 and 2*beta > kappa
+        # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
         if verbose:
-            __fb8_mle_output1(fb8(*z_start), callback)
-        _z = minimize(minus_log_likelihood,
-                      z_start,
+            __fb8_mle_output1(fb8(*y_start), callback)    
+        cons = ({"type": "ineq", # kappa >= 0
+                 "fun": lambda x: x[3]},
+                {"type": "ineq", # beta >= 0
+                 "fun": lambda x: x[4]},
+                {"type": "ineq", # -1 <= eta <=1
+                 "fun": lambda x: 1 - abs(x[5])})
+                # {"type": "ineq",
+                #  "fun": lambda x: -x[3] + 2 * x[4]})
+        _y = minimize(minus_log_likelihood,
+                      y_start,
                       method="SLSQP",
                       constraints=cons,
                       callback=callback,
-                      options={"disp": False, "ftol": 1e-08,
-                               "maxiter": 100})
+                      options={"disp": False,
+                               "maxiter": 100, "ftol": 1e-08})
 
-        if _z.success and _z.fun < all_values.fun:
-            all_values = _z
-    except IntegrationWarning as w:
-        print(w)
+        # Choose better of FB5 vs FB6 as seed for FB8
+        # Last three parameters determine if FB5, FB6, or FB8
+        if _y.success and _y.fun < all_values.fun:
+            all_values = _y
+            z_start = concatenate((_y.x, [0.,0.]))
+        else:
+            z_start = concatenate((all_values.x, [0.9,0.,0.]))
+
+        try:
+            if verbose:
+                __fb8_mle_output1(fb8(*z_start), callback)
+            _z = minimize(minus_log_likelihood,
+                          z_start,
+                          method="SLSQP",
+                          constraints=cons,
+                          callback=callback,
+                          options={"disp": False, "ftol": 1e-08,
+                                   "maxiter": 100})
+
+            if _z.success and _z.fun < all_values.fun:
+                all_values = _z
+        except IntegrationWarning as w:
+            print(w)
 
     warnflag = all_values.status
     if not all_values.success:
@@ -987,30 +987,30 @@ testing is done.
 
 >>> seed(888)
 >>> test_example_mle()
-Original Distribution: k = fb8(0.0, 0.0, 0.0, 1.0, 0.0, 1.0)
+Original Distribution: k = fb8(0.00, 0.00, 0.00, 1.00, 0.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.007720841890575154, -1.5740824920888568, -1.4375584223239652, 1.43492053209, 0.0044675770317, 1.0)
-Fitted with MLE:   k_mle = fb8(0.007459189777403647, -1.5740811153814367, -1.437558656621312, 0.964197999109, 0.0354161152778, 1.0)
-Original Distribution: k = fb8(0.75, 2.391592653589793, 2.3915926535897936, 20.0, 0.0, 1.0)
+Moment estimation:  k_me = fb8(0.01, -1.57, -1.44, 1.43, 0.00, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.01, -1.57, -1.44, 0.96, 0.04, 1.00, 0.00, 0.00)
+Original Distribution: k = fb8(0.75, 2.39, 2.39, 20.00, 0.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7474012488747638, 2.3956473758798102, -1.5107404958092123, 20.1062024974, 0.158640323669, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7474018360417302, 2.3956506602230427, -1.5113301600900508, 20.3358029783, 0.316186752336, 0.1951429860460265)
-Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.827433388230814, 20.0, 2.0, 1.0)
+Moment estimation:  k_me = fb8(0.75, 2.40, -1.51, 20.11, 0.16, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.75, 2.40, -1.51, 20.11, 0.18, 1.00, 0.00, 0.00)
+Original Distribution: k = fb8(0.79, 2.36, -2.83, 20.00, 2.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7830806816854289, 2.3566994796348273, 0.30374453765385184, 20.2392003233, 1.75374534349, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7829809342195447, 2.3567108200918363, 0.3038350185089338, 20.2872562797, 2.05942839445, 1.0)
-Original Distribution: k = fb8(0.7853981633974483, 2.356194490192345, -2.945243112740431, 20.0, 5.0, 1.0)
+Moment estimation:  k_me = fb8(0.78, 2.36, 0.30, 20.24, 1.75, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.78, 2.36, 0.30, 20.29, 2.06, 1.00, 0.00, 0.00)
+Original Distribution: k = fb8(0.79, 2.36, -2.95, 20.00, 5.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.7878716936286756, 2.358370795028891, 0.17634802796746255, 19.5541770417, 3.8469672309, 1.0)
-Fitted with MLE:   k_mle = fb8(0.7880385025649629, 2.358491916826943, 0.17625765017119674, 19.9372091782, 4.77383865091, 1.0)
-Original Distribution: k = fb8(1.0995574287564276, 2.356194490192345, -3.043417883165112, 50.0, 25.0, 1.0)
+Moment estimation:  k_me = fb8(0.79, 2.36, 0.18, 19.55, 3.85, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.79, 2.36, 0.18, 19.94, 4.77, 1.00, 0.00, 0.00)
+Original Distribution: k = fb8(1.10, 2.36, -3.04, 50.00, 25.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(1.102718086827844, 2.3558887019102808, 0.09774818228688721, 37.5233247341, 14.8542512779, 1.0)
-Fitted with MLE:   k_mle = fb8(1.1017455790512998, 2.3558270872470137, 0.09777101616795454, 50.1918525143, 24.9807555374, 1.0)
-Original Distribution: k = fb8(0.0, 0.0, 0.09817477042468103, 50.0, 25.0, 1.0)
+Moment estimation:  k_me = fb8(1.10, 2.36, 0.10, 37.52, 14.85, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(1.10, 2.36, 0.10, 50.19, 24.98, 1.00, 0.00, 0.00)
+Original Distribution: k = fb8(0.00, 0.00, 0.10, 50.00, 25.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.004005040503695006, 0.2396182325912848, -0.14364867043005725, 37.7138963117, 14.9491168355, 1.0)
-Fitted with MLE:   k_mle = fb8(0.005098617598271794, 0.20858549213401353, -0.11261422537952466, 50.5466339851, 25.1819351371, 1.0)
+Moment estimation:  k_me = fb8(0.00, 0.24, -0.14, 37.71, 14.95, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.01, 0.21, -0.11, 50.55, 25.18, 1.00, 0.00, 0.00)
 >>> seed(2323)
 >>> assert test_example_mle2(300)
 Testing various combinations of kappa and beta for 300 samples.
