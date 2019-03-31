@@ -792,7 +792,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
         z_start = concatenate((_y.x, [0,0]))
     else:
         all_values = _x
-        z_start = concatenate((_x.x, [1,0,0]))
+        z_start = concatenate((_x.x, [0.9,0,0]))
         
     try:
         if verbose:
