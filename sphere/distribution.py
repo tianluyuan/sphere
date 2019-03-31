@@ -517,7 +517,7 @@ class FB8Distribution(object):
         else:
             npts = 10000
             rvs = self.rvs(npts)
-            x = rvs[argsort(abs(lev+self.log_pdf(rvs)))[:200]]
+            x = rvs[argsort(abs(lev+self.log_pdf(rvs)))[:200]].T
         return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def __repr__(self):
