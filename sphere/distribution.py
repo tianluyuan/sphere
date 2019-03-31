@@ -745,7 +745,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
 
     # here the mle is done
     x_start = array([theta, phi, psi, kappa, beta])
-    y_start = array([theta, phi, psi, beta, kappa, -0.9])
+    y_start = array([theta, phi, psi, beta, kappa, -0.99])
 
     # First try a FB5 fit
     # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
@@ -787,12 +787,12 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
 
     # Choose better of FB5 vs FB6 as seed for FB8
     # Last three parameters determine if FB5, FB6, or FB8
-    if _y.fun < _x.fun:
+    if _y.success and _y.fun < _x.fun:
         all_values = _y
-        z_start = concatenate((_y.x, [0,0]))
+        z_start = concatenate((_y.x, [0.,0.]))
     else:
         all_values = _x
-        z_start = concatenate((_x.x, [0.9,0,0]))
+        z_start = concatenate((_x.x, [0.9,0.,0.]))
         
     try:
         if verbose:
@@ -805,7 +805,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn')
                       options={"disp": False, "ftol": 1e-08,
                                "maxiter": 100})
 
-        if _z.fun < all_values.fun:
+        if _z.success and _z.fun < all_values.fun:
             all_values = _z
     except IntegrationWarning as w:
         print(w)
