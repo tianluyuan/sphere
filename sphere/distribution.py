@@ -824,7 +824,7 @@ x   x   x   x   x   x   x   x   x   x
 x   x   x   x   x   x   x   x   x   x
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
->>> for k in [
+>>> ks = [
 ...   fb8(0.0,      0.0,      0.0,    20.0, 0.0),
 ...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0),
 ...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0),
@@ -832,7 +832,17 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.0),
 ...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.1),
 ...   fb8(0.0,      0.0,      0.5*pi, 0.1,  8.0),
-... ]:
+... ]
+>>> pdf_values = [
+...   3.18309886184,
+...   0.00909519370,
+...   0.09865564569,
+...   0.59668931662,
+...   0.08780030026,
+...   0.08768344462,
+...   0.00063128997
+... ]
+>>> for k in ks:
 ...   assert(abs(sum(k.gamma1 * k.gamma2)) < 1E-14)
 ...   assert(abs(sum(k.gamma1 * k.gamma3)) < 1E-14)
 ...   assert(abs(sum(k.gamma3 * k.gamma2)) < 1E-14)
@@ -845,15 +855,7 @@ correctly.
 >>> from numpy.random import seed
 >>> from scipy.stats import norm as gauss
 >>> seed(666)
->>> for k, pdf_value in [
-...   (fb8(0.0,      0.0,      0.0,    20.0, 0.0), 3.18309886184),
-...   (fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0), 0.00909519370),
-...   (fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0), 0.09865564569),
-...   (fb8(0.0,      0.0,      0.5*pi, 10.0, 7.0), 0.59668931662),
-...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  0.0), 0.08780030026),
-...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  0.1), 0.08768344462),
-...   (fb8(0.0,      0.0,      0.5*pi, 0.1,  8.0), 0.00063128997),
-... ]:
+>>> for k, pdf_value in zip(ks, pdf_values):
 ...   assert abs(k.pdf(array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
 ...   assert abs(k.log_pdf(array([1.0, 0.0, 0.0])) - log(pdf_value)) < 1E-8
 ...   num_samples = 100000
@@ -947,6 +949,19 @@ testing is done.
 ...   k = fb83(A, B)
 ...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
 ...   test_orth(k)
+
+>>> # testing property handlers
+>>> for k in ks:
+...    G = k.Gamma
+...    for attr in 'theta phi psi kappa beta eta alpha rho'.split():
+...      curr = k.__getattribute__(attr)
+...      k.__setattr__(attr, curr*gauss(0,1).rvs())
+...      test_orth(k)
+...      _ = k.rvs()
+...      assert len(k._cached_rvs) > 0
+...      k.__setattr__(attr, curr)
+...      test_orth(k)
+...      assert len(k._cached_rvs) == 0
 
 >>> seed(888)
 >>> test_example_mle()
