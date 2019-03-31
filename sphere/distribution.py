@@ -738,10 +738,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             print len(imv), kx.theta, kx.phi, kx.psi, kx.kappa, kx.beta, kx.eta, kx.alpha, kx.rho, minusL
 
     # first get estimated moments
-    # these don't depend on BM4
     k_me = kent_me(xs)
     theta, phi, psi, kappa, beta, eta, alpha, rho = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta, k_me.alpha, k_me.rho
-    min_kappa = FB8Distribution.minimum_value_for_kappa
 
     # here the mle is done
     x_start = array([theta, phi, psi, kappa, beta])
