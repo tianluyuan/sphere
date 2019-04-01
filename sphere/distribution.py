@@ -784,29 +784,32 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                       options={"disp": False,
                                "maxiter": 100, "ftol": 1e-08})
 
-        # Choose better of FB5 vs FB6 as seed for FB8
+        # default seed
+        z_starts = [array([theta, phi, psi, beta, kappa, -0.9, pi/2, 0]),]
+        # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_start = concatenate((_y.x, [0.,0.]))
+            z_starts.append(concatenate((_y.x, [0.,0.])))
         else:
-            z_start = concatenate((all_values.x, [0.9,0.,0.]))
+            z_starts.append(concatenate((all_values.x, [0.9,0.,0.])))
 
-        try:
-            if verbose:
-                __fb8_mle_output1(fb8(*z_start), callback)
-            _z = minimize(minus_log_likelihood,
-                          z_start,
-                          method="SLSQP",
-                          constraints=cons,
-                          callback=callback,
-                          options={"disp": False, "ftol": 1e-08,
-                                   "maxiter": 100})
+        for z_start in z_starts:
+            try:
+                if verbose:
+                    __fb8_mle_output1(fb8(*z_start), callback)
+                _z = minimize(minus_log_likelihood,
+                              z_start,
+                              method="SLSQP",
+                              constraints=cons,
+                              callback=callback,
+                              options={"disp": False, "ftol": 1e-08,
+                                       "maxiter": 100})
 
-            if _z.success and _z.fun < all_values.fun:
-                all_values = _z
-        except IntegrationWarning as w:
-            print(w)
+                if _z.success and _z.fun < all_values.fun:
+                    all_values = _z
+            except IntegrationWarning as w:
+                print(w)
 
     warnflag = all_values.status
     if not all_values.success:
