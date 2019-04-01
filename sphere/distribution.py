@@ -785,7 +785,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                                "maxiter": 100, "ftol": 1e-08})
 
         # default seed
-        z_starts = [array([theta, phi, psi, beta, kappa, -0.9, pi/2, 0]),]
+        z_starts = [array([theta, phi, psi, beta, kappa, -0.9, pi/4, 0]),]
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
