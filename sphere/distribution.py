@@ -353,6 +353,8 @@ class FB8Distribution(object):
                         result += a
 
                         j += 1
+                        if isnan(result):
+                            raise RuntimeWarning
                         if (j % 2 and abs(a) < abs(result) * 1E-12 and j > 5):
                             break
 
