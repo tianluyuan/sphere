@@ -805,7 +805,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                               method="SLSQP",
                               constraints=cons,
                               callback=callback,
-                              options={"disp": False, "ftol": 1e-04,
+                              options={"disp": False, "ftol": 1e-08,
                                        "maxiter": 100})
 
                 if _z.success and _z.fun < all_values.fun:
