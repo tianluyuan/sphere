@@ -7,7 +7,7 @@ Vol. 44, No. 1 (1982), pp. 71-80 Published by: Wiley
 Article Stable URL: http://www.jstor.org/stable/2984712]
 
 The example code in example.py serves not only as an example
-but also as a test. It performs some higher level tests but it also 
+but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
@@ -54,7 +54,7 @@ def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
 
 def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     """
-    Generates the FB8 distribution using the orthonormal vectors gamma1, 
+    Generates the FB8 distribution using the orthonormal vectors gamma1,
     gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
     """
     assert abs(inner(gamma1, gamma2)) < 1E-10
@@ -300,11 +300,11 @@ class FB8Distribution(object):
     @property
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
-    
+
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
         Returns the normalization constant of the FB8 distribution.
-        The proportional error may be expected not to be greater than 
+        The proportional error may be expected not to be greater than
         1E-11.
 
 
@@ -316,7 +316,7 @@ class FB8Distribution(object):
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
         ...     print abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*pi*sinh(kappa)/kappa) < 1E-15*4*pi*sinh(kappa)/kappa,
-        ... 
+        ...
         True True True True True True True True
         """
         k, b, m = self.kappa, self.beta, self.eta
@@ -539,7 +539,7 @@ class FB8Distribution(object):
 
     def rvs(self, n_samples=None):
         """
-        Returns random samples from the FB8 distribution by rejection sampling. 
+        Returns random samples from the FB8 distribution by rejection sampling.
         May become inefficient for large kappas.
 
         The returned random samples are 3D unit vectors.
@@ -703,8 +703,8 @@ def __fb8_mle_output2(x, minusL, output_count, verbose):
 def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn', fb5_only=False):
     """
     Generates a FB8Distribution fitted to xs using maximum likelihood estimation
-    For a first approximation kent_me() is used. The function 
-    -k.log_likelihood(xs)/len(xs) (where k is an instance of FB8Distribution) is 
+    For a first approximation kent_me() is used. The function
+    -k.log_likelihood(xs)/len(xs) (where k is an instance of FB8Distribution) is
     minimized.
 
     Input:
@@ -712,10 +712,10 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
       - verbose: if True, output is given for every step
       - return_intermediate_values: if true the values of all intermediate steps
         are returned as well
-      - warning: choices are 
+      - warning: choices are
         - "warn": issues any warning via warning.warn
-        - a file object: which results in any warning message being written to a file 
-          (e.g. stdout) 
+        - a file object: which results in any warning message being written to a file
+          (e.g. stdout)
         - "none": or any other value for this argument results in no warnings to be issued
     Output:
       - an instance of the fitted FB8Distribution
@@ -769,7 +769,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         # Then try a FB6 fit with seed: eta = -0.9 and 2*beta > kappa
         # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
         if verbose:
-            __fb8_mle_output1(fb8(*y_start), callback)    
+            __fb8_mle_output1(fb8(*y_start), callback)
         cons = ({"type": "ineq", # kappa >= 0
                  "fun": lambda x: x[3]},
                 {"type": "ineq", # beta >= 0
@@ -835,7 +835,7 @@ if __name__ == "__main__":
 >>> from numpy.random import seed
 >>> test_example_normalization(gridsize=10)
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0+j*1
-Calculating normalization factor for combinations of kappa and beta: 
+Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
  15   x   x   x   x   x   x   x   x   x
   9 161 299   x   x   x   x   x   x   x
@@ -897,21 +897,21 @@ correctly.
 
 These are tests to ensure that the coordinate transformations are done correctly
 that the functions that generate instances of FB8Distribution are consistent and
-that the derivatives are calculated correctly. In addition some more orthogonality 
+that the derivatives are calculated correctly. In addition some more orthogonality
 testing is done.
 
 >>> from distribution import *
 >>> from numpy.random import seed
->>> from scipy.stats import uniform 
+>>> from scipy.stats import uniform
 >>> def test_orth(k):
-...   # a bit more orthonormality testing for good measure 
+...   # a bit more orthonormality testing for good measure
 ...   assert(abs(sum(k.gamma1 * k.gamma2)) < 1E-14)
 ...   assert(abs(sum(k.gamma1 * k.gamma3)) < 1E-14)
 ...   assert(abs(sum(k.gamma3 * k.gamma2)) < 1E-14)
 ...   assert(abs(sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
 ...   assert(abs(sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
 ...   assert(abs(sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
-... 
+...
 >>> # generating some specific boundary values and some random values
 >>> seed(666)
 >>> upi, u2pi = uniform(0, pi), uniform(-pi, 2*pi)
@@ -922,7 +922,7 @@ testing is done.
 ...       thetas.append(a)
 ...       phis.append(b)
 ...       psis.append(c)
-... 
+...
 >>> # testing consintency of angles (specifically kent())
 >>> for theta, phi, psi in zip(thetas, phis, psis):
 ...   k = fb8(theta, phi, psi, 1.0, 1.0)
@@ -933,7 +933,7 @@ testing is done.
 ...     assert a < 1E-12 or abs(a-2*pi) < 1E-12
 ...     assert b < 1E-12 or abs(b-2*pi) < 1E-12
 ...   test_orth(k)
-... 
+...
 >>> # testing consistency of gammas and consistency of back and forth
 >>> # calculations between gammas and angles (specifically fb82(), fb83() and fb84())
 >>> kappas = gauss(0, 2).rvs(1000)**2
@@ -942,37 +942,37 @@ testing is done.
 ...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(gamma1, gamma2)
 ...   gamma1a, gamma2a, gamma3a = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
-...   assert all(abs(gamma1a-gamma1) < 1E-12) 
-...   assert all(abs(gamma2a-gamma2) < 1E-12) 
-...   assert all(abs(gamma3a-gamma3) < 1E-12) 
+...   assert all(abs(gamma1a-gamma1) < 1E-12)
+...   assert all(abs(gamma2a-gamma2) < 1E-12)
+...   assert all(abs(gamma3a-gamma3) < 1E-12)
 ...   k2 = fb82(gamma1, gamma2, gamma3, kappa, beta)
-...   assert all(abs(gamma1 - k2.gamma1) < 1E-12) 
-...   assert all(abs(gamma2 - k2.gamma2) < 1E-12) 
+...   assert all(abs(gamma1 - k2.gamma1) < 1E-12)
+...   assert all(abs(gamma2 - k2.gamma2) < 1E-12)
 ...   assert all(abs(gamma3 - k2.gamma3) < 1E-12)
 ...   A = gamma1*kappa
 ...   B = gamma2*beta
 ...   k3 = fb83(A, B)
-...   assert all(abs(gamma1 - k3.gamma1) < 1E-12) 
-...   assert all(abs(gamma2 - k3.gamma2) < 1E-12) 
+...   assert all(abs(gamma1 - k3.gamma1) < 1E-12)
+...   assert all(abs(gamma2 - k3.gamma2) < 1E-12)
 ...   assert all(abs(gamma3 - k3.gamma3) < 1E-12)
 ...   test_orth(k)
 ...   gamma = array([
-...     [gamma1[0], gamma2[0], gamma3[0]], 
-...     [gamma1[1], gamma2[1], gamma3[1]], 
-...     [gamma1[2], gamma2[2], gamma3[2]], 
+...     [gamma1[0], gamma2[0], gamma3[0]],
+...     [gamma1[1], gamma2[1], gamma3[1]],
+...     [gamma1[2], gamma2[2], gamma3[2]],
 ...   ])
 ...   k4 = fb84(gamma, kappa, beta)
-...   assert all(k2.gamma1 == k4.gamma1) 
-...   assert all(k2.gamma2 == k4.gamma2) 
-...   assert all(k2.gamma3 == k4.gamma3) 
-... 
+...   assert all(k2.gamma1 == k4.gamma1)
+...   assert all(k2.gamma2 == k4.gamma2)
+...   assert all(k2.gamma3 == k4.gamma3)
+...
 >>> # testing special case for B with zero length (fb83())
 >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
 ...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   A = gamma1*kappa
 ...   B = gamma2*0.0
 ...   k = fb83(A, B)
-...   assert all(abs(gamma1 - k.gamma1) < 1E-12) 
+...   assert all(abs(gamma1 - k.gamma1) < 1E-12)
 ...   test_orth(k)
 
 >>> # testing property handlers and cache
