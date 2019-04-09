@@ -361,7 +361,7 @@ class FB8Distribution(object):
             # FB8 numerical integration
             else:
                 result = dblquad(
-                    lambda th, ph: sin(th)*\
+                    lambda th, ph: np.sin(th)*\
                     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
                         b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
                                  0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
