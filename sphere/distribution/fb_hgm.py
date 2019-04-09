@@ -4,12 +4,10 @@ import scipy.optimize
 import scipy.special
 import numpy as np
 
-def tile_repeat(x, r):
-    r = np.asarray(r)
-    if r.size == 1:
-        return np.tile(x, r.dtype.type(r))
-    elif r.size == len(x):
-        return np.repeat(x, r)
+if __package__ is None:
+    from fb_saddle import SPA
+else:
+    from sphere.distribution.fb_saddle import SPA
 
 # Pfaffian for Fisher-Bingham distribution
 def dG_fun_FB(alpha, G, ns=None, s=1):

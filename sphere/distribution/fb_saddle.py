@@ -3,12 +3,10 @@ import scipy
 import scipy.special
 import scipy.optimize
 
-def tile_repeat(x, r):
-    r = np.asarray(r)
-    if r.size == 1:
-        return np.tile(x, r.dtype.type(r))
-    elif r.size == len(x):
-        return np.repeat(x, r)
+if __package__ is None:
+    from fb_utils import tile_repeat
+else:
+    from sphere.distribution.fb_utils import tile_repeat
 
 # Implement the saddle point approximation for FB8
 def saddleapprox_FB_revised(L, M=None, dub=3, order=3):
@@ -21,7 +19,7 @@ def saddleapprox_FB_revised(L, M=None, dub=3, order=3):
     Y = 0
 
     def KM(t):
-        y = np.sum(-0.5*np.log(1.0-t/L) + M**2.0 / (L-t) / L)
+        y = np.sum(-0.5*np.log(1.0-t/L) + M**2.0 / (L-t))
         return y
 
     def KM1(t):
