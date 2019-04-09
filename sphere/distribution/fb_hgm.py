@@ -284,9 +284,13 @@ def hg_mod(th0, G0, th1, dG_fun, max_step=0.01, ns=None, s=None, show_trace=Fals
 
 # Evaluation of FB normalization constant by HGM
 def hgm_FB(alpha, ns=None, alpha0=None, G0=None, withvol=True):
-    p = len(alpha) / 2
     if ns is None:
-        ns = np.ones(p).astype(int)
+        #ns = np.ones(p).astype(int)
+        theta, inv_theta, ns = np.unique(theta, return_inverse=True, return_counts=True)
+        l = len(theta)
+        gamma = np.array([np.sqrt(np.sum(gamma[inv_theta == i]**2.0)) for i in range(l)])
+        alpha = np.concatenate([theta, gamma])
+    p = len(alpha) / 2
     r = np.sum(abs(alpha))
     N = max(r, 1)**2.0 * 10.0
     if alpha0 is None:
@@ -298,9 +302,14 @@ def hgm_FB(alpha, ns=None, alpha0=None, G0=None, withvol=True):
 
 # Evaluation of FB normalization constant by HGM (via square-root transformation)
 def hgm_FB_2(alpha, ns=None, withvol=True):
-    p = len(alpha) / 2
     if ns is None:
-        ns = np.ones(p).astype(int)
+        #ns = np.ones(p).astype(int)
+        theta, inv_theta, ns = np.unique(theta, return_inverse=True, return_counts=True)
+        l = len(theta)
+        gamma = np.array([np.sqrt(np.sum(gamma[inv_theta == i]**2.0)) for i in range(l)])
+        alpha = np.concatenate([theta, gamma])
+    p = len(alpha) / 2
+
     r = np.sum(abs(alpha))
     N = max(r, 1)**2.0 * 10.0
     alpha0 = np.concatenate((alpha[:p]/N, alpha[p:2*p]/np.sqrt(N)))
