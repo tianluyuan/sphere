@@ -170,6 +170,8 @@ def rsphere(N, p):
 def G_FB_MC(alpha, ns=None, N=1e6, t=None):
     N = int(N)
     p = len(alpha) / 2
+    if ns is None:
+        ns = np.ones(p).astype(int)
     th = alpha[:p]
     xi = alpha[p:p*2]
     G = np.zeros(p*2+1)
