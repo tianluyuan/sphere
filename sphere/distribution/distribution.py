@@ -11,6 +11,9 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
+import sys
+import warnings
+
 import numpy as np
 from scipy.optimize import minimize
 from scipy.special import gamma as G
@@ -23,14 +26,53 @@ from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 from scipy.linalg import eig
-import sys
-import warnings
 
+if __package__ is None:
+    from fb_saddle import SPA
+    from fb_hgm import hgm_FB
+    from fb_hgm import hgm_FB_2
+else:
+    from sphere.distribution.fb_saddle import SPA
+    from sphere.distribution.fb_hgm import hgm_FB
+    from sphere.distribution.fb_hgm import hgm_FB_2
+    from sphere.distribution.fb_hgm import G_FB
 
 # helper function
 def MMul(A, B):
     return np.inner(A, np.transpose(B))
 
+def FBLLH(theta, gamma, O, A, B, n, method='hg', withvol=False):
+    p = len(theta)
+    alpha = np.concatenate((theta, gamma))
+
+    if method == 'hg':
+        c_res = hgm_FB_2(alpha, withvol=withvol)
+    elif method == 'hg_linear':
+        c_res = hgm_FB(alpha, withvol=withvol)
+    elif method == 'MC':
+        c_res = G_FB(alpha, method='MC', withvol=withvol)
+    elif method == 'SPA':
+        c_res = SPA(alpha, withvol=withvol)
+    else:
+        raise ValueError('Not a valid method.')
+
+    if method == 'SPA':
+        c = c_res
+        l = -n*np.log(c) - np.trace(O.dot(B).dot(gamma[:,None].T) + A.dot(O.T).dot(np.diag(theta)).dot(O))
+        return l
+
+    c = c_res[0]
+
+    #l = -n*np.log(c) - np.sum(A.dot(O.T).dot(np.diag(theta)).dot(O) + gamma.dot(B.T).dot(O))
+    l = -n*np.log(c) - np.trace(O.dot(B).dot(gamma[:,None].T) + A.dot(O.T).dot(np.diag(theta)).dot(O))
+
+    #grad = -n*c_res[1:] / c + np.concatenate((-np.diag(O.dot(A).dot(O.T)),O.dot(B)))
+    theta_grad = np.diag(O.dot(A).dot(A.T))
+    gamma_grad = np.squeeze(B.T.dot(O.T))
+    param_grad = np.concatenate((theta_grad, gamma_grad))
+    grad = -n*c_res[1:] / c + param_grad
+
+    return l, grad
 
 def norm(x, axis=None):
     """
@@ -725,6 +767,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
       and containing the extra requested values in the rest of the elements.
     """
     # method that generates the minus L to be minimized
+    # x = theta phi psi kappa beta eta alpha rho
     def minus_log_likelihood(x):
         return -fb8(*x).log_likelihood(xs) / len(xs)
 
