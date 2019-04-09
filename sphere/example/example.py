@@ -7,7 +7,8 @@ Plots will be shown unless this script is called with the --no-plots
 option.
 """
 
-from sphere.distribution import *
+import numpy as np
+import sphere.distribution
 from numpy.random import seed, uniform
 import warnings
 import sys
@@ -20,10 +21,10 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
     print "Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f+j*1" % (scale, scale)
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        c_grid = zeros((gridsize, gridsize)) - 1.0
-        cnum_grid = zeros((gridsize, gridsize), dtype=int32) - 1
+        c_grid = np.zeros((gridsize, gridsize)) - 1.0
+        cnum_grid = np.zeros((gridsize, gridsize), dtype=np.int32) - 1
         sys.stdout.write(
-            "Calculating normalization factor for combinations of kappa and beta: ")
+            "Calculating normalization factor for combinations of kappa and beta:")
         for i in xrange(gridsize):
             if verbose:
                 sys.stdout.write("%s/%s " %
@@ -32,10 +33,10 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
             kappa = scale * i + 1.0
             for j in xrange(gridsize):
                 beta = scale * j + 1.0
-                f = fb8(0.0, 0.0, 0.0, kappa, beta)
+                f = sphere.distribution.fb8(0.0, 0.0, 0.0, kappa, beta)
                 try:
                     c, cnum = f.normalize(return_num_iterations=True)
-                    c_grid[i, j] = log(c)
+                    c_grid[i, j] = np.log(c)
                     cnum_grid[i, j] = cnum
                 except (OverflowError, RuntimeWarning):
                     pass
@@ -71,21 +72,21 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
 
 def test_example_mle(showplots=False):
     for k in [
-        fb8(0.0,       0.0,     0.0,    1.0,  0.0),
-        fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
-        fb8(-0.25 * pi, -0.25 * pi, pi / 10,  20.0, 2.0),
-        fb8(-0.25 * pi, -0.25 * pi, pi / 16,  20.0, 5.0),
-        fb8(-0.35 * pi, -0.25 * pi, pi / 32,  50.0, 25.0),
-        fb8(0.0, 0.0, pi / 32,  50.0, 25.0),
+        sphere.distribution.fb8(0.0,       0.0,     0.0,    1.0,  0.0),
+        sphere.distribution.fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
+        sphere.distribution.fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10,  20.0, 2.0),
+        sphere.distribution.fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16,  20.0, 5.0),
+        sphere.distribution.fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32,  50.0, 25.0),
+        sphere.distribution.fb8(0.0, 0.0, np.pi / 32,  50.0, 25.0),
     ]:
         print "Original Distribution: k =", k
         gridsize = 200
-        u = linspace(0, 2 * pi, gridsize)
-        v = linspace(0, pi, gridsize)
+        u = np.linspace(0, 2 * np.pi, gridsize)
+        v = np.linspace(0, np.pi, gridsize)
 
-        x = outer(cos(u), sin(v))
-        y = outer(sin(u), sin(v))
-        z = outer(ones(size(u)), cos(v))
+        x = np.outer(np.cos(u), np.sin(v))
+        y = np.outer(np.sin(u), np.sin(v))
+        z = np.outer(np.ones(np.size(u)), np.cos(v))
 
         keys = list()
         points = list()
@@ -93,19 +94,19 @@ def test_example_mle(showplots=False):
             for j in range(gridsize):
                 points.append([x[i, j], y[i, j], z[i, j]])
                 keys.append((i, j))
-        points = array(points)
+        points = np.array(points)
 
         print "Drawing 10000 samples from k"
         xs = k.rvs(10000)
-        k_me = kent_me(xs)
+        k_me = sphere.distribution.kent_me(xs)
         print "Moment estimation:  k_me =", k_me
-        k_mle = fb8_mle(xs, warning=sys.stdout, fb5_only=True)
+        k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
         print "Fitted with MLE:   k_mle =", k_mle
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
 
         value_for_color = k_mle.pdf(points)
         value_for_color /= max(value_for_color)
-        colors = empty((gridsize, gridsize), dtype=tuple)
+        colors = np.empty((gridsize, gridsize), dtype=tuple)
         for (i, j), v in zip(keys, value_for_color):
             colors[i, j] = (1.0 - v, 1.0 - v, 1.0, 1.0)
 
@@ -116,36 +117,36 @@ def test_example_mle(showplots=False):
             f = plt.figure()
             ax = f.add_subplot(111, projection='3d')
             xx, yy, zz = zip(*xs[:100])  # plot only a portion of these values
-            ax.scatter(1.05 * array(xx), 1.05 *
-                       array(yy), 1.05 * array(zz), c='b')
+            ax.scatter(1.05 * np.array(xx), 1.05 *
+                       np.array(yy), 1.05 * np.array(zz), c='b')
             ax.plot_surface(x, y, z, rstride=4, cstride=4,
                             facecolors=colors, linewidth=0)
             values_t = r"$\theta=%.2f^\circ,\ \phi=%.2f^\circ,\ \psi=%.2f^\circ,\ \kappa=%.3f,\ \beta=%.3f$"
             f.text(0.12, 0.99 - 0.025, "$\mathrm{Original\ Values:}$")
             f.text(0.12, 0.99 - 0.055, "$\mathrm{Moment\ estimates:}$")
             f.text(0.12, 0.99 - 0.080, "$\mathrm{MLE\ (shown):}$")
-            f.text(0.30, 0.99 - 0.025, values_t % (k.theta * 180 / pi,
-                                                   k.phi * 180 / pi,     k.psi * 180 / pi,     k.kappa,     k.beta))
-            f.text(0.30, 0.99 - 0.055, values_t % (k_me.theta * 180 / pi,
-                                                   k_me.phi * 180 / pi,  k_me.psi * 180 / pi,  k_me.kappa,  k_me.beta))
-            f.text(0.30, 0.99 - 0.080, values_t % (k_mle.theta * 180 / pi,
-                                                   k_mle.phi * 180 / pi, k_mle.psi * 180 / pi, k_mle.kappa, k_mle.beta))
+            f.text(0.30, 0.99 - 0.025, values_t % (k.theta * 180 / np.pi,
+                                                   k.phi * 180 / np.pi,     k.psi * 180 / np.pi,     k.kappa,     k.beta))
+            f.text(0.30, 0.99 - 0.055, values_t % (k_me.theta * 180 / np.pi,
+                                                   k_me.phi * 180 / np.pi,  k_me.psi * 180 / np.pi,  k_me.kappa,  k_me.beta))
+            f.text(0.30, 0.99 - 0.080, values_t % (k_mle.theta * 180 / np.pi,
+                                                   k_mle.phi * 180 / np.pi, k_mle.psi * 180 / np.pi, k_mle.kappa, k_mle.beta))
             ax.set_xlabel(r"$Q\rightarrow$")
             ax.set_ylabel(r"$U\rightarrow$")
             ax.set_zlabel(r"$V\rightarrow$")
 
 
 def calculate_bias_var_and_mse(x, y):
-    bias = average(x) - average(y)
-    variance = var(x - y)
-    mse = average((x - y)**2)
+    bias = np.average(x) - np.average(y)
+    variance = np.var(x - y)
+    mse = np.average((x - y)**2)
     assert abs((bias**2 + variance) - mse) < 1E-12 * (bias**2 + variance + mse)
     return bias, variance, mse
 
 
 def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0):
     max_kappa = 50.0
-    real_kappas = arange(1.0, max_kappa, stepsize)
+    real_kappas = np.arange(1.0, max_kappa, stepsize)
     print "Testing various combinations of kappa and beta for", num_samples, "samples."
     bias_var_mse_kappa_me, bias_var_mse_kappa_mle, bias_var_mse_beta_me, bias_var_mse_beta_mle = [
         list() for i in xrange(4)]
@@ -161,11 +162,11 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
                 print "%.1f" % kappa,
                 sys.stdout.flush()
             beta = kappa * beta_ratio
-            k = fb8(uniform(0, pi), uniform(0, 2 * pi),
-                    uniform(0, 2 * pi), kappa, beta)
+            k = sphere.distribution.fb8(uniform(0, np.pi), uniform(0, 2 * np.pi),
+                    uniform(0, 2 * np.pi), kappa, beta)
             samples = k.rvs(num_samples)
-            k_me = kent_me(samples)
-            k_mle = fb8_mle(samples, warning=sys.stdout, fb5_only=True)
+            k_me = sphere.distribution.kent_me(samples)
+            k_mle = sphere.distribution.fb8_mle(samples, warning=sys.stdout, fb5_only=True)
             assert k_me.log_likelihood(samples) < k_mle.log_likelihood(samples)
             kappas_me.append(k_me.kappa)
             betas_me.append(k_me.beta)

@@ -11,7 +11,7 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
-from numpy import *
+import numpy as np
 from scipy.optimize import minimize
 from scipy.special import gamma as G
 from scipy.special import gammaln as LG
@@ -29,7 +29,7 @@ import warnings
 
 # helper function
 def MMul(A, B):
-    return inner(A, transpose(B))
+    return np.inner(A, np.transpose(B))
 
 
 def norm(x, axis=None):
@@ -37,8 +37,8 @@ def norm(x, axis=None):
     helper function to compute the L2 norm. scipy.linalg.norm is not used because this function does not allow to choose an axis
     """
     if isinstance(x, list) or isinstance(x, tuple):
-        x = array(x)
-    return sqrt(sum(x * x, axis=axis))
+        x = np.array(x)
+    return np.sqrt(np.sum(x * x, axis=axis))
 
 
 def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
@@ -57,9 +57,9 @@ def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     Generates the FB8 distribution using the orthonormal vectors gamma1,
     gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
     """
-    assert abs(inner(gamma1, gamma2)) < 1E-10
-    assert abs(inner(gamma2, gamma3)) < 1E-10
-    assert abs(inner(gamma3, gamma1)) < 1E-10
+    assert abs(np.inner(gamma1, gamma2)) < 1E-10
+    assert abs(np.inner(gamma2, gamma3)) < 1E-10
+    assert abs(np.inner(gamma3, gamma1)) < 1E-10
     return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
@@ -96,13 +96,13 @@ def fb84(Gamma, kappa, beta, eta=1., nu=None):
 
 
 def __generate_arbitrary_orthogonal_unit_vector(x):
-    v1 = cross(x, array([1.0, 0.0, 0.0]))
-    v2 = cross(x, array([0.0, 1.0, 0.0]))
-    v3 = cross(x, array([0.0, 0.0, 1.0]))
+    v1 = np.cross(x, np.array([1.0, 0.0, 0.0]))
+    v2 = np.cross(x, np.array([0.0, 1.0, 0.0]))
+    v3 = np.cross(x, np.array([0.0, 0.0, 1.0]))
     v1n = norm(v1)
     v2n = norm(v2)
     v3n = norm(v3)
-    v = [v1, v2, v3][argmax([v1n, v2n, v3n])]
+    v = [v1, v2, v3][np.argmax([v1n, v2n, v3n])]
     return v / norm(v)
 
 
@@ -111,27 +111,27 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_H(theta, phi):
-        return array([
-            [cos(theta),          -sin(theta),         0.0],
-            [sin(theta) * cos(phi), cos(theta) * cos(phi), -sin(phi)],
-            [sin(theta) * sin(phi), cos(theta) * sin(phi), cos(phi)]
+        return np.array([
+            [np.cos(theta),          -np.sin(theta),         0.0],
+            [np.sin(theta) * np.cos(phi), np.cos(theta) * np.cos(phi), -np.sin(phi)],
+            [np.sin(theta) * np.sin(phi), np.cos(theta) * np.sin(phi), np.cos(phi)]
         ])
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
-        return transpose(FB8Distribution.create_matrix_H(theta, phi))
+        return np.transpose(FB8Distribution.create_matrix_H(theta, phi))
 
     @staticmethod
     def create_matrix_K(psi):
-        return array([
+        return np.array([
             [1.0, 0.0,      0.0],
-            [0.0, cos(psi), -sin(psi)],
-            [0.0, sin(psi), cos(psi)]
+            [0.0, np.cos(psi), -np.sin(psi)],
+            [0.0, np.sin(psi), np.cos(psi)]
         ])
 
     @staticmethod
     def create_matrix_Kt(psi):
-        return transpose(FB8Distribution.create_matrix_K(psi))
+        return np.transpose(FB8Distribution.create_matrix_K(psi))
 
     @staticmethod
     def create_matrix_Gamma(theta, phi, psi):
@@ -141,7 +141,7 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_Gammat(theta, phi, psi):
-        return transpose(FB8Distribution.create_matrix_Gamma(theta, phi, psi))
+        return np.transpose(FB8Distribution.create_matrix_Gamma(theta, phi, psi))
 
     @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
@@ -157,25 +157,25 @@ class FB8Distribution(object):
 
     @staticmethod
     def gamma1_to_spherical_coordinates(gamma1):
-        theta = arccos(gamma1[0])
-        phi = arctan2(gamma1[2], gamma1[1])
+        theta = np.arccos(gamma1[0])
+        phi = np.arctan2(gamma1[2], gamma1[1])
         return theta, phi
 
     @staticmethod
     def gammas_to_spherical_coordinates(gamma1, gamma2):
         theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
         Ht = FB8Distribution.create_matrix_Ht(theta, phi)
-        u = MMul(Ht, reshape(gamma2, (3, 1)))
-        psi = arctan2(u[2][0], u[1][0])
+        u = MMul(Ht, np.reshape(gamma2, (3, 1)))
+        psi = np.arctan2(u[2][0], u[1][0])
         return theta, phi, psi
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
 
-        self._gamma1 = array(gamma1, dtype=float64)
-        self._gamma2 = array(gamma2, dtype=float64)
-        self._gamma3 = array(gamma3, dtype=float64)
+        self._gamma1 = np.array(gamma1, dtype=np.float64)
+        self._gamma2 = np.array(gamma2, dtype=np.float64)
+        self._gamma3 = np.array(gamma3, dtype=np.float64)
         self._kappa = float(kappa)
         self._beta = float(beta)
         # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
@@ -189,10 +189,10 @@ class FB8Distribution(object):
             self._gamma1, self._gamma2)
         self._alpha, self._rho = FB8Distribution.gamma1_to_spherical_coordinates(self._nu)
 
-        self._cached_rvs = empty((0,3))
+        self._cached_rvs = np.empty((0,3))
 
         # save rvs used to calculated level contours to keep levels self-consistent
-        self._level_log_pdf = empty((0,))
+        self._level_log_pdf = np.empty((0,))
 
     @property
     def gamma1(self):
@@ -217,8 +217,8 @@ class FB8Distribution(object):
     @kappa.setter
     def kappa(self, val):
         self._kappa = val
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def beta(self):
@@ -227,8 +227,8 @@ class FB8Distribution(object):
     @beta.setter
     def beta(self, val):
         self._beta = val
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def eta(self):
@@ -237,8 +237,8 @@ class FB8Distribution(object):
     @eta.setter
     def eta(self, val):
         self._eta = val
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def theta(self):
@@ -248,8 +248,8 @@ class FB8Distribution(object):
     def theta(self, val):
         self._theta = val
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def phi(self):
@@ -259,8 +259,8 @@ class FB8Distribution(object):
     def phi(self, val):
         self._phi = val
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def psi(self):
@@ -270,8 +270,8 @@ class FB8Distribution(object):
     def psi(self, val):
         self._psi = val
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def alpha(self):
@@ -282,8 +282,8 @@ class FB8Distribution(object):
         self._alpha = val
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def rho(self):
@@ -294,8 +294,8 @@ class FB8Distribution(object):
         self._rho = val
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
-        self._level_log_pdf = empty((0,))
-        self._cached_rvs = empty((0,3))
+        self._level_log_pdf = np.empty((0,))
+        self._cached_rvs = np.empty((0,3))
 
     @property
     def Gamma(self):
@@ -308,14 +308,14 @@ class FB8Distribution(object):
         1E-11.
 
 
-        >>> gamma1 = array([1.0, 0.0, 0.0])
-        >>> gamma2 = array([0.0, 1.0, 0.0])
-        >>> gamma3 = array([0.0, 0.0, 1.0])
+        >>> gamma1 = np.array([1.0, 0.0, 0.0])
+        >>> gamma2 = np.array([0.0, 1.0, 0.0])
+        >>> gamma3 = np.array([0.0, 0.0, 1.0])
         >>> tiny = FB8Distribution.minimum_value_for_kappa
-        >>> abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*pi) < 4*pi*1E-12
+        >>> abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
-        ...     print abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*pi*sinh(kappa)/kappa) < 1E-15*4*pi*sinh(kappa)/kappa,
+        ...     print abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
         ...
         True True True True True True True True
         """
@@ -339,21 +339,21 @@ class FB8Distribution(object):
                     while True:
                         # int sin(theta) dtheta
                         a = (
-                            exp(
-                                log(b) * j +
-                                log(0.5 * k) * (-j - 0.5)
+                            np.exp(
+                                np.log(b) * j +
+                                np.log(0.5 * k) * (-j - 0.5)
                             ) * I(j + 0.5, k)
                         )
                         # int dphi
-                        irange = arange(j + 1)
-                        aj = ((-m)**irange * exp(LG(irange + 0.5) + LG(j -
+                        irange = np.arange(j + 1)
+                        aj = ((-m)**irange * np.exp(LG(irange + 0.5) + LG(j -
                                                                        irange + 0.5) - LG(irange + 1) - LG(j - irange + 1))).sum()
-                        a /= sqrt(pi)
+                        a /= np.sqrt(np.pi)
                         a *= aj
                         result += a
 
                         j += 1
-                        if isnan(result):
+                        if np.isnan(result):
                             raise RuntimeWarning
                         if (j % 2 and abs(a) < abs(result) * 1E-12 and j > 5):
                             break
@@ -362,12 +362,12 @@ class FB8Distribution(object):
             else:
                 result = dblquad(
                     lambda th, ph: sin(th)*\
-                    exp(k*(n1*cos(th)+n2*sin(th)*cos(ph)+n3*sin(th)*sin(ph))+\
-                        b*sin(th)**2*(cos(ph)**2-m*sin(ph)**2)),
-                                 0., 2.*pi, lambda x: 0., lambda x: pi,
-                    epsabs=1e-3, epsrel=1e-3)[0]/(2.*pi)
+                    np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
+                        b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
+                                 0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
+                    epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
 
-            cache[k, b, m, n1, n2] = 2 * pi * result
+            cache[k, b, m, n1, n2] = 2 * np.pi * result
 
         if return_num_iterations:
             return cache[k, b, m, n1, n2], j
@@ -381,7 +381,7 @@ class FB8Distribution(object):
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             try:
-                lnormalize = log(self.normalize())
+                lnormalize = np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
                 k = self.kappa
                 b = self.beta
@@ -389,17 +389,17 @@ class FB8Distribution(object):
                 if k < 0 or b < 0:
                     lnormalize = 1e10
                 elif k > 2 * b:
-                    lnormalize = log(2 * pi) + k - \
-                        log((k - 2 * b) * (k + 2 * b)) / 2.
+                    lnormalize = np.log(2 * np.pi) + k - \
+                        np.log((k - 2 * b) * (k + 2 * b)) / 2.
                 else:
                     # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
                     # approximation in Bingham-Mardia (1978), converting F to
                     # c, where c is the normalization in the Kent paper, with
                     # a correction factor for floating eta
                     lnormalize = (
-                        0.5 * (log(pi) - log(b)) + log(4 * pi) + b * (1 + (k / (2 * b))**2) +
-                        log(I(0, 0.5 * (1 + m) * pi * b)) -
-                        0.5 * (1 + m) * pi * b
+                        0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
+                        np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
+                        0.5 * (1 + m) * np.pi * b
                     )
             return lnormalize
 
@@ -413,7 +413,7 @@ class FB8Distribution(object):
                 x1 = self.kappa / (2 * self.beta)
             if x1 > 1:
                 x1 = 1
-            x2 = sqrt(1 - x1**2)
+            x2 = np.sqrt(1 - x1**2)
             x3 = 0
         else:
             # FB8
@@ -439,36 +439,36 @@ class FB8Distribution(object):
             radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+\
               4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
 
-            curr_max = -inf
+            curr_max = -np.inf
             x_max = None
             for sgn_0 in [-1,1]:
                 for sgn_1 in [-1,1]:
-                    x1 = linspace(-1,1,ntests)
-                    x2 = sgn_0*sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
-                    x3 = sgn_1*sqrt(1-x1**2-x2**2)
+                    x1 = np.linspace(-1,1,ntests)
+                    x2 = sgn_0*np.sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
+                    x3 = sgn_1*np.sqrt(1-x1**2-x2**2)
 
-                    x = asarray((x1, x2, x3))
-                    lpdfs = self.log_pdf(dot(self.Gamma, x).T, normalize=False)
-                    lpdfs_max = nanmax(lpdfs)
+                    x = np.asarray((x1, x2, x3))
+                    lpdfs = self.log_pdf(np.dot(self.Gamma, x).T, normalize=False)
+                    lpdfs_max = np.nanmax(lpdfs)
                     # print lpdfs_max
                     if lpdfs_max > curr_max:
                         x_max = x.T[nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
             f = lambda x: -k*(
-                n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) -\
-                b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
+                n1*np.cos(x[0])+n2*np.sin(x[0])*np.cos(x[1])+n3*np.sin(x[0])*np.sin(x[1])) -\
+                b*np.sin(x[0])**2*(np.cos(x[1])**2-m*np.sin(x[1])**2)
             _x = minimize(f, self.gamma1_to_spherical_coordinates(x_max))
             if not _x.success:
                 warning_message = _x.message
                 warnings.warn(warning_message, RuntimeWarning)
             x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
 
-        x = dot(self.Gamma, asarray((x1, x2, x3)))
+        x = np.dot(self.Gamma, np.asarray((x1, x2, x3)))
         return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def pdf_max(self, normalize=True):
-        return exp(self.log_pdf_max(normalize))
+        return np.exp(self.log_pdf_max(normalize))
 
     def log_pdf_max(self, normalize=True):
         """
@@ -492,24 +492,24 @@ class FB8Distribution(object):
         >>> seed(666)
         >>> num_samples = 400000
         >>> xs = gauss(0, 1).rvs((num_samples, 3))
-        >>> xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
-        >>> assert abs(4*pi*average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*pi*average(fb8(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
+        >>> xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
+        >>> assert abs(4*np.pi*np.average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
         """
-        return exp(self.log_pdf(xs, normalize))
+        return np.exp(self.log_pdf(xs, normalize))
 
     def log_pdf(self, xs, normalize=True):
         """
         Returns the log(pdf) of the fb8 distribution.
         """
-        axis = len(shape(xs)) - 1
-        g1x = sum(self.gamma1 * xs, axis)
-        g2x = sum(self.gamma2 * xs, axis)
-        g3x = sum(self.gamma3 * xs, axis)
+        axis = len(np.shape(xs)) - 1
+        g1x = np.sum(self.gamma1 * xs, axis)
+        g2x = np.sum(self.gamma2 * xs, axis)
+        g3x = np.sum(self.gamma3 * xs, axis)
         k, b, m = self.kappa, self.beta, self.eta
-        ngx = self.nu.dot(asarray([g1x, g2x, g3x]))
+        ngx = self.nu.dot(np.asarray([g1x, g2x, g3x]))
 
         f = k * ngx + b * (g2x**2 - m * g3x**2)
         if normalize:
@@ -522,12 +522,12 @@ class FB8Distribution(object):
         Returns the log likelihood for xs.
         """
         retval = self.log_pdf(xs)
-        return sum(retval, len(shape(retval)) - 1)
+        return sum(retval, len(np.shape(retval)) - 1)
 
     def _rvs_helper(self):
         num_samples = 10000
         xs = gauss(0, 1).rvs((num_samples, 3))
-        xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
+        xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
         ## DEBUG
@@ -535,7 +535,7 @@ class FB8Distribution(object):
         # assert lfmax > lpvalues.max()
         ## END
         shifted = lpvalues - lfmax
-        return xs[uniform(0, 1).rvs(num_samples) < exp(shifted)]
+        return xs[uniform(0, 1).rvs(num_samples) < np.exp(shifted)]
 
     def rvs(self, n_samples=None):
         """
@@ -550,7 +550,7 @@ class FB8Distribution(object):
         rvs = self._cached_rvs
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
-            rvs = concatenate([rvs, new_rvs])
+            rvs = np.concatenate([rvs, new_rvs])
         if n_samples == None:
             self._cached_rvs = rvs[1:]
             return rvs[0]
@@ -594,33 +594,33 @@ class FB8Distribution(object):
             # work in coordinate system x' = Gamma'*x
             # range over which x1 remains real is [-x2_max, x2_max]
             # assume -1 < m < 1
-            x2_max = min(abs(sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
-                                  ) / (2 * sqrt(m * (1 + m)) * b)), 1)
-            if isnan(x2_max):
+            x2_max = np.min(abs(np.sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
+                                  ) / (2 * np.sqrt(m * (1 + m)) * b)), 1)
+            if np.isnan(x2_max):
                 x2_max = 1
-            x2 = linspace(-x2_max, x2_max, 10000)
+            x2 = np.linspace(-x2_max, x2_max, 10000)
             if abs(m) < 1E-4:
                 x1_0 = -(lev - ln + b * x2**2) / k
                 x1_1 = x1_0
             else:
-                x1_0 = (-k + sqrt(k**2 + 4 * m * b * (m * b - lev +
+                x1_0 = (-k + np.sqrt(k**2 + 4 * m * b * (m * b - lev +
                                                       ln - (1 + m) * b * x2**2))) / (2 * b * m)
-                x1_1 = (-k - sqrt(k**2 + 4 * m * b * (m * b - lev +
+                x1_1 = (-k - np.sqrt(k**2 + 4 * m * b * (m * b - lev +
                                                       ln - (1 + m) * b * x2**2))) / (2 * b * m)
-            x3_0 = sqrt(1 - x1_0**2 - x2**2)
-            x3_1 = sqrt(1 - x1_1**2 - x2**2)
-            x2 = concatenate([x2, -x2, x2, -x2])
-            x1 = concatenate([x1_0, x1_0, x1_1, x1_1])
-            x3 = concatenate([x3_0, -x3_0, x3_1, -x3_1])
+            x3_0 = np.sqrt(1 - x1_0**2 - x2**2)
+            x3_1 = np.sqrt(1 - x1_1**2 - x2**2)
+            x2 = np.concatenate([x2, -x2, x2, -x2])
+            x1 = np.concatenate([x1_0, x1_0, x1_1, x1_1])
+            x3 = np.concatenate([x3_0, -x3_0, x3_1, -x3_1])
 
             # Since Kent distribution is well-defined for points not on a sphere,
             # possible solutions for L=-log_pdf(kent) extend beyond surface of
             # sphere. For the contour evaluation, only use points that lie on sphere.
             ok = x1**2 + x2**2 <= 1
-            x123 = asarray((x1[ok], x2[ok], x3[ok]))
+            x123 = np.asarray((x1[ok], x2[ok], x3[ok]))
 
             # rotate back into x coordinates
-            x = dot(self.Gamma, x123)
+            x = np.dot(self.Gamma, x123)
         # FB8 approximate
         else:
             npts = 10000
@@ -635,9 +635,9 @@ class FB8Distribution(object):
 def kent_me(xs):
     """Generates and returns a FB8Distribution based on a FB5 (Kent) moment estimation."""
     lenxs = len(xs)
-    xbar = average(xs, 0)  # average direction of samples from origin
+    xbar = np.average(xs, 0)  # average direction of samples from origin
     # dispersion (or covariance) matrix around origin
-    S = average(xs.reshape((lenxs, 3, 1)) * xs.reshape((lenxs, 1, 3)), 0)
+    S = np.average(xs.reshape((lenxs, 3, 1)) * xs.reshape((lenxs, 1, 3)), 0)
     # has unit length and is in the same direction and parallel to xbar
     gamma1 = xbar / norm(xbar)
     theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
@@ -647,15 +647,15 @@ def kent_me(xs):
     B = MMul(Ht, MMul(S, H))
 
     eigvals, eigvects = eig(B[1:, 1:])
-    eigvals = real(eigvals)
+    eigvals = np.real(eigvals)
     if eigvals[0] < eigvals[1]:
         eigvals[0], eigvals[1] = eigvals[1], eigvals[0]
         eigvects = eigvects[:, ::-1]
-    K = diag([1.0, 1.0, 1.0])
+    K = np.diag([1.0, 1.0, 1.0])
     K[1:, 1:] = eigvects
 
     G = MMul(H, K)
-    Gt = transpose(G)
+    Gt = np.transpose(G)
     T = MMul(Gt, MMul(S, G))
 
     r1 = norm(xbar)
@@ -744,8 +744,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
     theta, phi, psi, kappa, beta, eta, alpha, rho = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta, k_me.alpha, k_me.rho
 
     # here the mle is done
-    x_start = array([theta, phi, psi, kappa, beta])
-    y_start = array([theta, phi, psi, beta, kappa, -0.99])
+    x_start = np.array([theta, phi, psi, kappa, beta])
+    y_start = np.array([theta, phi, psi, beta, kappa, -0.99])
 
     # First try a FB5 fit
     # constrain kappa, beta >= 0 and 2*beta <= kappa for FB5 (Kent 1982)
@@ -787,14 +787,14 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                                "maxiter": 100, "ftol": 1e-08})
 
         # default seed
-        z_starts = [array([theta, phi, psi, beta, kappa, -0.9, pi/4, 0]),]
+        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0]),]
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts.append(concatenate((_y.x, [0.,0.])))
+            z_starts.append(np.concatenate((_y.x, [0.,0.])))
         else:
-            z_starts.append(concatenate((all_values.x, [0.9,0.,0.])))
+            z_starts.append(np.concatenate((all_values.x, [0.9,0.,0.])))
 
         for z_start in z_starts:
             try:
@@ -831,6 +831,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
 if __name__ == "__main__":
     __doc__ += """
+>>> import numpy as np
 >>> from sphere.example import test_example_normalization, test_example_mle, test_example_mle2
 >>> from numpy.random import seed
 >>> test_example_normalization(gridsize=10)
@@ -851,12 +852,12 @@ Iterations necessary to calculate normalize(kappa, beta):
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> ks = [
 ...   fb8(0.0,      0.0,      0.0,    20.0, 0.0),
-...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 0.0),
-...   fb8(-0.25*pi, -0.25*pi, 0.0,    20.0, 5.0),
-...   fb8(0.0,      0.0,      0.5*pi, 10.0, 7.0),
-...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.0),
-...   fb8(0.0,      0.0,      0.5*pi, 0.1,  0.1),
-...   fb8(0.0,      0.0,      0.5*pi, 0.1,  8.0),
+...   fb8(-0.25*np.pi, -0.25*np.pi, 0.0,    20.0, 0.0),
+...   fb8(-0.25*np.pi, -0.25*np.pi, 0.0,    20.0, 5.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 10.0, 7.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.1),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  8.0),
 ... ]
 >>> pdf_values = [
 ...   3.18309886184,
@@ -868,12 +869,12 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   0.00063128997
 ... ]
 >>> for k in ks:
-...   assert(abs(sum(k.gamma1 * k.gamma2)) < 1E-14)
-...   assert(abs(sum(k.gamma1 * k.gamma3)) < 1E-14)
-...   assert(abs(sum(k.gamma3 * k.gamma2)) < 1E-14)
-...   assert(abs(sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
-...   assert(abs(sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
-...   assert(abs(sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
+...   assert(abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
 
 A test to ensure that the pdf() and the pdf_max() are calculated
 correctly.
@@ -881,19 +882,19 @@ correctly.
 >>> from scipy.stats import norm as gauss
 >>> seed(666)
 >>> for k, pdf_value in zip(ks, pdf_values):
-...   assert abs(k.pdf(array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
-...   assert abs(k.log_pdf(array([1.0, 0.0, 0.0])) - log(pdf_value)) < 1E-8
+...   assert abs(k.pdf(np.array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
+...   assert abs(k.log_pdf(np.array([1.0, 0.0, 0.0])) - np.log(pdf_value)) < 1E-8
 ...   num_samples = 100000
 ...   xs = gauss(0, 1).rvs((num_samples, 3))
-...   xs = divide(xs, reshape(norm(xs, 1), (num_samples, 1)))
+...   xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
 ...   values = k.pdf(xs, normalize=False)
 ...   fmax = k.pdf_max(normalize=False)
-...   assert all(values <= fmax)
-...   assert any(values > fmax*0.999)
+...   assert np.all(values <= fmax)
+...   assert np.any(values > fmax*0.999)
 ...   values = k.pdf(xs)
 ...   fmax = k.pdf_max()
-...   assert all(values <= fmax)
-...   assert any(values > fmax*0.999)
+...   assert np.all(values <= fmax)
+...   assert np.any(values > fmax*0.999)
 
 These are tests to ensure that the coordinate transformations are done correctly
 that the functions that generate instances of FB8Distribution are consistent and
@@ -905,20 +906,20 @@ testing is done.
 >>> from scipy.stats import uniform
 >>> def test_orth(k):
 ...   # a bit more orthonormality testing for good measure
-...   assert(abs(sum(k.gamma1 * k.gamma2)) < 1E-14)
-...   assert(abs(sum(k.gamma1 * k.gamma3)) < 1E-14)
-...   assert(abs(sum(k.gamma3 * k.gamma2)) < 1E-14)
-...   assert(abs(sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
-...   assert(abs(sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
-...   assert(abs(sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
+...   assert(abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
+...   assert(abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
+...   assert(abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
 ...
 >>> # generating some specific boundary values and some random values
 >>> seed(666)
->>> upi, u2pi = uniform(0, pi), uniform(-pi, 2*pi)
+>>> upi, u2pi = uniform(0, np.pi), uniform(-np.pi, 2*np.pi)
 >>> thetas, phis, psis = list(upi.rvs(925)), list(u2pi.rvs(925)), list(u2pi.rvs(925))
->>> for a in (0.0, 0.5*pi, pi):
-...   for b in (-pi, -0.5*pi, 0, 0.5*pi, pi):
-...     for c in (-pi, -0.5*pi, 0, 0.5*pi, pi):
+>>> for a in (0.0, 0.5*np.pi, np.pi):
+...   for b in (-np.pi, -0.5*np.pi, 0, 0.5*np.pi, np.pi):
+...     for c in (-np.pi, -0.5*np.pi, 0, 0.5*np.pi, np.pi):
 ...       thetas.append(a)
 ...       phis.append(b)
 ...       psis.append(c)
@@ -929,9 +930,9 @@ testing is done.
 ...   assert abs(theta - k.theta) < 1E-12
 ...   a = abs(phi - k.phi)
 ...   b = abs(psi - k.psi)
-...   if theta != 0 and theta != pi:
-...     assert a < 1E-12 or abs(a-2*pi) < 1E-12
-...     assert b < 1E-12 or abs(b-2*pi) < 1E-12
+...   if theta != 0 and theta != np.pi:
+...     assert a < 1E-12 or abs(a-2*np.pi) < 1E-12
+...     assert b < 1E-12 or abs(b-2*np.pi) < 1E-12
 ...   test_orth(k)
 ...
 >>> # testing consistency of gammas and consistency of back and forth
@@ -942,29 +943,29 @@ testing is done.
 ...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(gamma1, gamma2)
 ...   gamma1a, gamma2a, gamma3a = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
-...   assert all(abs(gamma1a-gamma1) < 1E-12)
-...   assert all(abs(gamma2a-gamma2) < 1E-12)
-...   assert all(abs(gamma3a-gamma3) < 1E-12)
+...   assert np.all(abs(gamma1a-gamma1) < 1E-12)
+...   assert np.all(abs(gamma2a-gamma2) < 1E-12)
+...   assert np.all(abs(gamma3a-gamma3) < 1E-12)
 ...   k2 = fb82(gamma1, gamma2, gamma3, kappa, beta)
-...   assert all(abs(gamma1 - k2.gamma1) < 1E-12)
-...   assert all(abs(gamma2 - k2.gamma2) < 1E-12)
-...   assert all(abs(gamma3 - k2.gamma3) < 1E-12)
+...   assert np.all(abs(gamma1 - k2.gamma1) < 1E-12)
+...   assert np.all(abs(gamma2 - k2.gamma2) < 1E-12)
+...   assert np.all(abs(gamma3 - k2.gamma3) < 1E-12)
 ...   A = gamma1*kappa
 ...   B = gamma2*beta
 ...   k3 = fb83(A, B)
-...   assert all(abs(gamma1 - k3.gamma1) < 1E-12)
-...   assert all(abs(gamma2 - k3.gamma2) < 1E-12)
-...   assert all(abs(gamma3 - k3.gamma3) < 1E-12)
+...   assert np.all(abs(gamma1 - k3.gamma1) < 1E-12)
+...   assert np.all(abs(gamma2 - k3.gamma2) < 1E-12)
+...   assert np.all(abs(gamma3 - k3.gamma3) < 1E-12)
 ...   test_orth(k)
-...   gamma = array([
+...   gamma = np.array([
 ...     [gamma1[0], gamma2[0], gamma3[0]],
 ...     [gamma1[1], gamma2[1], gamma3[1]],
 ...     [gamma1[2], gamma2[2], gamma3[2]],
 ...   ])
 ...   k4 = fb84(gamma, kappa, beta)
-...   assert all(k2.gamma1 == k4.gamma1)
-...   assert all(k2.gamma2 == k4.gamma2)
-...   assert all(k2.gamma3 == k4.gamma3)
+...   assert np.all(k2.gamma1 == k4.gamma1)
+...   assert np.all(k2.gamma2 == k4.gamma2)
+...   assert np.all(k2.gamma3 == k4.gamma3)
 ...
 >>> # testing special case for B with zero length (fb83())
 >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
@@ -972,7 +973,7 @@ testing is done.
 ...   A = gamma1*kappa
 ...   B = gamma2*0.0
 ...   k = fb83(A, B)
-...   assert all(abs(gamma1 - k.gamma1) < 1E-12)
+...   assert np.all(abs(gamma1 - k.gamma1) < 1E-12)
 ...   test_orth(k)
 
 >>> # testing property handlers and cache
