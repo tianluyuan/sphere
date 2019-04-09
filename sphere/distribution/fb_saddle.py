@@ -42,7 +42,8 @@ def saddleapprox_FB_revised(L, M=None, dub=3, order=3):
         f = lambda t: abs(KM1(t) - 1.0)
         fmin = np.amin(L)-len(L)/(4.0*y) - np.sqrt(len(L)**2.0 / 4.0 + len(L)*np.amax(L)**2.0*np.amax(M)**2.0)
         fmax = np.amin(L)
-        res = scipy.optimize.minimize_scalar(f, method='brent', bounds=(fmin, fmax))
+
+        res = scipy.optimize.minimize_scalar(f, method='bounded', bounds=(fmin, fmax))
         return res.x
 
     that = sol(1.0)

@@ -23,6 +23,9 @@ from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 from scipy.linalg import eig
+from sphere.distribution import fb_saddle as saddle
+from sphere.distribution import fb_hgm as hgm
+from sphere.distribution import fb_utils
 import sys
 import warnings
 
@@ -360,6 +363,13 @@ class FB8Distribution(object):
 
             # FB8 numerical integration
             else:
+                # TODO: fix for hgm
+                # result = hgm.hgm_FB_2(
+                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))[0]/(2*np.pi)
+                # result = hgm.hgm_FB_2(
+                #     fb_utils.fb8_to_ks_params(k, self.nu, b, m),
+                #     ns = np.asarray([6,]))[0]
+
                 result = dblquad(
                     lambda th, ph: np.sin(th)*\
                     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
@@ -452,7 +462,7 @@ class FB8Distribution(object):
                     lpdfs_max = np.nanmax(lpdfs)
                     # print lpdfs_max
                     if lpdfs_max > curr_max:
-                        x_max = x.T[nanargmax(lpdfs)]
+                        x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
             f = lambda x: -k*(
