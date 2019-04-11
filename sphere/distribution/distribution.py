@@ -28,14 +28,13 @@ from scipy.stats import norm as gauss
 from scipy.linalg import eig
 
 if __package__ is None:
-    from fb_saddle import SPA
-    from fb_hgm import hgm_FB
-    from fb_hgm import hgm_FB_2
+    import fb_saddle as saddle
+    import fb_hgm as hgm
+    import fb_utils
 else:
-    from sphere.distribution.fb_saddle import SPA
-    from sphere.distribution.fb_hgm import hgm_FB
-    from sphere.distribution.fb_hgm import hgm_FB_2
-    from sphere.distribution.fb_hgm import G_FB
+    from sphere.distribution import fb_saddle as saddle
+    from sphere.distribution import fb_hgm as hgm
+    from sphere.distribution import fb_utils
 
 # helper function
 def MMul(A, B):
@@ -402,6 +401,13 @@ class FB8Distribution(object):
 
             # FB8 numerical integration
             else:
+                # TODO: fix for hgm
+                # result = hgm.hgm_FB_2(
+                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))[0]/(2*np.pi)
+                # result = hgm.hgm_FB_2(
+                #     fb_utils.fb8_to_ks_params(k, self.nu, b, m),
+                #     ns = np.asarray([6,]))[0]
+
                 result = dblquad(
                     lambda th, ph: np.sin(th)*\
                     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
@@ -494,7 +500,7 @@ class FB8Distribution(object):
                     lpdfs_max = np.nanmax(lpdfs)
                     # print lpdfs_max
                     if lpdfs_max > curr_max:
-                        x_max = x.T[nanargmax(lpdfs)]
+                        x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
             f = lambda x: -k*(
