@@ -349,7 +349,8 @@ def hgm_FB_2(alpha, ns=None, alpha0=None, G0=None, withvol=True):
     res = hg_mod(alpha0, G0, alpha, dG_fun_FB, ns=ns, s=1)[0]
     c_res = res[0]
     grad_res = fb_utils.increase_grad_dim(res[1:], alpha, original_alpha, inv_theta)
-    grad_res = grad_res[down_map]
+    original_p = len(original_alpha) / 2
+    grad_res = np.concatenate([grad_res[:original_p][down_map], grad_res[original_p:][down_map]])
     return np.concatenate([[c_res], grad_res])
 
 def test():
