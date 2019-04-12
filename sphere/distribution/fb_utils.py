@@ -1,5 +1,9 @@
 import numpy as np
 
+def is_numeric(obj):
+    attrs = ['__add__', '__sub__', '__mul__', '__div__', '__pow__']
+    return all(hasattr(obj, attr) for attr in attrs)
+
 def tile_repeat(x, r):
     r = np.asarray(r)
     if r.size == 1:
