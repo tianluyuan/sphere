@@ -5,9 +5,11 @@ import scipy.special
 import numpy as np
 
 if __package__ is None:
-    from fb_saddle import SPA
+    import fb_saddle
+    import fb_utils
 else:
-    from sphere.distribution.fb_saddle import SPA
+    from sphere.distribution import fb_saddle
+    from sphere.distribution import fb_utils
 
 # Pfaffian for Fisher-Bingham distribution
 def dG_fun_FB(alpha, G, ns=None, s=1):
@@ -284,12 +286,25 @@ def hg_mod(th0, G0, th1, dG_fun, max_step=0.01, ns=None, s=None, show_trace=Fals
 
 # Evaluation of FB normalization constant by HGM
 def hgm_FB(alpha, ns=None, alpha0=None, G0=None, withvol=True):
-    if ns is None:
-        #ns = np.ones(p).astype(int)
-        theta, inv_theta, ns = np.unique(theta, return_inverse=True, return_counts=True)
-        l = len(theta)
-        gamma = np.array([np.sqrt(np.sum(gamma[inv_theta == i]**2.0)) for i in range(l)])
-        alpha = np.concatenate([theta, gamma])
+    input_p = len(alpha) / 2
+    input_ns = ns
+    input_alpha = alpha
+    if input_ns is None:
+        down_map = np.arange(input_p)
+        original_alpha = alpha
+        alpha, ns, inv_theta = fb_utils.reduce_dim(alpha)
+    else:
+        original_alpha, down_map = fb_utils.increase_dim(alpha, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+        alpha, ns, inv_theta = fb_utils.reduce_dim(original_alpha)
+    input_alpha0 = alpha0
+    if input_alpha0 is not None:
+        if input_ns is None:
+            alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
+        else:
+            alpha0 = increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+            alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
+        assert(ns == ns0)
+        assert(inv_theta == inv_theta0)
     p = len(alpha) / 2
     r = np.sum(abs(alpha))
     N = max(r, 1)**2.0 * 10.0
@@ -298,24 +313,44 @@ def hgm_FB(alpha, ns=None, alpha0=None, G0=None, withvol=True):
     if G0 is None:
         G0 = G_FB(alpha0, ns=ns, method='power', withvol=withvol)
     res = hg(alpha0, G0, alpha, dG_fun_FB, ns=ns, s=1)[0]
-    return res
+    c_res = res[0]
+    grad_res = fb_utils.increase_grad_dim(res[1:], alpha, original_alpha, inv_theta)
+    grad_res = grad_res[down_map]
+    return np.concatenate([[c_res], grad_res])
 
 # Evaluation of FB normalization constant by HGM (via square-root transformation)
-def hgm_FB_2(alpha, ns=None, withvol=True):
-    if ns is None:
-        #ns = np.ones(p).astype(int)
-        theta, inv_theta, ns = np.unique(theta, return_inverse=True, return_counts=True)
-        l = len(theta)
-        gamma = np.array([np.sqrt(np.sum(gamma[inv_theta == i]**2.0)) for i in range(l)])
-        alpha = np.concatenate([theta, gamma])
+def hgm_FB_2(alpha, ns=None, alpha0=None, G0=None, withvol=True):
+    input_p = len(alpha) / 2
+    input_ns = ns
+    input_alpha = alpha
+    if input_ns is None:
+        down_map = np.arange(input_p)
+        original_alpha = alpha
+        alpha, ns, inv_theta = fb_utils.reduce_dim(alpha)
+    else:
+        original_alpha, down_map = fb_utils.increase_dim(alpha, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+        alpha, ns, inv_theta = fb_utils.reduce_dim(original_alpha)
+    input_alpha0 = alpha0
+    if input_alpha0 is not None:
+        if input_ns is None:
+            alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
+        else:
+            alpha0 = increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+            alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
+        assert(ns == ns0)
+        assert(inv_theta == inv_theta0)
     p = len(alpha) / 2
 
     r = np.sum(abs(alpha))
     N = max(r, 1)**2.0 * 10.0
     alpha0 = np.concatenate((alpha[:p]/N, alpha[p:2*p]/np.sqrt(N)))
-    G0 = G_FB(alpha0, ns=ns, method="power", withvol=withvol)
+    if G0 is None:
+        G0 = G_FB(alpha0, ns=ns, method="power", withvol=withvol)
     res = hg_mod(alpha0, G0, alpha, dG_fun_FB, ns=ns, s=1)[0]
-    return res
+    c_res = res[0]
+    grad_res = fb_utils.increase_grad_dim(res[1:], alpha, original_alpha, inv_theta)
+    grad_res = grad_res[down_map]
+    return np.concatenate([[c_res], grad_res])
 
 def test():
     alpha1 = np.array([1,2,3,4,7,6,8,5])
@@ -328,7 +363,7 @@ def test():
     print 'HGM2:', G2
     G3 = G_FB(alpha1, ns=ns1, method='MC') # direct computation by Monte Carlo
     print 'MC:', G3
-    G4 = SPA(alpha1, ns1)
+    G4 = fb_saddle.SPA(alpha1, ns1)
     print 'SPA:', G4
 
     print
@@ -344,7 +379,7 @@ def test():
     print 'HGM2:', G2
     G3 = G_FB(alpha2, ns=ns2, method='MC') # direct computation by Monte Carlo
     print 'MC:', G3
-    G4 = SPA(alpha2, ns2)
+    G4 = fb_saddle.SPA(alpha2, ns2)
     print 'SPA:', G4
 
 if __name__ == '__main__':
