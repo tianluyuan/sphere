@@ -467,9 +467,8 @@ class FB8Distribution(object):
                 # TODO: fix for hgm
                 # result = hgm.hgm_FB_2(
                 #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))[0]/(2*np.pi)
-                # result = hgm.hgm_FB_2(
-                #     fb_utils.fb8_to_ks_params(k, self.nu, b, m),
-                #     ns = np.asarray([6,]))[0]
+                # result = saddle.SPA(
+                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))/(2*np.pi)
 
                 result = dblquad(
                     lambda th, ph: np.sin(th)*\
