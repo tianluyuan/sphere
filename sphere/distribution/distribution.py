@@ -110,7 +110,7 @@ def FB_opt(theta_seed, gamma_seed, A=None, B=None, O=None, n=1, Bing=False, n_it
             gg = np.zeros(gg.shape)
             gg[Kent] = gamma_val
             th[1] = -th[2]
-            th += th + abs(np.amin(th))
+            th += th + np.abs(np.amin(th))
 
         if Bing:
             gg = np.zeros(3)
@@ -161,9 +161,9 @@ def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     Generates the FB8 distribution using the orthonormal vectors gamma1,
     gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
     """
-    assert abs(np.inner(gamma1, gamma2)) < 1E-10
-    assert abs(np.inner(gamma2, gamma3)) < 1E-10
-    assert abs(np.inner(gamma3, gamma1)) < 1E-10
+    assert np.abs(np.inner(gamma1, gamma2)) < 1E-10
+    assert np.abs(np.inner(gamma2, gamma3)) < 1E-10
+    assert np.abs(np.inner(gamma3, gamma1)) < 1E-10
     return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
 
 
@@ -416,10 +416,10 @@ class FB8Distribution(object):
         >>> gamma2 = np.array([0.0, 1.0, 0.0])
         >>> gamma3 = np.array([0.0, 0.0, 1.0])
         >>> tiny = FB8Distribution.minimum_value_for_kappa
-        >>> abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
+        >>> np.abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
-        ...     print abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
+        ...     print np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
         ...
         True True True True True True True True
         """
@@ -459,7 +459,7 @@ class FB8Distribution(object):
                         j += 1
                         if np.isnan(result):
                             raise RuntimeWarning
-                        if (j % 2 and abs(a) < abs(result) * 1E-12 and j > 5):
+                        if (j % 2 and np.abs(a) < np.abs(result) * 1E-12 and j > 5):
                             break
 
             # FB8 numerical integration
@@ -603,10 +603,10 @@ class FB8Distribution(object):
         >>> num_samples = 400000
         >>> xs = gauss(0, 1).rvs((num_samples, 3))
         >>> xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
-        >>> assert abs(4*np.pi*np.average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
-        >>> assert abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  8.0).pdf(xs)) - 1.0) < 0.01
+        >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 16.0, 8.0).pdf(xs)) - 1.0) < 0.01
         """
         return np.exp(self.log_pdf(xs, normalize))
 
@@ -704,12 +704,12 @@ class FB8Distribution(object):
             # work in coordinate system x' = Gamma'*x
             # range over which x1 remains real is [-x2_max, x2_max]
             # assume -1 < m < 1
-            x2_max = np.min(abs(np.sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
-                                  ) / (2 * np.sqrt(m * (1 + m)) * b)), 1)
+            x2_max = min(np.abs(np.sqrt(k**2 + 4 * b * m * (b * m - lev + ln)
+                                ) / (2 * np.sqrt(m * (1 + m)) * b)), 1)
             if np.isnan(x2_max):
                 x2_max = 1
             x2 = np.linspace(-x2_max, x2_max, 10000)
-            if abs(m) < 1E-4:
+            if np.abs(m) < 1E-4:
                 x1_0 = -(lev - ln + b * x2**2) / k
                 x1_1 = x1_0
             else:
@@ -735,7 +735,7 @@ class FB8Distribution(object):
         else:
             npts = 10000
             rvs = self.rvs(npts)
-            x = rvs[argsort(abs(lev+self.log_pdf(rvs)))[:200]].T
+            x = rvs[np.argsort(np.abs(lev+self.log_pdf(rvs)))[:200]].T
         return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def __repr__(self):
@@ -886,7 +886,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                 {"type": "ineq", # beta >= 0
                  "fun": lambda x: x[4]},
                 {"type": "ineq", # -1 <= eta <=1
-                 "fun": lambda x: 1 - abs(x[5])})
+                 "fun": lambda x: 1 - np.abs(x[5])})
                 # {"type": "ineq",
                 #  "fun": lambda x: -x[3] + 2 * x[4]})
         _y = minimize(minus_log_likelihood,
@@ -980,8 +980,8 @@ def test():
 
     print res
 
-test()
-raise
+#test()
+#raise
 
 if __name__ == "__main__":
     __doc__ += """
@@ -1023,12 +1023,12 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   0.00063128997
 ... ]
 >>> for k in ks:
-...   assert(abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
-...   assert(abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
-...   assert(abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
-...   assert(abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
-...   assert(abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
-...   assert(abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
 
 A test to ensure that the pdf() and the pdf_max() are calculated
 correctly.
@@ -1036,8 +1036,8 @@ correctly.
 >>> from scipy.stats import norm as gauss
 >>> seed(666)
 >>> for k, pdf_value in zip(ks, pdf_values):
-...   assert abs(k.pdf(np.array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
-...   assert abs(k.log_pdf(np.array([1.0, 0.0, 0.0])) - np.log(pdf_value)) < 1E-8
+...   assert np.abs(k.pdf(np.array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
+...   assert np.abs(k.log_pdf(np.array([1.0, 0.0, 0.0])) - np.log(pdf_value)) < 1E-8
 ...   num_samples = 100000
 ...   xs = gauss(0, 1).rvs((num_samples, 3))
 ...   xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
@@ -1060,12 +1060,12 @@ testing is done.
 >>> from scipy.stats import uniform
 >>> def test_orth(k):
 ...   # a bit more orthonormality testing for good measure
-...   assert(abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
-...   assert(abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
-...   assert(abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
-...   assert(abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
-...   assert(abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
-...   assert(abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma3)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma3 * k.gamma2)) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma1 * k.gamma1) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma2 * k.gamma2) - 1.0) < 1E-14)
+...   assert(np.abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
 ...
 >>> # generating some specific boundary values and some random values
 >>> seed(666)
@@ -1081,12 +1081,12 @@ testing is done.
 >>> # testing consintency of angles (specifically kent())
 >>> for theta, phi, psi in zip(thetas, phis, psis):
 ...   k = fb8(theta, phi, psi, 1.0, 1.0)
-...   assert abs(theta - k.theta) < 1E-12
-...   a = abs(phi - k.phi)
-...   b = abs(psi - k.psi)
+...   assert np.abs(theta - k.theta) < 1E-12
+...   a = np.abs(phi - k.phi)
+...   b = np.abs(psi - k.psi)
 ...   if theta != 0 and theta != np.pi:
-...     assert a < 1E-12 or abs(a-2*np.pi) < 1E-12
-...     assert b < 1E-12 or abs(b-2*np.pi) < 1E-12
+...     assert a < 1E-12 or np.abs(a-2*np.pi) < 1E-12
+...     assert b < 1E-12 or np.abs(b-2*np.pi) < 1E-12
 ...   test_orth(k)
 ...
 >>> # testing consistency of gammas and consistency of back and forth
@@ -1097,19 +1097,19 @@ testing is done.
 ...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(gamma1, gamma2)
 ...   gamma1a, gamma2a, gamma3a = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
-...   assert np.all(abs(gamma1a-gamma1) < 1E-12)
-...   assert np.all(abs(gamma2a-gamma2) < 1E-12)
-...   assert np.all(abs(gamma3a-gamma3) < 1E-12)
+...   assert np.all(np.abs(gamma1a-gamma1) < 1E-12)
+...   assert np.all(np.abs(gamma2a-gamma2) < 1E-12)
+...   assert np.all(np.abs(gamma3a-gamma3) < 1E-12)
 ...   k2 = fb82(gamma1, gamma2, gamma3, kappa, beta)
-...   assert np.all(abs(gamma1 - k2.gamma1) < 1E-12)
-...   assert np.all(abs(gamma2 - k2.gamma2) < 1E-12)
-...   assert np.all(abs(gamma3 - k2.gamma3) < 1E-12)
+...   assert np.all(np.abs(gamma1 - k2.gamma1) < 1E-12)
+...   assert np.all(np.abs(gamma2 - k2.gamma2) < 1E-12)
+...   assert np.all(np.abs(gamma3 - k2.gamma3) < 1E-12)
 ...   A = gamma1*kappa
 ...   B = gamma2*beta
 ...   k3 = fb83(A, B)
-...   assert np.all(abs(gamma1 - k3.gamma1) < 1E-12)
-...   assert np.all(abs(gamma2 - k3.gamma2) < 1E-12)
-...   assert np.all(abs(gamma3 - k3.gamma3) < 1E-12)
+...   assert np.all(np.abs(gamma1 - k3.gamma1) < 1E-12)
+...   assert np.all(np.abs(gamma2 - k3.gamma2) < 1E-12)
+...   assert np.all(np.abs(gamma3 - k3.gamma3) < 1E-12)
 ...   test_orth(k)
 ...   gamma = np.array([
 ...     [gamma1[0], gamma2[0], gamma3[0]],
@@ -1127,7 +1127,7 @@ testing is done.
 ...   A = gamma1*kappa
 ...   B = gamma2*0.0
 ...   k = fb83(A, B)
-...   assert np.all(abs(gamma1 - k.gamma1) < 1E-12)
+...   assert np.all(np.abs(gamma1 - k.gamma1) < 1E-12)
 ...   test_orth(k)
 
 >>> # testing property handlers and cache
