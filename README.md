@@ -11,7 +11,7 @@ Implements the Bingham-Mardia distribution whose mode is a small-circle on the s
 
 Also calculates directional, percentile contours which can be used to indicate the N% highest-posterior-density regions in the sky.
 
-![maps](/fig/example.png?raw=true)
+![maps](https://github.com/tianluyuan/sphere/blob/master/fig/example.png?raw=true)
 
 Additional references
 =================
