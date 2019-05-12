@@ -13,7 +13,5 @@ setup(
                       'scipy'],
     extras_require={
         'plotting':  ['matplotlib', 'healpy']
-    },
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest']
+    }
     )
