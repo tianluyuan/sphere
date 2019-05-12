@@ -29,112 +29,10 @@ import scipy.linalg
 from scipy.linalg import eig
 
 
-if __package__ is None:
-    import fb_saddle as saddle
-    import fb_hgm as hgm
-    import fb_utils
-    from expm import expm_Higham08 as expm
-else:
-    from sphere.distribution import fb_saddle as saddle
-    from sphere.distribution import fb_hgm as hgm
-    from sphere.distribution import fb_utils
-    from sphere.distribution.expm import expm_Higham08 as expm
-
 # helper function
 def MMul(A, B):
     return np.inner(A, np.transpose(B))
 
-def FBLLH(theta, gamma, O, A, B, n, ns=None, method='hg', withvol=False):
-    p = len(theta)
-    alpha = np.concatenate((theta, gamma))
-
-    if method == 'hg':
-        c_res = hgm.hgm_FB_2(alpha, ns=ns, withvol=withvol)
-    elif method == 'hg_linear':
-        c_res = hgm.hgm_FB(alpha, ns=ns, withvol=withvol)
-    elif method == 'MC':
-        c_res = hgm.G_FB(alpha, ns=ns, method='MC', withvol=withvol)
-    elif method == 'SPA':
-        c_res = saddle.SPA(alpha, ns=ns, withvol=withvol)
-    else:
-        raise ValueError('Not a valid method.')
-
-    if method == 'SPA':
-        c = c_res
-        l = -n*np.log(c) - np.trace(O.dot(B).dot(gamma[:,None].T) + A.dot(O.T).dot(np.diag(theta)).dot(O))
-        return l
-
-    c = c_res[0]
-
-    #l = -n*np.log(c) - np.sum(A.dot(O.T).dot(np.diag(theta)).dot(O) + gamma.dot(B.T).dot(O))
-    l = -n*np.log(c) - np.trace(O.dot(B).dot(gamma[:,None].T) + A.dot(O.T).dot(np.diag(theta)).dot(O))
-
-    #grad = -n*c_res[1:] / c + np.concatenate((-np.diag(O.dot(A).dot(O.T)),O.dot(B)))
-    theta_grad = np.diag(O.dot(A).dot(A.T))
-    gamma_grad = np.squeeze(B.T.dot(O.T))
-    param_grad = np.concatenate((theta_grad, gamma_grad))
-    grad = -n*c_res[1:] / c + param_grad
-
-    return l, grad
-
-def FB_opt(theta_seed, gamma_seed, A=None, B=None, O=None, n=1, Bing=False, n_iter=199, Kent="", method="hg", withvol=False):
-    p = len(theta_seed)
-    if O is None:
-        O = np.identity(A.shape[0])
-
-    zero_index = np.argmin(theta_seed)
-    theta_seed = theta_seed - theta_seed[zero_index]
-    theta_par_mask = np.ones(p).astype(bool)
-    theta_par_mask[zero_index] = False
-    theta_par_indices = np.arange(p)[theta_par_mask]
-
-    # generates the orth matrix given its variable in exp proj mapping
-    def orth(x):
-        vhat = np.zeros((p,p))
-        vhat[1,0] = x[5]
-        vhat[2,0] = x[6]
-        vhat[2,1] = x[7]
-        VV = vhat - vhat.T
-        O = expm(VV)
-        return O
-
-    # This function optimises numerically the likelihood fnction when p=3. when the data are given as in the paper of Seietal
-    #Bingh=TRUE reduces to the Bingham distribution
-    # If Kent is numeric and Bing=FALSE(default) we can run the Kent distribution with the Kent=numeric eigenvector present in the model.
-    def likelihood(par,p=3):
-        th = np.zeros(p)
-        th[theta_par_mask] = par[:p-1]
-        gg = par[p-1:p*2-1]
-        if fb_utils.is_numeric(Kent):
-            gamma_val = gg[Kent]
-            gg = np.zeros(gg.shape)
-            gg[Kent] = gamma_val
-            th[1] = -th[2]
-            th += th + np.abs(np.amin(th))
-
-        if Bing:
-            gg = np.zeros(3)
-
-        O = orth(par)
-        l, grad = FBLLH(th, gg, O, A/n, B/n, n, method=method, withvol=withvol)
-        return -l
-
-    ort = scipy.linalg.logm(O)
-    par = np.concatenate((theta_seed[theta_par_indices], gamma_seed, [ort[1,0], ort[2,0], ort[2,1]]))
-
-    bounds = [(0.0, None)]*(p*2-1) + [(None,None)]*p
-
-    res = scipy.optimize.minimize(likelihood, par, method='L-BFGS-B', bounds=bounds)
-
-    x = res.x
-
-    if fb_utils.is_numeric(Kent):
-        x[0] = -x[1]
-        x[3:5] = 0.0
-    theta = np.concatenate(([0.0], x[:p-1]))
-    gamma = x[p-1:p*2-1]
-    O = orth(x)
-    return theta, gamma, O, res
 
 def norm(x, axis=None):
     """
@@ -464,12 +362,6 @@ class FB8Distribution(object):
 
             # FB8 numerical integration
             else:
-                # TODO: fix for hgm
-                # result = hgm.hgm_FB_2(
-                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))[0]/(2*np.pi)
-                # result = saddle.SPA(
-                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))/(2*np.pi)
-
                 result = dblquad(
                     lambda th, ph: np.sin(th)*\
                     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
@@ -939,49 +831,6 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         k = k[0]
     return k
 
-def test():
-    # astronomy data test
-    A = np.zeros((3,3))
-    A[0,0]=0.3119
-    A[0,1]=0.0292/2.0; A[1,0]=A[0,1]
-    A[0,2]=0.0707/2.0;A[2,0]=A[0,2]
-    A[1,1]=0.3605
-    A[1,2]=0.0462/2.0; A[2,1]=A[1,2]
-    A[2,2]=0.3276
-    A = 2.0*A - np.diag(np.diag(A))
-
-    B = np.array([-0.0063,-0.0054,-0.0762])[:,None]
-    B = -B
-
-    theta = np.array([0, 0.708, 1.416])
-    gamma = np.array([0.122, 0.087, 0.197])
-    O = np.array([[-0.511, -0.612, -0.605], [-0.490, 0.785, -0.380], [0.706, 0.102, -0.700]])
-
-    n = 1
-
-    print FBLLH(theta, gamma, O, A, B, n, method='hg', withvol=False)
-    print FBLLH(theta, gamma, O, A, B, n, method='hg', withvol=True)
-    print FBLLH(theta, gamma, O, A, B, n, method='SPA', withvol=False)
-    print FBLLH(theta, gamma, O, A, B, n, method='SPA', withvol=True)
-    theta = np.arange(3)
-    gamma = theta + 1
-    O = np.identity(3)
-
-    #res = MLE(A, B, n=1, theta=None, gamma=None, O=None, method='hg', withvol=True, max_iter=200)
-    #res = MLE(A, B, n=1, theta=theta, gamma=gamma, O=O, method='hg', withvol=True, max_iter=200)
-    #res = FB_opt(A, B, n=1, theta=theta, gamma=gamma, O=O, method='hg', withvol=True, max_iter=200)
-    res = FB_opt(theta, gamma, A=A, B=B, O=O, n=1, method='hg', withvol=True)
-
-    print res
-
-    return
-
-    res = MLE(A, B, n=1, theta=None, gamma=None, O=None, method='MC', withvol=True, max_iter=200)
-
-    print res
-
-#test()
-#raise
 
 if __name__ == "__main__":
     __doc__ += """
