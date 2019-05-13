@@ -301,7 +301,7 @@ def hgm_FB(alpha, ns=None, alpha0=None, G0=None, withvol=True):
         if input_ns is None:
             alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
         else:
-            alpha0 = increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+            alpha0 = fb_utils.increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
             alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
         assert(ns == ns0)
         assert(inv_theta == inv_theta0)
@@ -335,7 +335,7 @@ def hgm_FB_2(alpha, ns=None, alpha0=None, G0=None, withvol=True):
         if input_ns is None:
             alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
         else:
-            alpha0 = increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
+            alpha0 = fb_utils.increase_dim(alpha0, fb_utils.tile_repeat(np.arange(len(input_ns)), input_ns))
             alpha0, ns0, inv_theta0 = fb_utils.reduce_dim(alpha0)
         assert(ns == ns0)
         assert(inv_theta == inv_theta0)

@@ -465,10 +465,10 @@ class FB8Distribution(object):
             # FB8 numerical integration
             else:
                 # TODO: fix for hgm
-                # result = hgm.hgm_FB_2(
-                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))[0]/(2*np.pi)
-                # result = saddle.SPA(
-                #     *fb_utils.fb8_to_ks_params(k, self.nu, b, m))/(2*np.pi)
+                # _ = fb_utils.fb8_to_ks_params(k, self.nu, b, m)
+                # result = hgm.hgm_FB(_[0], _[1])[0]/(2*np.pi)
+                # result = hgm.hgm_FB_2(_[0], _[1])[0]/(2*np.pi)
+                # result = saddle.SPA(_[0], _[1])/(2*np.pi)
 
                 result = dblquad(
                     lambda th, ph: np.sin(th)*\
