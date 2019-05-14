@@ -30,42 +30,42 @@ def dG_fun_FB(alpha, G, ns=None, s=1):
     dG[:,0] = G[1:d+1]
 
     # derivative of dC/dth[i] with respect to th[j]
-    for i in range(p):
+    # derivative of dC/dxi[i] with respect to th[j]
+    # derivative of dC/dxi[j] with respect to xi[i]
+    # derivative of dC/dxi[i] with respect to xi[j]
+    for i in xrange(p):
         dG[i, i+1] = -s*Gth[i]
-        for j in range(p):
+        dG[i,p+i+1] = -s*Gxi[i]
+        for j in xrange(p):
             if j != i:
-                a1 = -(ns[j]/2.0 / (th[j]-th[i]) + xi[j]**2.0 / 4.0 / (th[j]-th[i])**2.0)
-                a2 = -(ns[i]/2.0 / (th[i]-th[j]) + xi[i]**2.0 / 4.0 / (th[i]-th[j])**2.0)
-                a3 = -(ns[j] * xi[i] / 4.0 / (th[j]-th[i])**2.0 + xi[i]*xi[j]**2.0 / 4 / (th[j]-th[i])**3.0)
-                a4 = -(ns[i]*xi[j] / 4.0 / (th[i]-th[j])**2.0 + xi[i]**2.0 * xi[j] / 4.0 / (th[i]-th[j])**3.0)
+                dth = th[i]-th[j]
+                dth2 = dth**2
+                dth3 = dth2*dth
+                xii2 = xi[i]**2
+                xij2 = xi[j]**2
+                a1 = -(-ns[j]/2.0 / dth + xij2 / 4.0 / dth2)
+                a2 = -(ns[i]/2.0 / dth + xii2 / 4.0 / dth2)
+                a3 = -(ns[j] * xi[i] / 4.0 / dth2 - xi[i]*xij2 / 4 / dth3)
+                a4 = -(ns[i]*xi[j] / 4.0 / dth2 + xii2 * xi[j] / 4.0 / dth3)
                 dG[j,i+1] = a1*Gth[i] + a2*Gth[j] + a3*Gxi[i] + a4*Gxi[j]
                 dG[i,i+1] = dG[i,i+1] - dG[j,i+1]
 
-    # derivative of dC/dxi[i] with respect to th[j]
-    # derivative of dC/dxi[j] with respect to xi[i]
-    for i in range(p):
-        dG[i,p+i+1] = -s*Gxi[i]
-        for j in range(p):
-            if j != i:
-                b2 = xi[i] / 2.0 / (th[i]-th[j])
-                b3 = -(ns[j] / 2.0 / (th[j]-th[i]) + xi[j]**2.0 / 4.0 / (th[j]-th[i])**2.0)
-                b4 = xi[i]*xi[j] / 4.0 / (th[i]-th[j])**2.0
+                b2 = xi[i] / 2.0 / dth
+                b3 = -(-ns[j] / 2.0 / dth + xij2 / 4.0 / dth2)
+                b4 = xi[i]*xi[j] / 4.0 / dth2
                 dG[j,p+i+1] = b2*Gth[j] + b3*Gxi[i] + b4*Gxi[j]
                 dG[p+i,j+1] = dG[j,p+i+1]
                 dG[i,p+i+1] = dG[i,p+i+1] - dG[j,p+i+1]
-        dG[p+i,i+1] = dG[i,p+i+1]
 
-    # derivative of dC/dxi[i] with respect to xi[j]
-    for i in range(p):
-        for j in range(p):
-            if j != i:
-                c3 = xi[j] / 2.0 / (th[j]-th[i])
-                c4 = -xi[i] / 2.0 / (th[j]-th[i])
+                c3 = -xi[j] / 2.0 / dth
+                c4 = xi[i] / 2.0 / dth
                 dG[p+j,p+i+1] = c3*Gxi[i] + c4*Gxi[j]
         if ns[i] == 1 or abs(xi[i]) < 1e-10:
             dG[p+i,p+i+1] = -Gth[i] # cheat
         else:
             dG[p+i,p+i+1] = -Gth[i] - (ns[i]-1) / xi[i] * Gxi[i] # singular if xi[i] == 0
+        dG[p+i,i+1] = dG[i,p+i+1]
+
     return dG
 
 # Initial vlaue for Pfaffian system (by power series expansion)
@@ -79,17 +79,17 @@ def C_FB_power(alpha, v=None, d=None, Ctol=1e-6, alphatol=1e-10, Nmax=None):
     if Nmax is None:
         Nmax = int(np.ceil(10.0**(10.0/len(alpha))))
 
-    alpha_sum = np.sum(abs(alpha[:p*2]))
+    alpha_sum = np.sum(np.abs(alpha[:p*2]))
     N0 = max(int(np.ceil(alpha_sum)), 1)
     if N0 > Nmax:
         raise ValueError("alpha is too large!")
-    for N in range(N0, Nmax):
+    for N in xrange(N0, Nmax):
         logep = N*np.log(alpha_sum) - scipy.special.loggamma(N+1) + np.log((N+1) / (N+1.0-alpha_sum))
         if logep < np.log(Ctol):
             break
     if N > Nmax:
-        raise ValueError("alpha is too large!")
-
+        raise ValueError("alpha is too large!")        
+    
     def f(k):
         k1 = k[:p]
         k2 = k[p:p*2]
@@ -99,14 +99,19 @@ def C_FB_power(alpha, v=None, d=None, Ctol=1e-6, alphatol=1e-10, Nmax=None):
             return 0.0
         w = k > 0
         a = np.prod(alpha[w] ** k[w])
-        b1 = np.sum(-scipy.special.loggamma(k1+1) - scipy.special.loggamma(k2+1) + scipy.special.loggamma(k1 + v1 + (k2 + v2)/2.0 + (d/2.0)) + scipy.special.loggamma((k2+v2)/2.0 + 0.5) - scipy.special.loggamma((k2+v2)/2.0 + d/2.0))
-        b2 = -scipy.special.loggamma(np.sum(k1+v1+(k2+v2)/2.0 + (d/2.0)))
+        _s0 = (k2+v2)/2.0 
+        _s1 = _s0 + d/2.0
+        _s2 = _s1+k1+v1
+        b1 = np.sum(-scipy.special.loggamma(k1+1) - scipy.special.loggamma(k2+1) + scipy.special.loggamma(_s2) + scipy.special.loggamma(_s0 + 0.5) - scipy.special.loggamma(_s1))
+        b2 = -scipy.special.loggamma(np.sum(_s2))
         b3 = scipy.special.loggamma(np.sum(d)/2.0) - p*scipy.special.loggamma(0.5)
         return a * np.exp(b1+b2+b3)
 
     stack = [(np.array([]), None, None, None)]
     res = None
     tot = 0.0
+    # import pdb
+    # pdb.set_trace()
     while len(stack) > 0:
         k, branch, max_index, index = stack.pop()
         kn = len(k)
@@ -154,7 +159,7 @@ def G_FB_power(alpha, ns=None, Ctol=1e-6, alphatol=1e-10):
 
     C = C_FB_power(alpha_prime, d=ns, Ctol=Ctol, alphatol=alphatol) # note: parameterization
     dC = np.zeros(p*2)
-    for i in range(p):
+    for i in xrange(p):
         e = np.zeros(p*2)
         e[i] = 1
         dC[i] = -C_FB_power(alpha_prime, v=e, d=ns, Ctol=Ctol, alphatol=alphatol) # note: parameterization
@@ -183,14 +188,14 @@ def G_FB_MC(alpha, ns=None, N=1e6, t=None):
     t1 = np.zeros((N,p))
     t2 = np.zeros((N,p))
 
-    for i in range(p):
+    for i in xrange(p):
         t2[:,i] = np.sum(t[:,idx[i]:idx[i+1]]**2.0, axis=1)
         t1[:,i] = t[:,idx[i]]
 
     itrd = np.exp(t2.dot(-th) + t1.dot(xi)) # integrand
     G[0] = np.mean(itrd)
 
-    for i in range(p):
+    for i in xrange(p):
         G[i+1] = -np.mean(itrd * t2[:,i])
         G[p+i+1] = np.mean(itrd * t1[:,i])
     return G
