@@ -375,9 +375,9 @@ class FB8Distribution(object):
                                 n2**(2 * ll) * n3**(2 * kk) *
                                 abs(0.5 * k * n1)**(-jj -ll -kk -0.5)*
                                 np.exp(
-                                    np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
-                                    # np.log(n2) * 2 * ll + np.log(n3) * 2 * kk +
-                                    # np.log(0.5 * k * n1) * (-jj -ll - kk - 0.5) -
+                                    np.log(b) * jj + np.log(k) * 2 * (ll+kk) -# +
+                                    # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
+                                    # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
                                     LG(2 * ll + 1) - LG(2 * kk + 1)
                                 ) * I(jj + ll + kk + 0.5, abs(k*n1))
                             )
@@ -397,10 +397,10 @@ class FB8Distribution(object):
                                 break
 
                         kk += 1
-                        if (kk % 2 and np.abs(result-reskk) < np.abs(result) * 1E-12):
+                        if np.abs(result-reskk) < np.abs(result) * 1E-12:
                             break
                     ll += 1
-                    if (ll % 2 and np.abs(result-resll) < np.abs(result) * 1E-12):
+                    if np.abs(result-resll) < np.abs(result) * 1E-12:
                         break
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
