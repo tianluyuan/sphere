@@ -832,20 +832,18 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             z_starts.append(np.concatenate((all_values.x, [0.9,0.,0.])))
 
         for z_start in z_starts:
-            try:
-                if verbose:
-                    __fb8_mle_output1(fb8(*z_start), callback)
-                _z = minimize(minus_log_likelihood,
-                              z_start,
-                              method="SLSQP",
-                              constraints=cons,
-                              callback=callback,
-                              options={"disp": False, "ftol": 1e-08,
-                                       "maxiter": 100})
+            if verbose:
+                __fb8_mle_output1(fb8(*z_start), callback)
+            _z = minimize(minus_log_likelihood,
+                          z_start,
+                          method="SLSQP",
+                          constraints=cons,
+                          callback=callback,
+                          options={"disp": False, "ftol": 1e-08,
+                                   "maxiter": 100})
 
-                if _z.success and _z.fun < all_values.fun:
-                    all_values = _z
-
+            if _z.success and _z.fun < all_values.fun:
+                all_values = _z
     warnflag = all_values.status
     if not all_values.success:
         warning_message = all_values.message
