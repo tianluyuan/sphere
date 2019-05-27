@@ -817,24 +817,19 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         for z_start in z_starts:
             if verbose:
                 __fb8_mle_output1(fb8(*z_start), callback)
-            ### DEBUG ###
             # _z = basinhopping(minus_log_likelihood,
             #                   z_start,
             #                   niter=10,
+            #                   niter_success=3,
             #                   minimizer_kwargs= dict(
-            #                       method="SLSQP",
+            #                       method="L-BFGS-B",
             #                       callback=callback,
-            #                       constraints=cons,
-            #                       options={"disp": False, "ftol": 1e-08,
-            #                                "maxiter": 100}))
-            ### END ###
+            #                       options={"disp": False,
+            #                                "maxiter": 100})).lowest_optimization_result
             _z = minimize(minus_log_likelihood,
                       z_start,
-                      method="SLSQP",
-                      constraints=cons,
-                      callback=callback,
-                      options={"disp": False, "ftol": 1e-08,
-                               "maxiter": 100})
+                      method="L-BFGS-B",
+                      callback=callback)
             if _z.success and _z.fun < all_values.fun:
                 all_values = _z
     warnflag = all_values.status
