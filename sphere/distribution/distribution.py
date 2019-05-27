@@ -451,24 +451,7 @@ class FB8Distribution(object):
             x3 = 0
         else:
             # FB8
-            ## Brute force grid
-            # def gridded(npts):
-            #     return [_.flatten() for _ in meshgrid(linspace(0, pi, npts), linspace(0,2*pi, npts))]
-            # npts = 1000
-            # thetas, phis = FB8Distribution.gridded(npts)
-            # lpdfs = self.log_pdf(
-            #     FB8Distribution.spherical_coordinates_to_nu(thetas, phis),
-            #     normalize=False)
-            # return thetas[lpdfs.argmax()], phis[lpdfs.argmax()]
-            ## basinhopping
-            # f = lambda x: -k*(n1*cos(x[0])+n2*sin(x[0])*cos(x[1])+n3*sin(x[0])*sin(x[1])) - b*sin(x[0])**2*(cos(x[1])**2-m*sin(x[1])**2)
-            # _x = basinhopping(f,
-            #                   array([0,0]))
-            # if not _x.lowest_optimization_result.success:
-            #     warning_message = _x.message
-            #     warnings.warn(warning_message, RuntimeWarning)
-            # x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
-            ##
+            # Line search along solution set with BFGS run over x_max
             ntests = 1001
             radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+\
               4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
@@ -834,6 +817,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         for z_start in z_starts:
             if verbose:
                 __fb8_mle_output1(fb8(*z_start), callback)
+            ### DEBUG ###
             # _z = basinhopping(minus_log_likelihood,
             #                   z_start,
             #                   niter=10,
@@ -843,6 +827,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             #                       constraints=cons,
             #                       options={"disp": False, "ftol": 1e-08,
             #                                "maxiter": 100}))
+            ### END ###
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="SLSQP",
