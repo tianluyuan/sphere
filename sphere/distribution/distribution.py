@@ -22,7 +22,6 @@ from scipy.special import iv as I
 from scipy.special import ivp as DI
 from scipy.stats import uniform
 from scipy.special import comb
-from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 import scipy.linalg
@@ -326,7 +325,7 @@ class FB8Distribution(object):
         j = 0
         if not (k, b, m, n1, n2) in cache:
             result = 0.
-            # FB6 case
+            # FB6
             if n1 == 1.:
                 # exact solution (vmF)
                 if b == 0.0:
@@ -360,14 +359,47 @@ class FB8Distribution(object):
                         if (j % 2 and np.abs(a) < np.abs(result) * 1E-12 and j > 5):
                             break
 
-            # FB8 numerical integration
+            # FB8
             else:
-                result = dblquad(
-                    lambda th, ph: np.sin(th)*\
-                    np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
-                        b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
-                                 0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-                    epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
+                ll = 0
+                while True:
+                    resll = result
+                    kk = 0
+                    while True:
+                        reskk = result
+                        jj = 0
+                        while True:
+                            # int sin(theta) dtheta
+                            a = (n2**(2 * ll) * n3**(2 * kk) *
+                                (0.5 * k * n1)**(-jj -ll -kk -0.5)*
+                                np.exp(
+                                    np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
+                                    # np.log(n2) * 2 * ll + np.log(n3) * 2 * kk +
+                                    # np.log(0.5 * k * n1) * (-jj -ll - kk - 0.5) -
+                                    LG(2 * ll + 1) - LG(2 * kk + 1)
+                                ) * I(jj + ll + kk + 0.5, k*n1)
+                            )
+                            # int dphi
+                            irange = np.arange(jj + 1)
+                            aj = ((-m)**irange * np.exp(
+                                LG(irange + kk + 0.5) + LG(jj - irange + ll + 0.5) - LG(irange + 1) - LG(jj - irange + 1))).sum()
+                            a /= np.sqrt(np.pi)
+                            a *= aj
+                            result += a
+
+                            j += 1
+                            jj += 1
+                            if np.isnan(result):
+                                raise RuntimeWarning
+                            if (jj % 2 and np.abs(a) < np.abs(result) * 1E-12 and jj > 5):
+                                break
+
+                        kk += 1
+                        if (kk % 2 and np.abs(result-reskk) < np.abs(result) * 1E-12):
+                            break
+                    ll += 1
+                    if (ll % 2 and np.abs(result-resll) < np.abs(result) * 1E-12):
+                        break
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
 
@@ -813,8 +845,6 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
                 if _z.success and _z.fun < all_values.fun:
                     all_values = _z
-            except IntegrationWarning as w:
-                print(w)
 
     warnflag = all_values.status
     if not all_values.success:
