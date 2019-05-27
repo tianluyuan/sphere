@@ -784,25 +784,14 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                                    "maxiter": 100})
 
     if not fb5_only:
-        # Then try a FB6 fit with seed: eta = -0.9 and 2*beta > kappa
+        # Then try a FB6 fit with seed: eta = -0.99
         # note eta=-1 with 2*beta >= kappa is the small-circle distribution (Bingham-Mardia 1978)
         if verbose:
             __fb8_mle_output1(fb8(*y_start), callback)
-        cons = ({"type": "ineq", # kappa >= 0
-                 "fun": lambda x: x[3]},
-                {"type": "ineq", # beta >= 0
-                 "fun": lambda x: x[4]},
-                {"type": "ineq", # -1 <= eta <=1
-                 "fun": lambda x: 1 - np.abs(x[5])})
-                # {"type": "ineq",
-                #  "fun": lambda x: -x[3] + 2 * x[4]})
         _y = minimize(minus_log_likelihood,
                       y_start,
-                      method="SLSQP",
-                      constraints=cons,
-                      callback=callback,
-                      options={"disp": False,
-                               "maxiter": 100, "ftol": 1e-08})
+                      method="L-BFGS-B",
+                      callback=callback)
 
         # default seed
         z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0]),]
