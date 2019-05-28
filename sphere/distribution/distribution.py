@@ -340,7 +340,6 @@ class FB8Distribution(object):
                     while True:
                         # int sin(theta) dtheta
                         a = (
-                            # b**j * abs(0.5*k)**(-j - 0.5)
                             np.exp(
                                 np.log(b) * j +
                                 np.log(abs(0.5 * k)) * (-j - 0.5)
@@ -369,6 +368,7 @@ class FB8Distribution(object):
                     while True:
                         reskk = result
                         jj = 0
+                        curr_a = 0
                         while True:
                             # int sin(theta) dtheta
                             a = (
@@ -378,12 +378,12 @@ class FB8Distribution(object):
                                     np.log(b) * jj + np.log(k) * 2 * (ll+kk) -# +
                                     # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
                                     # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
-                                    LG(2 * ll + 1) - LG(2 * kk + 1)
+                                    LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj+1)
                                 ) * I(jj + ll + kk + 0.5, abs(k*n1))
                             )
                             # int dphi
                             irange = np.arange(jj + 1)
-                            aj = ((-m)**irange * np.exp(
+                            aj = ((-m)**irange * np.exp(LG(jj+1) + 
                                 LG(irange + kk + 0.5) + LG(jj - irange + ll + 0.5) - LG(irange + 1) - LG(jj - irange + 1))).sum()
                             a /= np.sqrt(np.pi)
                             a *= aj
@@ -393,8 +393,9 @@ class FB8Distribution(object):
                             jj += 1
                             if np.isnan(result):
                                 raise RuntimeWarning
-                            if (jj % 2 and np.abs(a) < np.abs(result) * 1E-12 and jj > 5):
+                            if (jj % 2 and np.abs(a) < np.abs(result) * 1E-8 and np.abs(a)<=curr_a):
                                 break
+                            curr_a = np.abs(a)
 
                         kk += 1
                         if np.abs(result-reskk) < np.abs(result) * 1E-12:
@@ -402,6 +403,15 @@ class FB8Distribution(object):
                     ll += 1
                     if np.abs(result-resll) < np.abs(result) * 1E-12:
                         break
+                ### DEBUG ###
+                # from scipy.integrate import dblquad
+                # result = dblquad(
+                #     lambda th, ph: np.sin(th)*\
+                #     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
+                #         b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
+                #                  0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
+                #     epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
+                ### END ###
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
 
