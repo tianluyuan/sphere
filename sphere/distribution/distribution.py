@@ -321,6 +321,8 @@ class FB8Distribution(object):
         True True True True True True True True
         """
         k, b, m = self.kappa, self.beta, self.eta
+        if k < 0 or b < 0:
+            return np.inf
         n1, n2, n3 = self.nu
         j = 0
         if not (k, b, m, n1, n2) in cache:
@@ -427,7 +429,8 @@ class FB8Distribution(object):
                 k = self.kappa
                 b = self.beta
                 m = self.eta
-                if self.nu[0] == 1.:
+                n1, n2, n3 = self.nu
+                if n1 == 1.:
                     if k > 2 * b:
                         lnormalize = np.log(2 * np.pi) + k - \
                             np.log((k - 2 * b) * (k + 2 * b)) / 2.
@@ -442,12 +445,14 @@ class FB8Distribution(object):
                             0.5 * (1 + m) * np.pi * b
                         )
                 else:
-                    result = dblquad(
+                    import pdb
+                    pdb.set_trace()
+                    lnormalize = np.log(dblquad(
                         lambda th, ph: np.sin(th)*\
                         np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
                             b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
                                      0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-                        epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
+                        epsabs=1e-3, epsrel=1e-3)[0])
                     
             return lnormalize
 
