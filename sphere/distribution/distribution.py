@@ -21,7 +21,7 @@ from scipy.special import gammaln as LG
 from scipy.special import iv as I
 from scipy.special import ivp as DI
 from scipy.stats import uniform
-from scipy.integrate import dblquad
+from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 import scipy.linalg
@@ -327,17 +327,21 @@ class FB8Distribution(object):
         j = 0
         if not (k, b, m, n1, n2) in cache:
             result = 0.
+            if b == 0. and k == 0.:
+                result = 2
             # FB6
-            if n1 == 1.:
+            elif n1 == 1.:
                 # exact solution (vmF)
                 if b == 0.0:
-                    result = (
-                        ((0.5 * k)**(-2 * j - 0.5)) *
-                        (I(2 * j + 0.5, k))
-                    )
-                    result /= G(j + 1)
-                    result *= G(j + 0.5)
-
+                    result = 2/k * np.sinh(k)
+                    # import pdb
+                    # pdb.set_trace()
+                    # result = (
+                    #     ((0.5 * k)**(-2 * j - 0.5)) *
+                    #     (I(2 * j + 0.5, k))
+                    # )
+                    # result /= G(j + 1)
+                    # result *= G(j + 0.5)
                 else:
                     while True:
                         # int sin(theta) dtheta
@@ -360,54 +364,65 @@ class FB8Distribution(object):
                         if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
                             assert not a < 0
                             break
-
             # FB8
             else:
-                ll = 0
-                while True:
-                    resll = result
-                    kk = 0
-                    curr_dkk = 0
+                try:
+                    ll = 0
                     while True:
-                        reskk = result
-                        jj = 0
-                        curr_djj = 0
+                        resll = result
+                        kk = 0
+                        curr_dkk = 0
                         while True:
-                            # int sin(theta) dtheta
-                            a = (
-                                n2**(2 * ll) * n3**(2 * kk) *
-                                abs(0.5 * k * n1)**(-jj -ll -kk -0.5)*
-                                np.exp(
-                                    np.log(b) * jj + np.log(k) * 2 * (ll+kk) -# +
-                                    # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
-                                    # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
-                                    LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj+1)
-                                ) * I(jj + ll + kk + 0.5, abs(k*n1))
-                            )
-                            # int dphi
-                            irange = np.arange(jj + 1)
-                            aj = ((-m)**irange * np.exp(LG(jj+1) + 
-                                LG(irange + kk + 0.5) + LG(jj - irange + ll + 0.5) - LG(irange + 1) - LG(jj - irange + 1))).sum()
-                            a /= np.sqrt(np.pi)
-                            a *= aj
-                            result += a
+                            reskk = result
+                            jj = 0
+                            curr_djj = 0
+                            while True:
+                                # int sin(theta) dtheta
+                                a = (
+                                    n2**(2 * ll) * n3**(2 * kk) *
+                                    abs(0.5 * k * n1)**(-jj -ll -kk -0.5)*
+                                    np.exp(
+                                        np.log(b) * jj + np.log(k) * 2 * (ll+kk) -# +
+                                        # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
+                                        # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
+                                        LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj+1)
+                                    ) * I(jj + ll + kk + 0.5, abs(k*n1))
+                                )
+                                # int dphi
+                                irange = np.arange(jj + 1)
+                                aj = ((-m)**irange * np.exp(LG(jj+1) + 
+                                    LG(irange + kk + 0.5) + LG(jj - irange + ll + 0.5) - LG(irange + 1) - LG(jj - irange + 1))).sum()
+                                a /= np.sqrt(np.pi)
+                                a *= aj
+                                result += a
 
-                            j += 1
-                            jj += 1
-                            if np.isnan(result):
-                                raise RuntimeWarning
-                            if jj % 2:
-                                assert not a < 0
-                                if a < np.abs(result) * 1E-8 and a<=curr_djj:
-                                    break
-                                curr_djj = a
-                        kk += 1
-                        if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
+                                j += 1
+                                jj += 1
+                                if np.isnan(result):
+                                    raise RuntimeWarning
+                                if jj % 2:
+                                    assert not a < 0
+                                    if a < np.abs(result) * 1E-8 and a<=curr_djj:
+                                        break
+                                    curr_djj = a
+                            kk += 1
+                            if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
+                                break
+                            curr_dkk = result-reskk
+                        ll += 1
+                        if np.abs(result-resll) < np.abs(result) * 1E-12:
                             break
-                        curr_dkk = result-reskk
-                    ll += 1
-                    if np.abs(result-resll) < np.abs(result) * 1E-12:
-                        break
+                except (RuntimeWarning, OverflowError):
+                    try:
+                        # numerical integration
+                        result = dblquad(
+                            lambda th, ph: np.sin(th)*\
+                            np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
+                                   b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
+                                   0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
+                            epsabs=1e-3, epsrel=1e-3)[0]/(2*np.pi)
+                    except (RuntimeWarning, OverflowError, IntegrationWarning):
+                        return np.inf
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
 
@@ -421,36 +436,27 @@ class FB8Distribution(object):
         Returns the logarithm of the normalization constant.
         """
         with warnings.catch_warnings():
-            warnings.simplefilter('error')
+            warnings.simplefilter('default')
             try:
                 lnormalize = np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
-                # Approximate the normalization
+                assert self.nu[0] == 1. # should only reach here if it's FB6
                 k = self.kappa
                 b = self.beta
                 m = self.eta
-                n1, n2, n3 = self.nu
-                if n1 == 1.:
-                    if k > 2 * b:
-                        lnormalize = np.log(2 * np.pi) + k - \
-                            np.log((k - 2 * b) * (k + 2 * b)) / 2.
-                    else:
-                        # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
-                        # approximation in Bingham-Mardia (1978), converting F to
-                        # c, where c is the normalization in the Kent paper, with
-                        # a correction factor for floating eta
-                        lnormalize = (
-                            0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
-                            np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
-                            0.5 * (1 + m) * np.pi * b
-                        )
+                if k > 2 * b:
+                    lnormalize = np.log(2 * np.pi) + k - \
+                        np.log((k - 2 * b) * (k + 2 * b)) / 2.
                 else:
-                    lnormalize = np.log(dblquad(
-                        lambda th, ph: np.sin(th)*\
-                        np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
-                            b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
-                                     0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-                        epsabs=1e-3, epsrel=1e-3)[0])
+                    # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
+                    # approximation in Bingham-Mardia (1978), converting F to
+                    # c, where c is the normalization in the Kent paper, with
+                    # a correction factor for floating eta
+                    lnormalize = (
+                        0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
+                        np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
+                        0.5 * (1 + m) * np.pi * b
+                    )
                     
             return lnormalize
 
@@ -761,6 +767,10 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
     # method that generates the minus L to be minimized
     # x = theta phi psi kappa beta eta alpha rho
     def minus_log_likelihood(x):
+        if np.any(np.isnan(x)):
+            return np.inf
+        if x[3] < 0 or x[4] < 0:
+            return np.inf
         return -fb8(*x).log_likelihood(xs) / len(xs)
 
     # callback for keeping track of the values
@@ -817,8 +827,6 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         _y = minimize(minus_log_likelihood,
                       y_start,
                       method="L-BFGS-B",
-                      bounds=zip([0,0,0,0,0,None],
-                                 [np.pi,2*np.pi,2*np.pi,None,None,None]),
                       callback=callback)
 
         # default seed
@@ -846,13 +854,10 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="L-BFGS-B",
-                      bounds=zip([0,0,0,0,0,None,0,0],
-                                 [np.pi,2*np.pi,2*np.pi,None,None,None,np.pi,2*np.pi]),
                       callback=callback,
                       options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
                 all_values = _z
-    warnflag = all_values.status
     if not all_values.success:
         warning_message = all_values.message
         if warning == "warn":
