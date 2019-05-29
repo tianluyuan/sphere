@@ -423,22 +423,24 @@ class FB8Distribution(object):
             try:
                 lnormalize = np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
+                # Approximate the normalization
                 k = self.kappa
                 b = self.beta
                 m = self.eta
-                if k > 2 * b:
-                    lnormalize = np.log(2 * np.pi) + k - \
-                        np.log((k - 2 * b) * (k + 2 * b)) / 2.
-                elif self.nu[0] == 1.:
-                    # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
-                    # approximation in Bingham-Mardia (1978), converting F to
-                    # c, where c is the normalization in the Kent paper, with
-                    # a correction factor for floating eta
-                    lnormalize = (
-                        0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
-                        np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
-                        0.5 * (1 + m) * np.pi * b
-                    )
+                if self.nu[0] == 1.:
+                    if k > 2 * b:
+                        lnormalize = np.log(2 * np.pi) + k - \
+                            np.log((k - 2 * b) * (k + 2 * b)) / 2.
+                    else:
+                        # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
+                        # approximation in Bingham-Mardia (1978), converting F to
+                        # c, where c is the normalization in the Kent paper, with
+                        # a correction factor for floating eta
+                        lnormalize = (
+                            0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
+                            np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
+                            0.5 * (1 + m) * np.pi * b
+                        )
                 else:
                     result = dblquad(
                         lambda th, ph: np.sin(th)*\
