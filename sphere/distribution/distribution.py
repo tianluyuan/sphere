@@ -355,7 +355,8 @@ class FB8Distribution(object):
                         j += 1
                         if np.isnan(result):
                             raise RuntimeWarning
-                        if (j % 2 and np.abs(a) < np.abs(result) * 1E-12 and j > 5):
+                        if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
+                            assert not a < 0
                             break
 
             # FB8
@@ -364,10 +365,11 @@ class FB8Distribution(object):
                 while True:
                     resll = result
                     kk = 0
+                    curr_dkk = 0
                     while True:
                         reskk = result
                         jj = 0
-                        curr_a = 0
+                        curr_djj = 0
                         while True:
                             # int sin(theta) dtheta
                             a = (
@@ -392,14 +394,15 @@ class FB8Distribution(object):
                             jj += 1
                             if np.isnan(result):
                                 raise RuntimeWarning
-                            if jj % 2:                                
-                                if np.abs(a) < np.abs(result) * 1E-8 and np.abs(a)<=curr_a:
+                            if jj % 2:
+                                assert not a < 0
+                                if a < np.abs(result) * 1E-8 and a<=curr_djj:
                                     break
-                                curr_a = np.abs(a)
-
+                                curr_djj = a
                         kk += 1
-                        if np.abs(result-reskk) < np.abs(result) * 1E-12:
+                        if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
                             break
+                        curr_dkk = result-reskk
                     ll += 1
                     if np.abs(result-resll) < np.abs(result) * 1E-12:
                         break
@@ -815,7 +818,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                       callback=callback)
 
         # default seed
-        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0]),]
+        # z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0]),]
+        z_starts = []
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
@@ -839,7 +843,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="L-BFGS-B",
-                      callback=callback)
+                      callback=callback,
+                      options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
                 all_values = _z
     warnflag = all_values.status
