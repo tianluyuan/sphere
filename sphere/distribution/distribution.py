@@ -321,9 +321,6 @@ class FB8Distribution(object):
         True True True True True True True True
         """
         k, b, m = self.kappa, self.beta, self.eta
-        if k < 0 or b < 0:
-            warnings.warn('kappa and beta cannot be negative', RuntimeWarning)
-            return np.inf
         n1, n2, n3 = self.nu
         j = 0
         if not (k, b, m, n1, n2) in cache:
@@ -818,6 +815,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         _y = minimize(minus_log_likelihood,
                       y_start,
                       method="L-BFGS-B",
+                      bounds=zip([0,0,0,0,0,None],
+                                 [np.pi,2*np.pi,2*np.pi,None,None,None]),
                       callback=callback)
 
         # default seed
@@ -845,6 +844,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="L-BFGS-B",
+                      bounds=zip([0,0,0,0,0,None,0,0],
+                                 [np.pi,2*np.pi,2*np.pi,None,None,None,np.pi,2*np.pi]),
                       callback=callback,
                       options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
