@@ -446,8 +446,6 @@ class FB8Distribution(object):
                             0.5 * (1 + m) * np.pi * b
                         )
                 else:
-                    import pdb
-                    pdb.set_trace()
                     lnormalize = np.log(dblquad(
                         lambda th, ph: np.sin(th)*\
                         np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
