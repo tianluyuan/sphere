@@ -322,6 +322,7 @@ class FB8Distribution(object):
         """
         k, b, m = self.kappa, self.beta, self.eta
         if k < 0 or b < 0:
+            warnings.warn('kappa and beta cannot be negative', RuntimeWarning)
             return np.inf
         n1, n2, n3 = self.nu
         j = 0
