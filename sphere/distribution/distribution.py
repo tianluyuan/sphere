@@ -413,6 +413,7 @@ class FB8Distribution(object):
                         if np.abs(result-resll) < np.abs(result) * 1E-12:
                             break
                 except (RuntimeWarning, OverflowError):
+                    warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
                     try:
                         # numerical integration
                         result = dblquad(
@@ -440,6 +441,7 @@ class FB8Distribution(object):
             try:
                 lnormalize = np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
+                warnings.warn('Series calculation of normalization failed. Approximating normalization.')
                 assert self.nu[0] == 1. # should only reach here if it's FB6
                 k = self.kappa
                 b = self.beta
