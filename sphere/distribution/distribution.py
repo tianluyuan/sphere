@@ -171,6 +171,8 @@ class FB8Distribution(object):
         return theta, phi, psi
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
+        assert not kappa < 0
+        assert not beta < 0
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
 
