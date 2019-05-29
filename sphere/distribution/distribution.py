@@ -352,7 +352,6 @@ class FB8Distribution(object):
                         a /= np.sqrt(np.pi)
                         a *= aj
                         result += a
-
                         j += 1
                         if np.isnan(result):
                             raise RuntimeWarning
@@ -393,9 +392,10 @@ class FB8Distribution(object):
                             jj += 1
                             if np.isnan(result):
                                 raise RuntimeWarning
-                            if (jj % 2 and np.abs(a) < np.abs(result) * 1E-8 and np.abs(a)<=curr_a):
-                                break
-                            curr_a = np.abs(a)
+                            if jj % 2:                                
+                                if np.abs(a) < np.abs(result) * 1E-8 and np.abs(a)<=curr_a:
+                                    break
+                                curr_a = np.abs(a)
 
                         kk += 1
                         if np.abs(result-reskk) < np.abs(result) * 1E-12:
