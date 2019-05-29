@@ -21,7 +21,7 @@ from scipy.special import gammaln as LG
 from scipy.special import iv as I
 from scipy.special import ivp as DI
 from scipy.stats import uniform
-from scipy.special import comb
+from scipy.integrate import dblquad
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
 from scipy.stats import norm as gauss
 import scipy.linalg
@@ -406,15 +406,6 @@ class FB8Distribution(object):
                     ll += 1
                     if np.abs(result-resll) < np.abs(result) * 1E-12:
                         break
-                ### DEBUG ###
-                # from scipy.integrate import dblquad
-                # result = dblquad(
-                #     lambda th, ph: np.sin(th)*\
-                #     np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
-                #         b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
-                #                  0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-                #     epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
-                ### END ###
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
 
@@ -435,12 +426,10 @@ class FB8Distribution(object):
                 k = self.kappa
                 b = self.beta
                 m = self.eta
-                if k < 0 or b < 0:
-                    lnormalize = 1e10
-                elif k > 2 * b:
+                if k > 2 * b:
                     lnormalize = np.log(2 * np.pi) + k - \
                         np.log((k - 2 * b) * (k + 2 * b)) / 2.
-                else:
+                elif self.nu[0] == 1.:
                     # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
                     # approximation in Bingham-Mardia (1978), converting F to
                     # c, where c is the normalization in the Kent paper, with
@@ -450,6 +439,14 @@ class FB8Distribution(object):
                         np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
                         0.5 * (1 + m) * np.pi * b
                     )
+                else:
+                    result = dblquad(
+                        lambda th, ph: np.sin(th)*\
+                        np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
+                            b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
+                                     0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
+                        epsabs=1e-3, epsrel=1e-3)[0]/(2.*np.pi)
+                    
             return lnormalize
 
     def max(self):
