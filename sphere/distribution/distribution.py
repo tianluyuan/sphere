@@ -20,6 +20,7 @@ from scipy.special import gamma as G
 from scipy.special import gammaln as LG
 from scipy.special import iv as I
 from scipy.special import ivp as DI
+from scipy.special import hyp2f1 as H2F1
 from scipy.stats import uniform
 from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
@@ -334,14 +335,6 @@ class FB8Distribution(object):
                 # exact solution (vmF)
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
-                    # import pdb
-                    # pdb.set_trace()
-                    # result = (
-                    #     ((0.5 * k)**(-2 * j - 0.5)) *
-                    #     (I(2 * j + 0.5, k))
-                    # )
-                    # result /= G(j + 1)
-                    # result *= G(j + 0.5)
                 else:
                     while True:
                         # int sin(theta) dtheta
@@ -352,11 +345,7 @@ class FB8Distribution(object):
                             ) * I(j + 0.5, abs(k))
                         )
                         # int dphi
-                        irange = np.arange(j + 1)
-                        aj = ((-m)**irange * np.exp(LG(irange + 0.5) + LG(j -
-                                                                       irange + 0.5) - LG(irange + 1) - LG(j - irange + 1))).sum()
-                        a /= np.sqrt(np.pi)
-                        a *= aj
+                        a *= np.exp(LG(j+0.5)-LG(j+1))*H2F1(-j, 0.5, 0.5-j, -m)
                         result += a
                         j += 1
                         if np.isnan(result):
@@ -377,7 +366,6 @@ class FB8Distribution(object):
                             jj = 0
                             curr_djj = 0
                             while True:
-                                # int sin(theta) dtheta
                                 a = (
                                     n2**(2 * ll) * n3**(2 * kk) *
                                     abs(0.5 * k * n1)**(-jj -ll -kk -0.5)*
@@ -386,14 +374,9 @@ class FB8Distribution(object):
                                         # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
                                         # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
                                         LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj+1)
-                                    ) * I(jj + ll + kk + 0.5, abs(k*n1))
-                                )
-                                # int dphi
-                                irange = np.arange(jj + 1)
-                                aj = ((-m)**irange * np.exp(LG(jj+1) + 
-                                    LG(irange + kk + 0.5) + LG(jj - irange + ll + 0.5) - LG(irange + 1) - LG(jj - irange + 1))).sum()
-                                a /= np.sqrt(np.pi)
-                                a *= aj
+                                    ) * I(jj + ll + kk + 0.5, abs(k*n1)) *
+                                    H2F1(-jj, kk+0.5, 0.5-jj-ll, -m) * G(kk+0.5) * G(jj+ll+0.5)
+                                ) / np.sqrt(np.pi)
                                 result += a
 
                                 j += 1
@@ -412,7 +395,7 @@ class FB8Distribution(object):
                         ll += 1
                         if np.abs(result-resll) < np.abs(result) * 1E-12:
                             break
-                except (RuntimeWarning, OverflowError):
+                except (RuntimeWarning, OverflowError) as e:
                     warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
                     try:
                         # numerical integration
