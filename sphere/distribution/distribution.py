@@ -172,8 +172,9 @@ class FB8Distribution(object):
         return theta, phi, psi
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
-        assert not kappa < 0
-        assert not beta < 0
+        assert not kappa < 0.
+        assert not beta < 0.
+        assert not abs(eta) > 1.001
         for gamma in gamma1, gamma2, gamma3:
             assert len(gamma) == 3
 
@@ -361,7 +362,7 @@ class FB8Distribution(object):
                         while True:
                             reskk = result
                             jj = 0
-                            curr_djj = 0
+                            curr_a = 0
                             while True:
                                 a = (
                                     n2**(2 * ll) * n3**(2 * kk) *
@@ -382,9 +383,9 @@ class FB8Distribution(object):
                                     raise RuntimeWarning
                                 if jj % 2:
                                     assert not a < 0
-                                    if a < np.abs(result) * 1E-8 and a<=curr_djj:
+                                    if a < np.abs(result) * 1E-8 and a<=curr_a:
                                         break
-                                    curr_djj = a
+                                    curr_a = a
                             kk += 1
                             if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
                                 break
@@ -753,6 +754,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             return np.inf
         if x[3] < 0 or x[4] < 0:
             return np.inf
+        ### DEBUG ###
+        # if len(x) > 5 and (x[5] > 1 or x[5] < -1):
+        #     return np.inf
         return -fb8(*x).log_likelihood(xs) / len(xs)
 
     # callback for keeping track of the values
@@ -809,6 +813,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         _y = minimize(minus_log_likelihood,
                       y_start,
                       method="L-BFGS-B",
+                      bounds=zip([None]*5+[-1,], [None]*5+[1,]),
                       callback=callback)
 
         # default seed
@@ -836,6 +841,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="L-BFGS-B",
+                      bounds=zip([None]*5+[-1,]+[None]*2, [None]*5+[1,]+[None]*2),
                       callback=callback,
                       options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
