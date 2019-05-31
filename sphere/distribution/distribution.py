@@ -337,15 +337,12 @@ class FB8Distribution(object):
                     result = 2/k * np.sinh(k)
                 else:
                     while True:
-                        # int sin(theta) dtheta
                         a = (
                             np.exp(
                                 np.log(b) * j +
                                 np.log(abs(0.5 * k)) * (-j - 0.5)
                             ) * I(j + 0.5, abs(k))
-                        )
-                        # int dphi
-                        a *= np.exp(LG(j+0.5)-LG(j+1))*H2F1(-j, 0.5, 0.5-j, -m)
+                        ) * np.exp(LG(j+0.5)-LG(j+1))*H2F1(-j, 0.5, 0.5-j, -m)
                         result += a
                         j += 1
                         if np.isnan(result):
