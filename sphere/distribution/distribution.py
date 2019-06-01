@@ -307,7 +307,7 @@ class FB8Distribution(object):
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
 
-    def _nnormalize(self):
+    def _nnormalize(self, epsabs=1e-3, epsrel=1e-3):
         """
         Perform numerical integration with dblquad. This function can be used for testing and 
         exception handling in self.normalize
@@ -320,7 +320,7 @@ class FB8Distribution(object):
             np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
                    b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
                    0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-            epsabs=1e-3, epsrel=1e-3)[0]
+                   epsabs=epsabs, epsrel=epsrel)[0]
     
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
@@ -341,7 +341,7 @@ class FB8Distribution(object):
         True True True True True True True True
 
         >>> from itertools import product
-        >>> for x in product([0], [0], [0], [0, 2, 32, 128], [0.01, 2, 32, 128], np.linspace(-1, 1, 5), np.linspace(0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
         ...    norm, nnorm = np.exp(fb8(*x).log_normalize()), fb8(*x)._nnormalize()
         ...    if np.abs(norm-nnorm)/norm > 0.01:
         ...        print fb8(*x), norm, nnorm
@@ -374,6 +374,9 @@ class FB8Distribution(object):
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
                 else:
+                    prev_a = 0
+                    pprev_a = 0
+                    ppprev_a = 0
                     while True:
                         v = j + 0.5
                         a = (
@@ -388,9 +391,20 @@ class FB8Distribution(object):
                         j += 1
                         if np.isnan(result):
                             raise RuntimeWarning
-                        if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
-                            assert not a < 0
+                        if j % 2 and a < 0:
+                            # hack around H2F1 inaccuracy
+                            warnings.warn('a < 0 for even j. 2F1 negative', OverflowError)
+                        _ = np.abs(result) * 1E-12
+                        if (np.abs(a) < _ and np.abs(prev_a) < _ and
+                            np.abs(a) <= np.abs(pprev_a) and
+                            np.abs(prev_a) <= np.abs(ppprev_a)):
                             break
+                        ppprev_a = pprev_a
+                        pprev_a = prev_a
+                        prev_a = a
+                        # if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
+                        #     assert not a < 0
+                        #     break
             # FB8
             else:
                 try:
@@ -403,50 +417,68 @@ class FB8Distribution(object):
                             curr_a_kk = 0
                             jj = 0
                             prev_a = 0
+                            pprev_a = 0
+                            ppprev_a = 0
                             while True:
                                 v = jj + ll + kk + 0.5
-                                z = abs(k*n1)
+                                z = k*n1
                                 a = (
                                     n2**(2 * ll) * n3**(2 * kk) *
                                     np.exp(
                                         np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
                                         LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
                                         LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
-                                    ) * H0F1(v+1, (z/2)**2) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+                                    ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
                                 ) / np.sqrt(np.pi)
                                 result += a
                                 curr_a_kk += a
                                 curr_a_ll += a
                                 ### DEBUG ###
-                                # if ll == 2 and kk==0 and jj==6:
+                                # if ll == 13 and kk==1 and jj==0:
+                                #     print ll, kk, jj, a, result
                                 #     import pdb
                                 #     pdb.set_trace()
-                                #     print ll, kk, jj, a, result
                                 j += 1
                                 jj += 1
                                 if np.isnan(result):
                                     raise RuntimeWarning
-                                if jj % 2:
+                                if jj % 2 and a < 0:
+                                    # hack around H2F1 inaccuracy
+                                    warnings.warn('a < 0 for even j. 2F1 negative', OverflowError)
+
+                                    # if a < np.abs(result) * 1E-12 and a<=prev_a:
+                                    #     break
+                                    # prev_a = a
+
                                     ### debug
-                                    if a < 0:
-                                        # hack around H2F1 inaccuracy
-                                        break
                                     # import pdb
                                     # pdb.set_trace()
                                     # print jj, v, a
                                     # print 'a<0', self.__repr__()
-                                    assert not a < 0
-                                    if a < np.abs(result) * 1E-8 and a<=prev_a:
-                                        break
-                                    prev_a = a
+
+                                _ = np.abs(result) * 1E-12
+                                if (np.abs(a) < _ and np.abs(prev_a) < _ and
+                                    np.abs(a) <= np.abs(pprev_a) and
+                                    np.abs(prev_a) <= np.abs(ppprev_a)):
+                                    break
+                                ppprev_a = pprev_a
+                                pprev_a = prev_a
+                                prev_a = a
+                            if curr_a_kk < 0:
+                                warnings.warn('Current a_k is negative. Sequence of a_k may not be well-behaved', RuntimeWarning)
                             kk += 1
                             ### DEBUG ###
-                            # print ll, kk, result, result-curr_a_kk
-                            if np.abs(curr_a_kk) < np.abs(result) * 1E-8 and np.abs(curr_a_kk) <= prev_a_kk:
+                            # print ll, kk, curr_a_kk, result
+                            # assert not curr_a_kk < 0
+                            if np.abs(curr_a_kk) < np.abs(result) * 1E-10 and np.abs(curr_a_kk) <= prev_a_kk:
                                 break
                             prev_a_kk = np.abs(curr_a_kk)
+                        if curr_a_ll < 0:
+                            warnings.warn('Current a_l is negative. Sequence of a_l may not be well-behaved', RuntimeWarning)
+                        ### DEBUG ###
+                        # print ll, curr_a_ll, result
                         ll += 1
-                        if np.abs(curr_a_ll) < np.abs(result) * 1E-12:
+                        if np.abs(curr_a_ll) < np.abs(result) * 1E-8:
                             break
                 except (RuntimeWarning, OverflowError) as e:
                     warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
@@ -759,7 +791,7 @@ def __fb8_mle_output1(k_me, callback):
     print "alpha =", k_me.alpha
     print "rho   =", k_me.rho
     print "******** Starting the Gradient Descent ********"
-    print "[iteration]   theta   phi   psi   kappa   beta   eta   alpha   rho   -L"
+    print "[iteration]   fb8(theta, phi, psi, kappa, beta, eta, alpha, rho)   -L"
 
 
 def __fb8_mle_output2(x, minusL, output_count, verbose):
@@ -820,7 +852,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         imv = intermediate_values
         imv.append((x, minusL))
         if verbose:
-            print len(imv), kx.theta, kx.phi, kx.psi, kx.kappa, kx.beta, kx.eta, kx.alpha, kx.rho, minusL
+            print len(imv), kx, minusL
 
     # first get estimated moments
     k_me = kent_me(xs)
