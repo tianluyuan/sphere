@@ -393,7 +393,8 @@ class FB8Distribution(object):
                             raise RuntimeWarning
                         if j % 2 and a < 0:
                             # hack around H2F1 inaccuracy
-                            warnings.warn('a < 0 for even j. 2F1 negative', OverflowError)
+                            warnings.warn('a < 0 for even j. 2F1 negative')
+                            raise RuntimeWarning
                         _ = np.abs(result) * 1E-12
                         if (np.abs(a) < _ and np.abs(prev_a) < _ and
                             np.abs(a) <= np.abs(pprev_a) and
@@ -444,7 +445,8 @@ class FB8Distribution(object):
                                     raise RuntimeWarning
                                 if jj % 2 and a < 0:
                                     # hack around H2F1 inaccuracy
-                                    warnings.warn('a < 0 for even j. 2F1 negative', OverflowError)
+                                    warnings.warn('a < 0 for even j. 2F1 negative')
+                                    raise RuntimeWarning
 
                                     # if a < np.abs(result) * 1E-12 and a<=prev_a:
                                     #     break
@@ -465,7 +467,8 @@ class FB8Distribution(object):
                                 pprev_a = prev_a
                                 prev_a = a
                             if curr_a_kk < 0:
-                                warnings.warn('Current a_k is negative. Sequence of a_k may not be well-behaved', RuntimeWarning)
+                                warnings.warn('Current a_k is negative. Sequence of a_k may not be well-behaved')
+                                raise RuntimeWarning
                             kk += 1
                             ### DEBUG ###
                             # print ll, kk, curr_a_kk, result
@@ -474,7 +477,8 @@ class FB8Distribution(object):
                                 break
                             prev_a_kk = np.abs(curr_a_kk)
                         if curr_a_ll < 0:
-                            warnings.warn('Current a_l is negative. Sequence of a_l may not be well-behaved', RuntimeWarning)
+                            warnings.warn('Current a_l is negative. Sequence of a_l may not be well-behaved')
+                            raise RuntimeWarning
                         ### DEBUG ###
                         # print ll, curr_a_ll, result
                         ll += 1
