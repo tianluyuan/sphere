@@ -954,14 +954,15 @@ if __name__ == "__main__":
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0+j*1
 Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
- 15 181 309 431 549 665 779 893   x   x
-  9 161 299 423 543 661 777 891   x   x
-  7 101 267 403 527 647 765   x   x   x
-  7  53 215 367 501 625 747   x   x   x
-  7  37 141 317 463 595 721   x   x   x
-  7  29  83 251 413 555 687   x   x   x
-  7  25  57 171 353 507   x   x   x   x
-  7  23  45 109 281   x   x   x   x   x
+ 16 182 309 431 549 665 780 894   x   x
+ 10 161 299 424 543 662 777 891   x   x
+  7 101 267 403 527 648 765   x   x   x
+  7  53 215 368 502 626 747   x   x   x
+  7  37 142 318 463 595 724   x   x   x
+  7  30  83 252 413 555 687   x   x   x
+  7  26  57 171 354 507   x   x   x   x
+  7  23  45 110 281   x   x   x   x   x
+  x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
 
