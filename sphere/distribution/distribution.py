@@ -968,7 +968,6 @@ Iterations necessary to calculate normalize(kappa, beta):
   7  23  45 110 281   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
-  x   x   x   x   x   x   x   x   x   x
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> ks = [
