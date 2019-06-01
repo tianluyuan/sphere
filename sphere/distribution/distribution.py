@@ -428,9 +428,9 @@ class FB8Distribution(object):
                                     raise RuntimeWarning
                                 if jj % 2:
                                     ### debug
-                                    # if a < 0:
-                                    #     # hack around H2F1 inaccuracy
-                                    #     break
+                                    if a < 0:
+                                        # hack around H2F1 inaccuracy
+                                        break
                                     # import pdb
                                     # pdb.set_trace()
                                     # print jj, v, a
@@ -922,11 +922,11 @@ if __name__ == "__main__":
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0+j*1
 Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
- 15   x   x   x   x   x   x   x   x   x
-  9 161 299   x   x   x   x   x   x   x
-  7 101 267 403   x   x   x   x   x   x
-  7  53 215 367 501   x   x   x   x   x
-  7  37 141 317 463 595   x   x   x   x
+ 15 181 309 431 549 665 779 893   x   x
+  9 161 299 423 543 661 777 891   x   x
+  7 101 267 403 527 647 765   x   x   x
+  7  53 215 367 501 625 747   x   x   x
+  7  37 141 317 463 595 721   x   x   x
   7  29  83 251 413 555 687   x   x   x
   7  25  57 171 353 507   x   x   x   x
   7  23  45 109 281   x   x   x   x   x
