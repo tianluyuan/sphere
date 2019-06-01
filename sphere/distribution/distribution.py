@@ -21,6 +21,7 @@ from scipy.special import gammaln as LG
 from scipy.special import iv as I
 from scipy.special import ivp as DI
 from scipy.special import hyp2f1 as H2F1
+from scipy.special import hyp0f1 as H0F1
 from scipy.stats import uniform
 from scipy.integrate import dblquad, IntegrationWarning
 # to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
@@ -306,6 +307,21 @@ class FB8Distribution(object):
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
 
+    def _nnormalize(self):
+        """
+        Perform numerical integration with dblquad. This function can be used for testing and 
+        exception handling in self.normalize
+        """
+        # numerical integration
+        k, b, m = self.kappa, self.beta, self.eta
+        n1, n2, n3 = self.nu
+        return dblquad(
+            lambda th, ph: np.sin(th)*\
+            np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
+                   b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
+                   0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
+            epsabs=1e-3, epsrel=1e-3)[0]
+    
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
         Returns the normalization constant of the FB8 distribution.
@@ -323,6 +339,12 @@ class FB8Distribution(object):
         ...     print np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
         ...
         True True True True True True True True
+
+        >>> from itertools import product
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128], [0.01, 2, 32, 128], np.linspace(-1, 1, 5), np.linspace(0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
+        ...    norm, nnorm = np.exp(fb8(*x).log_normalize()), fb8(*x)._nnormalize()
+        ...    if np.abs(norm-nnorm)/norm > 0.01:
+        ...        print fb8(*x), norm, nnorm
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -331,6 +353,21 @@ class FB8Distribution(object):
             result = 0.
             if b == 0. and k == 0.:
                 result = 2
+            # BM with eta modification (edge case k=0)
+            elif k == 0.:
+                while True:
+                    a = 2 * (
+                        np.exp(
+                            np.log(b) * j - LG(j+1)
+                        ) 
+                    ) * H2F1(0.5, -j, 0.5 - j, -m)/(1 + 2 * j)
+                    result += a
+                    j += 1
+                    if np.isnan(result):
+                        raise RuntimeWarning
+                    if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
+                        assert not a < 0
+                        break                
             # FB6
             elif n1 == 1.:
                 # exact solution (vmF)
@@ -338,12 +375,24 @@ class FB8Distribution(object):
                     result = 2/k * np.sinh(k)
                 else:
                     while True:
-                        a = (
-                            np.exp(
-                                np.log(b) * j +
-                                np.log(abs(0.5 * k)) * (-j - 0.5)
-                            ) * I(j + 0.5, abs(k))
-                        ) * np.exp(LG(j+0.5)-LG(j+1))*H2F1(-j, 0.5, 0.5-j, -m)
+                        v = j + 0.5
+                        if True:
+                            a = (
+                                np.exp(
+                                    np.log(b) * j +
+                                    + LG(j + 0.5) - LG(j+1) - LG(v+1)
+                                    )
+                                ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
+                        else:                            
+                            a = (
+                                np.exp(
+                                    np.log(b) * j +
+                                    np.log(0.5 * k) * (-j - 0.5)
+                                    + LG(j + 0.5) - LG(j+1)
+                                    ) * I(v, k) * H2F1(-j, 0.5, 0.5-j, -m)
+                                )
+                        ### DEBUG ###
+                        # print j, a, I(j+0.5, k)
                         result += a
                         j += 1
                         if np.isnan(result):
@@ -364,29 +413,53 @@ class FB8Distribution(object):
                             jj = 0
                             curr_a = 0
                             while True:
-                                a = (
-                                    n2**(2 * ll) * n3**(2 * kk) *
-                                    abs(0.5 * k * n1)**(-jj -ll -kk -0.5)*
-                                    np.exp(
-                                        np.log(b) * jj + np.log(k) * 2 * (ll+kk) -# +
-                                        # np.log(n2**(2 * ll)) + np.log(n3**(2 * kk)) +
-                                        # np.log(abs(0.5 * k * n1)**(-jj -ll - kk - 0.5)) -
-                                        LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj+1)
-                                    ) * I(jj + ll + kk + 0.5, abs(k*n1)) *
-                                    H2F1(-jj, kk+0.5, 0.5-jj-ll, -m) * G(kk+0.5) * G(jj+ll+0.5)
-                                ) / np.sqrt(np.pi)
+                                v = jj + ll + kk + 0.5
+                                z = abs(k*n1)
+                                if True:
+                                    a = (
+                                        n2**(2 * ll) * n3**(2 * kk) *
+                                        np.exp(
+                                            np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
+                                            LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                                            LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
+                                        ) * H0F1(v+1, (z/2)**2) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+                                    ) / np.sqrt(np.pi)
+                                else:
+                                    a = (
+                                        n2**(2 * ll) * n3**(2 * kk) *
+                                        np.exp(
+                                            np.log(b) * jj + np.log(k) * 2 * (ll+kk) +
+                                            np.log(abs(0.5 * k * n1))*(-jj -ll - kk - 0.5) -
+                                            LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                                            LG(jj + ll + 0.5) + LG(kk + 0.5)
+                                        ) * I(v, abs(k*n1)) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+                                    ) / np.sqrt(np.pi)
                                 result += a
-
+                                ### DEBUG ###
+                                if ll == 2 and kk==0:
+                                    # import pdb
+                                    # pdb.set_trace()
+                                    print ll, kk, jj, a, result
                                 j += 1
                                 jj += 1
                                 if np.isnan(result):
                                     raise RuntimeWarning
                                 if jj % 2:
+                                    ### debug
+                                    # if a < 0:
+                                    #     # hack around H2F1 inaccuracy
+                                    #     break
+                                    # import pdb
+                                    # pdb.set_trace()
+                                    # print jj, v, a
+                                    # print 'a<0', self.__repr__()
                                     assert not a < 0
                                     if a < np.abs(result) * 1E-8 and a<=curr_a:
                                         break
                                     curr_a = a
                             kk += 1
+                            ### DEBUG ###
+                            # print ll, kk, result, result-reskk
                             if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
                                 break
                             curr_dkk = result-reskk
@@ -395,14 +468,11 @@ class FB8Distribution(object):
                             break
                 except (RuntimeWarning, OverflowError) as e:
                     warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
+                    ### DEBUG ###
+                    # print self.__repr__()
                     try:
                         # numerical integration
-                        result = dblquad(
-                            lambda th, ph: np.sin(th)*\
-                            np.exp(k*(n1*np.cos(th)+n2*np.sin(th)*np.cos(ph)+n3*np.sin(th)*np.sin(ph))+\
-                                   b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
-                                   0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
-                            epsabs=1e-3, epsrel=1e-3)[0]/(2*np.pi)
+                        result = self._nnormalize()/(2*np.pi)
                     except (RuntimeWarning, OverflowError, IntegrationWarning):
                         return np.inf
 
