@@ -376,21 +376,12 @@ class FB8Distribution(object):
                 else:
                     while True:
                         v = j + 0.5
-                        if True:
-                            a = (
-                                np.exp(
-                                    np.log(b) * j +
-                                    + LG(j + 0.5) - LG(j+1) - LG(v+1)
-                                    )
-                                ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
-                        else:                            
-                            a = (
-                                np.exp(
-                                    np.log(b) * j +
-                                    np.log(0.5 * k) * (-j - 0.5)
-                                    + LG(j + 0.5) - LG(j+1)
-                                    ) * I(v, k) * H2F1(-j, 0.5, 0.5-j, -m)
+                        a = (
+                            np.exp(
+                                np.log(b) * j +
+                                + LG(j + 0.5) - LG(j+1) - LG(v+1)
                                 )
+                            ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
                         ### DEBUG ###
                         # print j, a, I(j+0.5, k)
                         result += a
@@ -405,41 +396,32 @@ class FB8Distribution(object):
                 try:
                     ll = 0
                     while True:
-                        resll = result
+                        curr_a_ll = 0
                         kk = 0
-                        curr_dkk = 0
+                        prev_a_kk = 0
                         while True:
-                            reskk = result
+                            curr_a_kk = 0
                             jj = 0
-                            curr_a = 0
+                            prev_a = 0
                             while True:
                                 v = jj + ll + kk + 0.5
                                 z = abs(k*n1)
-                                if True:
-                                    a = (
-                                        n2**(2 * ll) * n3**(2 * kk) *
-                                        np.exp(
-                                            np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
-                                            LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                                            LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
-                                        ) * H0F1(v+1, (z/2)**2) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
-                                    ) / np.sqrt(np.pi)
-                                else:
-                                    a = (
-                                        n2**(2 * ll) * n3**(2 * kk) *
-                                        np.exp(
-                                            np.log(b) * jj + np.log(k) * 2 * (ll+kk) +
-                                            np.log(abs(0.5 * k * n1))*(-jj -ll - kk - 0.5) -
-                                            LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                                            LG(jj + ll + 0.5) + LG(kk + 0.5)
-                                        ) * I(v, abs(k*n1)) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
-                                    ) / np.sqrt(np.pi)
+                                a = (
+                                    n2**(2 * ll) * n3**(2 * kk) *
+                                    np.exp(
+                                        np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
+                                        LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                                        LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
+                                    ) * H0F1(v+1, (z/2)**2) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+                                ) / np.sqrt(np.pi)
                                 result += a
+                                curr_a_kk += a
+                                curr_a_ll += a
                                 ### DEBUG ###
-                                if ll == 2 and kk==0:
-                                    # import pdb
-                                    # pdb.set_trace()
-                                    print ll, kk, jj, a, result
+                                # if ll == 2 and kk==0 and jj==6:
+                                #     import pdb
+                                #     pdb.set_trace()
+                                #     print ll, kk, jj, a, result
                                 j += 1
                                 jj += 1
                                 if np.isnan(result):
@@ -454,17 +436,17 @@ class FB8Distribution(object):
                                     # print jj, v, a
                                     # print 'a<0', self.__repr__()
                                     assert not a < 0
-                                    if a < np.abs(result) * 1E-8 and a<=curr_a:
+                                    if a < np.abs(result) * 1E-8 and a<=prev_a:
                                         break
-                                    curr_a = a
+                                    prev_a = a
                             kk += 1
                             ### DEBUG ###
-                            # print ll, kk, result, result-reskk
-                            if np.abs(result-reskk) < np.abs(result) * 1E-8 and np.abs(result-reskk) <= curr_dkk:
+                            # print ll, kk, result, result-curr_a_kk
+                            if np.abs(curr_a_kk) < np.abs(result) * 1E-8 and np.abs(curr_a_kk) <= prev_a_kk:
                                 break
-                            curr_dkk = result-reskk
+                            prev_a_kk = np.abs(curr_a_kk)
                         ll += 1
-                        if np.abs(result-resll) < np.abs(result) * 1E-12:
+                        if np.abs(curr_a_ll) < np.abs(result) * 1E-12:
                             break
                 except (RuntimeWarning, OverflowError) as e:
                     warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
