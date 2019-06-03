@@ -379,6 +379,7 @@ class FB8Distribution(object):
                 result = 2
             # BM with eta modification (edge case k=0)
             elif k == 0.:
+                prev_a = 0
                 while True:
                     a = a_k0(np.arange(j*100,(j+1)*100), b, m)
                     sa = a.sum()
@@ -386,14 +387,16 @@ class FB8Distribution(object):
                     j += 1
                     if np.isnan(result):
                         raise RuntimeWarning
-                    if (np.abs(sa) < np.abs(result) * 1E-12):
-                        break                
+                    if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) < np.abs(prev_a):
+                        break
+                    prev_a = sa
             # FB6
             elif n1 == 1.:
                 # exact solution (vmF)
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
                 else:
+                    prev_a = 0
                     while True:
                         js = np.arange(j*100,(j+1)*100)
                         a = a_c6(js, b, k, m)
@@ -411,8 +414,9 @@ class FB8Distribution(object):
                             logging.warn('Series result is nan')
                             raise RuntimeWarning
                         j += 1
-                        if np.abs(sa) < np.abs(result) * 1E-12:
-                            break                
+                        if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) < np.abs(prev_a):
+                            break
+                        prev_a = sa
             # FB8
             else:
                 try:
@@ -424,9 +428,12 @@ class FB8Distribution(object):
                         while True:
                             curr_a_kk = 0
                             jj = 0
+                            prev_a_jj = 0
                             while True:
-                                jjs = np.arange(jj*100,(jj+1)*100)
-                                a = a_c8(jjs, kk, ll, b, k, m, n1, n2, n3)
+                                # jjs = np.arange(jj*10,(jj+1)*10)
+                                # kks = np.arange(kk*10,(kk+1)*10)
+                                jjs, kks = np.meshgrid(np.arange(jj*100,(jj+1)*100), np.arange(kk*100,(kk+1)*100))
+                                a = a_c8(jjs, kks, ll, b, k, m, n1, n2, n3)
                                 evens = jjs%2==0
                                 if np.any(a[evens] < 0):
                                     logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
@@ -444,8 +451,9 @@ class FB8Distribution(object):
                                     raise RuntimeWarning
                                 j += 1
                                 jj += 1
-                                if np.abs(sa) < np.abs(result) * 1E-12:
-                                    break                
+                                if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) <= np.abs(prev_a_jj):
+                                    break
+                                prev_a_jj = sa
                                 ### DEBUG ###
                                 # print ll, kk, jj, z, H0F1(v+1, z**2/4), H2F1(-jj, kk+0.5, 0.5-jj-ll, -m), a, result
                                 # if ll == 13 and kk==1 and jj==0:
