@@ -430,10 +430,10 @@ class FB8Distribution(object):
                             jj = 0
                             prev_a_jj = 0
                             while True:
-                                # jjs = np.arange(jj*10,(jj+1)*10)
-                                # kks = np.arange(kk*10,(kk+1)*10)
-                                _ = 10
-                                jjs, kks, lls = np.meshgrid(np.arange(jj*_,(jj+1)*_), np.arange(kk*_,(kk+1)*_), np.arange(ll*_,(ll+1)*_))
+                                _l = 15
+                                _k = 15
+                                _j = 15
+                                jjs, kks, lls = np.meshgrid(np.arange(jj*_j,(jj+1)*_j), np.arange(kk*_k,(kk+1)*_k), np.arange(ll*_l,(ll+1)*_l))
                                 a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                                 evens = jjs%2==0
                                 if np.any(a[evens] < 0):
@@ -462,7 +462,7 @@ class FB8Distribution(object):
                                 #     import pdb
                                 #     pdb.set_trace()
                             if curr_a_kk < 0:
-                                logging.warn('Current a_k is negative. Sequence of a_k may not be well-behaved')
+                                logging.warn('Current a_k is negative.')
                                 raise RuntimeWarning
 
                             kk += 1
@@ -476,7 +476,7 @@ class FB8Distribution(object):
                                 break
                             prev_a_kk = np.abs(curr_a_kk)
                         if curr_a_ll < 0:
-                            logging.warn('Current a_l is negative. Sequence of a_l may not be well-behaved')
+                            logging.warn('Current a_l is negative.')
                             raise RuntimeWarning
 
                         ### DEBUG ###
