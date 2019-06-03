@@ -13,6 +13,7 @@ generates example plots if called directly from the shell.
 
 import sys
 import warnings
+import logging
 
 import numpy as np
 from scipy.optimize import minimize, basinhopping
@@ -185,7 +186,7 @@ class FB8Distribution(object):
         self._kappa = float(kappa)
         self._beta = float(beta)
         # Bingham-Mardia, 4-param, small-circle distribution has eta=-1
-        self._eta = eta
+        self._eta = float(eta)
         # FB8 param nu
         if nu is None:
             nu = FB8Distribution.spherical_coordinates_to_nu(0,0)
@@ -341,7 +342,7 @@ class FB8Distribution(object):
         True True True True True True True True
 
         >>> from itertools import product
-        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
         ...    norm, nnorm = np.exp(fb8(*x).log_normalize()), fb8(*x)._nnormalize()
         ...    if np.abs(norm-nnorm)/norm > 0.01:
         ...        print fb8(*x), norm, nnorm
@@ -349,24 +350,28 @@ class FB8Distribution(object):
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         j = 0
-        if not (k, b, m, n1, n2) in cache:
+
+        def a_k0(j, m):
+            return 2 * (
+                        np.exp(
+                            lb * j - LG(j+1)
+                            ) 
+                        ) * H2F1(0.5, -j, 0.5 - j, -m)/(1 + 2 * j)
+        
+        if not cache.has_key((k, b, m, n1, n2)):
             result = 0.
             if b == 0. and k == 0.:
                 result = 2
             # BM with eta modification (edge case k=0)
             elif k == 0.:
+                lb = np.log(b)
                 while True:
-                    a = 2 * (
-                        np.exp(
-                            np.log(b) * j - LG(j+1)
-                        ) 
-                    ) * H2F1(0.5, -j, 0.5 - j, -m)/(1 + 2 * j)
+                    a = a_k0(j, m)
                     result += a
                     j += 1
                     if np.isnan(result):
                         raise RuntimeWarning
                     if (j % 2 and a < np.abs(result) * 1E-12 and j > 5):
-                        assert not a < 0
                         break                
             # FB6
             elif n1 == 1.:
@@ -374,6 +379,7 @@ class FB8Distribution(object):
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
                 else:
+                    lb = np.log(b)
                     prev_a = 0
                     pprev_a = 0
                     ppprev_a = 0
@@ -381,7 +387,7 @@ class FB8Distribution(object):
                         v = j + 0.5
                         a = (
                             np.exp(
-                                np.log(b) * j +
+                                lb * j +
                                 + LG(j + 0.5) - LG(j+1) - LG(v+1)
                                 )
                             ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
@@ -389,12 +395,13 @@ class FB8Distribution(object):
                         # print j, a, I(j+0.5, k)
                         result += a
                         j += 1
-                        if np.isnan(result):
+                        if np.isnan(result):# or np.isinf(result):
                             raise RuntimeWarning
                         if j % 2 and a < 0:
                             # hack around H2F1 inaccuracy
-                            warnings.warn('a < 0 for even j. 2F1 negative')
+                            logging.warn('a < 0 for even j. This is due to an inaccuracy in H2F1({}, {}, {}, {})'.format(-(j-1), 0.5, 0.5-j, -m))
                             raise RuntimeWarning
+
                         _ = np.abs(result) * 1E-12
                         if (np.abs(a) < _ and np.abs(prev_a) < _ and
                             np.abs(a) <= np.abs(pprev_a) and
@@ -409,6 +416,8 @@ class FB8Distribution(object):
             # FB8
             else:
                 try:
+                    lb = np.log(b)
+                    lk = np.log(k)
                     ll = 0
                     while True:
                         curr_a_ll = 0
@@ -426,7 +435,7 @@ class FB8Distribution(object):
                                 a = (
                                     n2**(2 * ll) * n3**(2 * kk) *
                                     np.exp(
-                                        np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
+                                        lb * jj + lk * 2 * (ll+kk) -
                                         LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
                                         LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
                                     ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
@@ -435,6 +444,7 @@ class FB8Distribution(object):
                                 curr_a_kk += a
                                 curr_a_ll += a
                                 ### DEBUG ###
+                                # print ll, kk, jj, z, H0F1(v+1, z**2/4), H2F1(-jj, kk+0.5, 0.5-jj-ll, -m), a, result
                                 # if ll == 13 and kk==1 and jj==0:
                                 #     print ll, kk, jj, a, result
                                 #     import pdb
@@ -442,23 +452,19 @@ class FB8Distribution(object):
                                 j += 1
                                 jj += 1
                                 if np.isnan(result):
+                                    logging.warn('Series result is nan')
                                     raise RuntimeWarning
                                 if jj % 2 and a < 0:
                                     # hack around H2F1 inaccuracy
-                                    warnings.warn('a < 0 for even j. 2F1 negative')
+                                    logging.warn('a < 0 for even j. This is due to an inaccuracy in H2F1({}, {}, {}, {})'.format(-(jj-1), kk+0.5, 0.5-jj-ll, -m))
                                     raise RuntimeWarning
-
-                                    # if a < np.abs(result) * 1E-12 and a<=prev_a:
-                                    #     break
-                                    # prev_a = a
 
                                     ### debug
                                     # import pdb
                                     # pdb.set_trace()
                                     # print jj, v, a
                                     # print 'a<0', self.__repr__()
-
-                                _ = np.abs(result) * 1E-12
+                                _ = np.abs(result) * 1E-8
                                 if (np.abs(a) < _ and np.abs(prev_a) < _ and
                                     np.abs(a) <= np.abs(pprev_a) and
                                     np.abs(prev_a) <= np.abs(ppprev_a)):
@@ -466,28 +472,29 @@ class FB8Distribution(object):
                                 ppprev_a = pprev_a
                                 pprev_a = prev_a
                                 prev_a = a
-                            if curr_a_kk < 0:
-                                warnings.warn('Current a_k is negative. Sequence of a_k may not be well-behaved')
-                                raise RuntimeWarning
+                            # if curr_a_kk < 0:
+                            #     warnings.warn('Current a_k is negative. Sequence of a_k may not be well-behaved', RuntimeWarning)
+
                             kk += 1
                             ### DEBUG ###
+                            # if ll == 2 and kk==44:
+                            #     import pdb
+                            #     pdb.set_trace()
                             # print ll, kk, curr_a_kk, result
                             # assert not curr_a_kk < 0
-                            if np.abs(curr_a_kk) < np.abs(result) * 1E-10 and np.abs(curr_a_kk) <= prev_a_kk:
+                            if np.abs(curr_a_kk) < np.abs(result) * 1E-8 and np.abs(curr_a_kk) <= prev_a_kk:
                                 break
                             prev_a_kk = np.abs(curr_a_kk)
-                        if curr_a_ll < 0:
-                            warnings.warn('Current a_l is negative. Sequence of a_l may not be well-behaved')
-                            raise RuntimeWarning
+                        # if curr_a_ll < 0:
+                        #     warnings.warn('Current a_l is negative. Sequence of a_l may not be well-behaved', RuntimeWarning)
+
                         ### DEBUG ###
                         # print ll, curr_a_ll, result
                         ll += 1
                         if np.abs(curr_a_ll) < np.abs(result) * 1E-8:
                             break
                 except (RuntimeWarning, OverflowError) as e:
-                    warnings.warn('Series calculation of normalization failed. Attempting numerical integration')
-                    ### DEBUG ###
-                    # print self.__repr__()
+                    logging.warn('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
                         # numerical integration
                         result = self._nnormalize()/(2*np.pi)
@@ -506,11 +513,11 @@ class FB8Distribution(object):
         Returns the logarithm of the normalization constant.
         """
         with warnings.catch_warnings():
-            warnings.simplefilter('default')
+            warnings.simplefilter('error')
             try:
                 lnormalize = np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
-                warnings.warn('Series calculation of normalization failed. Approximating normalization.')
+                logging.warn('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 assert self.nu[0] == 1. # should only reach here if it's FB6
                 k = self.kappa
                 b = self.beta
@@ -528,6 +535,12 @@ class FB8Distribution(object):
                         np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
                         0.5 * (1 + m) * np.pi * b
                     )
+                    # z = 0.5 * (1 + m) * np.pi * b
+                    # print z, hyp0f1(1,z**2/4)
+                    # lnormalize = (
+                    #     0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
+                    #     np.log(hyp0f1(1, z**2/4)) - z
+                    # )
                     
             return lnormalize
 
@@ -796,19 +809,6 @@ def __fb8_mle_output1(k_me, callback):
     print "rho   =", k_me.rho
     print "******** Starting the Gradient Descent ********"
     print "[iteration]   fb8(theta, phi, psi, kappa, beta, eta, alpha, rho)   -L"
-
-
-def __fb8_mle_output2(x, minusL, output_count, verbose):
-    interval = verbose if isinstance(verbose, int) else 1
-    str_values = list()
-    for value in (tuple(x) + (minusL,)):
-        str_value = "%- 8g" % value
-        while len(str_value) < 12:
-            str_value += " "
-        str_values.append(str_value)
-    if output_count[0] % interval == 0:
-        print ("[%3i]       " + " %s" * 3) % tuple(output_count + str_values)
-    output_count[0] = output_count[0] + 1
 
 
 def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn', fb5_only=False):
