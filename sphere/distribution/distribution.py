@@ -379,24 +379,25 @@ class FB8Distribution(object):
                 result = 2
             # BM with eta modification (edge case k=0)
             elif k == 0.:
-                prev_a = 0
+                prev_abs_a = 0
                 while True:
                     a = a_k0(np.arange(j*100,(j+1)*100), b, m)
                     sa = a.sum()
+                    abs_sa = np.abs(a).sum()
                     result += sa
                     j += 1
                     if np.isnan(result):
                         raise RuntimeWarning
-                    if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) < np.abs(prev_a):
+                    if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_a:
                         break
-                    prev_a = sa
+                    prev_abs_a = sa
             # FB6
             elif n1 == 1.:
                 # exact solution (vmF)
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
                 else:
-                    prev_a = 0
+                    prev_abs_a = 0
                     while True:
                         js = np.arange(j*100,(j+1)*100)
                         a = a_c6(js, b, k, m)
@@ -407,6 +408,7 @@ class FB8Distribution(object):
                             # hack around H2F1 inaccuracy
                             a[(evens) & (a < 0)] = 0
                         sa = a.sum()
+                        abs_sa = np.abs(sa).sum()
                         ### DEBUG ###
                         # print j, a, I(j+0.5, k)
                         result += sa
@@ -414,25 +416,23 @@ class FB8Distribution(object):
                             logging.warn('Series result is nan')
                             raise RuntimeWarning
                         j += 1
-                        if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) < np.abs(prev_a):
+                        if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_a:
                             break
-                        prev_a = sa
+                        prev_abs_a = sa
             # FB8
             else:
                 try:
                     ll = 0
                     while True:
-                        curr_a_ll = 0
+                        curr_abs_sa_ll = 0
                         kk = 0
-                        prev_a_kk = 0
+                        prev_abs_sa_kk = 0
                         while True:
-                            curr_a_kk = 0
+                            curr_abs_sa_kk = 0
                             jj = 0
-                            prev_a_jj = 0
+                            prev_abs_sa_jj = 0
                             while True:
-                                _l = 15
-                                _k = 15
-                                _j = 15
+                                _l, _k, _j = 14, 14, 14
                                 jjs, kks, lls = np.meshgrid(np.arange(jj*_j,(jj+1)*_j), np.arange(kk*_k,(kk+1)*_k), np.arange(ll*_l,(ll+1)*_l))
                                 a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                                 evens = jjs%2==0
@@ -442,26 +442,27 @@ class FB8Distribution(object):
                                     # hack around H2F1 inaccuracy
                                     a[(evens) & (a < 0)] = 0
                                 sa = a.sum()
+                                abs_sa = np.abs(a).sum()
                                 ### DEBUG ###
                                 # print j, a, I(j+0.5, k)
-                                curr_a_kk += sa
-                                curr_a_ll += sa
+                                curr_abs_sa_kk += abs_sa
+                                curr_abs_sa_ll += abs_sa
                                 result += sa
                                 if np.isnan(result):
                                     logging.warn('Series result is nan')
                                     raise RuntimeWarning
                                 j += 1
                                 jj += 1
-                                if np.abs(sa) < np.abs(result) * 1E-12 and np.abs(sa) <= np.abs(prev_a_jj):
+                                if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_sa_jj:
                                     break
-                                prev_a_jj = sa
+                                prev_abs_sa_jj = abs_sa
                                 ### DEBUG ###
                                 # print ll, kk, jj, z, H0F1(v+1, z**2/4), H2F1(-jj, kk+0.5, 0.5-jj-ll, -m), a, result
                                 # if ll == 13 and kk==1 and jj==0:
                                 #     print ll, kk, jj, a, result
                                 #     import pdb
                                 #     pdb.set_trace()
-                            if curr_a_kk < 0:
+                            if curr_abs_sa_kk < 0:
                                 logging.warn('Current a_k is negative.')
                                 raise RuntimeWarning
 
@@ -470,19 +471,19 @@ class FB8Distribution(object):
                             # if ll == 2 and kk==44:
                             #     import pdb
                             #     pdb.set_trace()
-                            # print ll, kk, curr_a_kk, result
-                            # assert not curr_a_kk < 0
-                            if np.abs(curr_a_kk) < np.abs(result) * 1E-12 and np.abs(curr_a_kk) <= prev_a_kk:
+                            # print ll, kk, curr_abs_sa_kk, result
+                            # assert not curr_abs_sa_kk < 0
+                            if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
                                 break
-                            prev_a_kk = np.abs(curr_a_kk)
-                        if curr_a_ll < 0:
+                            prev_abs_sa_kk = curr_abs_sa_kk
+                        if curr_abs_sa_ll < 0:
                             logging.warn('Current a_l is negative.')
                             raise RuntimeWarning
 
                         ### DEBUG ###
-                        # print ll, curr_a_ll, result
+                        # print ll, curr_abs_sa_ll, result
                         ll += 1
-                        if np.abs(curr_a_ll) < np.abs(result) * 1E-12:
+                        if curr_abs_sa_ll < np.abs(result) * 1E-12:
                             break
                 except (RuntimeWarning, OverflowError) as e:
                     logging.warn('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
