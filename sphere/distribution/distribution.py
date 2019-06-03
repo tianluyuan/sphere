@@ -432,8 +432,9 @@ class FB8Distribution(object):
                             while True:
                                 # jjs = np.arange(jj*10,(jj+1)*10)
                                 # kks = np.arange(kk*10,(kk+1)*10)
-                                jjs, kks = np.meshgrid(np.arange(jj*100,(jj+1)*100), np.arange(kk*100,(kk+1)*100))
-                                a = a_c8(jjs, kks, ll, b, k, m, n1, n2, n3)
+                                _ = 10
+                                jjs, kks, lls = np.meshgrid(np.arange(jj*_,(jj+1)*_), np.arange(kk*_,(kk+1)*_), np.arange(ll*_,(ll+1)*_))
+                                a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                                 evens = jjs%2==0
                                 if np.any(a[evens] < 0):
                                     logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
