@@ -340,12 +340,6 @@ class FB8Distribution(object):
         ...     print np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
         ...
         True True True True True True True True
-
-        >>> from itertools import product
-        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
-        ...    norm, nnorm = np.exp(fb8(*x).log_normalize()), fb8(*x)._nnormalize()
-        ...    if np.abs(norm-nnorm)/norm > 0.01:
-        ...        print fb8(*x), norm, nnorm
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -499,6 +493,13 @@ class FB8Distribution(object):
     def log_normalize(self):
         """
         Returns the logarithm of the normalization constant.
+
+
+        >>> from itertools import product
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
+        ...    lnorm, lnnorm = fb8(*x).log_normalize(), np.log(fb8(*x)._nnormalize())
+        ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
+        ...        print fb8(*x), lnorm, lnnorm
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
