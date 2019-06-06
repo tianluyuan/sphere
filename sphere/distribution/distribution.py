@@ -22,6 +22,7 @@ from scipy.special import gammaln as LG
 from scipy.special import iv as I
 from scipy.special import ivp as DI
 from scipy.special import hyp2f1 as H2F1
+from scipy.special import hyp1f1 as H1F1
 from scipy.special import hyp0f1 as H0F1
 from scipy.stats import uniform
 from scipy.integrate import dblquad, IntegrationWarning
@@ -386,6 +387,7 @@ class FB8Distribution(object):
             if b == 0. and k == 0.:
                 result = 2
             # FB6 or BM4-with-eta
+            # This is faster than the full FB8 sum
             elif n1 == 1. or k == 0.:
                 # exact solution (vmF)
                 if b == 0.0:
@@ -403,10 +405,13 @@ class FB8Distribution(object):
                         sa = a.sum()
                         abs_sa = np.abs(sa).sum()
                         ### DEBUG ###
-                        # print j, a, I(j+0.5, k)
+                        # print j, sa
                         result += sa
                         if np.isnan(result):
                             logging.warn('Series result is nan')
+                            raise RuntimeWarning
+                        if np.isinf(result):
+                            logging.warn('Series result is infinity')
                             raise RuntimeWarning
                         j += 1
                         if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_a:
@@ -520,10 +525,12 @@ class FB8Distribution(object):
                     # approximation in Bingham-Mardia (1978), converting F to
                     # c, where c is the normalization in the Kent paper, with
                     # a correction factor for floating eta
+                    # Written in terms of 1F1 using A&S (13.1.27) in which
+                    # I(0, z) = M(1/2, 1, -2z) exp(z)
+                    z = 0.5 * (1 + m) * np.pi * b
                     lnormalize = (
                         0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
-                        np.log(I(0, 0.5 * (1 + m) * np.pi * b)) -
-                        0.5 * (1 + m) * np.pi * b
+                        np.log(H1F1(0.5, 1, -2*z))
                     )
                     
             return lnormalize
