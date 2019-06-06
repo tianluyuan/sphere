@@ -362,20 +362,21 @@ class FB8Distribution(object):
                     ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
 
         def a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
+            assert k > 0
             v = jj + ll + kk + 0.5
             z = k*n1
-            assert k > 0
-            # prevent issues with log
-            if b == 0.:
-                b += np.finfo(float).eps
-            if n2 == 0.:
-                n2 += np.finfo(float).eps
-            if n3 == 0.:
-                n3 += np.finfo(float).eps
+            ln_n2 = np.log(n2**2) * ll
+            ln_n3 = np.log(n3**2) * kk
+            ln_b = np.log(b) * jj
+
+            # prevent issues with log for edge cases
+            ln_n2[np.isnan(ln_n2)] = 0
+            ln_n3[np.isnan(ln_n3)] = 0
+            ln_b[np.isnan(ln_b)] = 0
             return (
                 np.exp(
-                    np.log(n2**2) * ll + np.log(n3**2) * kk +
-                    np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
+                    ln_n2 + ln_n3 + ln_b +
+                    np.log(k) * 2 * (ll+kk) -
                     LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
                     LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
                     ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
