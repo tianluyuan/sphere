@@ -346,6 +346,7 @@ class FB8Distribution(object):
         j = 0
 
         def a_k0(j, b, m):
+            assert b > 0
             return 2 * (
                         np.exp(
                             np.log(b) * j - LG(j+1)
@@ -353,6 +354,7 @@ class FB8Distribution(object):
                         ) * H2F1(0.5, -j, 0.5 - j, -m)/(1 + 2 * j)
 
         def a_c6(j, b, k, m):
+            assert k > 0 and b > 0
             v = j + 0.5
             return (
                     np.exp(
