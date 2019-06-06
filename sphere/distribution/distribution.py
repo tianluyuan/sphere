@@ -364,9 +364,17 @@ class FB8Distribution(object):
         def a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
             v = jj + ll + kk + 0.5
             z = k*n1
+            assert k > 0
+            # prevent issues with log
+            if b == 0.:
+                b += np.finfo(float).eps
+            if n2 == 0.:
+                n2 += np.finfo(float).eps
+            if n3 == 0.:
+                n3 += np.finfo(float).eps
             return (
-                n2**(2 * ll) * n3**(2 * kk) *
                 np.exp(
+                    np.log(n2**2) * ll + np.log(n3**2) * kk +
                     np.log(b) * jj + np.log(k) * 2 * (ll+kk) -
                     LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
                     LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
@@ -403,7 +411,6 @@ class FB8Distribution(object):
                         a = a_c6(js, b, k, m)
                         evens = js % 2==0
                         if np.any(a[evens] < 0):
-                            # hack around H2F1 inaccuracy
                             logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1')
                             # hack around H2F1 inaccuracy
                             a[(evens) & (a < 0)] = 0
@@ -433,17 +440,19 @@ class FB8Distribution(object):
                             prev_abs_sa_jj = 0
                             while True:
                                 _l, _k, _j = 14, 14, 14
-                                jjs, kks, lls = np.meshgrid(np.arange(jj*_j,(jj+1)*_j), np.arange(kk*_k,(kk+1)*_k), np.arange(ll*_l,(ll+1)*_l))
+                                jjs, kks, lls = np.meshgrid(np.arange(jj*_j,(jj+1)*_j),
+                                                            np.arange(kk*_k,(kk+1)*_k),
+                                                            np.arange(ll*_l,(ll+1)*_l))
                                 a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                                 evens = jjs%2==0
                                 if np.any(a[evens] < 0):
                                     logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
-                                    # raise RuntimeWarning
                                     # hack around H2F1 inaccuracy
                                     a[(evens) & (a < 0)] = 0
                                 sa = a.sum()
                                 abs_sa = np.abs(a).sum()
                                 ### DEBUG ###
+                                # print ll, kk, jj, sa, abs_sa
                                 # print j, a, I(j+0.5, k)
                                 curr_abs_sa_kk += abs_sa
                                 curr_abs_sa_ll += abs_sa
@@ -457,7 +466,7 @@ class FB8Distribution(object):
                                     break
                                 prev_abs_sa_jj = abs_sa
                                 ### DEBUG ###
-                                # print ll, kk, jj, z, H0F1(v+1, z**2/4), H2F1(-jj, kk+0.5, 0.5-jj-ll, -m), a, result
+                                # print ll, kk, jj, sa, result
                                 # if ll == 13 and kk==1 and jj==0:
                                 #     print ll, kk, jj, a, result
                                 #     import pdb
@@ -466,13 +475,13 @@ class FB8Distribution(object):
                                 logging.warn('Current a_k is negative.')
                                 raise RuntimeWarning
 
-                            kk += 1
                             ### DEBUG ###
                             # if ll == 2 and kk==44:
                             #     import pdb
                             #     pdb.set_trace()
                             # print ll, kk, curr_abs_sa_kk, result
                             # assert not curr_abs_sa_kk < 0
+                            kk += 1
                             if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
                                 break
                             prev_abs_sa_kk = curr_abs_sa_kk
@@ -506,7 +515,7 @@ class FB8Distribution(object):
 
 
         >>> from itertools import product
-        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0.01, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
         ...    lnorm, lnnorm = fb8(*x).log_normalize(), np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print fb8(*x), lnorm, lnnorm
