@@ -345,16 +345,8 @@ class FB8Distribution(object):
         n1, n2, n3 = self.nu
         j = 0
 
-        def a_k0(j, b, m):
-            assert b > 0
-            return 2 * (
-                        np.exp(
-                            np.log(b) * j - LG(j+1)
-                            ) 
-                        ) * H2F1(0.5, -j, 0.5 - j, -m)/(1 + 2 * j)
-
         def a_c6(j, b, k, m):
-            assert k > 0 and b > 0
+            assert b > 0
             v = j + 0.5
             return (
                     np.exp(
@@ -393,22 +385,8 @@ class FB8Distribution(object):
             result = 0.
             if b == 0. and k == 0.:
                 result = 2
-            # BM with eta modification (edge case k=0)
-            elif k == 0.:
-                prev_abs_a = 0
-                while True:
-                    a = a_k0(np.arange(j*100,(j+1)*100), b, m)
-                    sa = a.sum()
-                    abs_sa = np.abs(a).sum()
-                    result += sa
-                    j += 1
-                    if np.isnan(result):
-                        raise RuntimeWarning
-                    if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_a:
-                        break
-                    prev_abs_a = sa
-            # FB6
-            elif n1 == 1.:
+            # FB6 or BM4-with-eta
+            elif n1 == 1. or k == 0.:
                 # exact solution (vmF)
                 if b == 0.0:
                     result = 2/k * np.sinh(k)
