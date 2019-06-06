@@ -372,9 +372,12 @@ class FB8Distribution(object):
                 ln_b = np.log(b) * jj
 
             # prevent issues with log for edge cases
-            ln_n2[np.isnan(ln_n2)] = 0
-            ln_n3[np.isnan(ln_n3)] = 0
-            ln_b[np.isnan(ln_b)] = 0
+            if n2 == 0.:
+                ln_n2[ll==0] = 0
+            if n3 == 0.:
+                ln_n3[kk==0] = 0
+            if b == 0.:
+                ln_b[jj==0] = 0
             return (
                 np.exp(
                     ln_n2 + ln_n3 + ln_b +
@@ -474,10 +477,8 @@ class FB8Distribution(object):
                                 #     print ll, kk, jj, a, result
                                 #     import pdb
                                 #     pdb.set_trace()
-                            if curr_abs_sa_kk < 0:
-                                logging.warn('Current a_k is negative.')
-                                raise RuntimeWarning
 
+                            assert not curr_abs_sa_kk < 0
                             ### DEBUG ###
                             # if ll == 2 and kk==44:
                             #     import pdb
@@ -488,10 +489,8 @@ class FB8Distribution(object):
                             if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
                                 break
                             prev_abs_sa_kk = curr_abs_sa_kk
-                        if curr_abs_sa_ll < 0:
-                            logging.warn('Current a_l is negative.')
-                            raise RuntimeWarning
 
+                        assert not curr_abs_sa_ll < 0
                         ### DEBUG ###
                         # print ll, curr_abs_sa_ll, result
                         ll += 1
