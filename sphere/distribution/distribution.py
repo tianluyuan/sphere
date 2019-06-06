@@ -365,9 +365,11 @@ class FB8Distribution(object):
             assert k > 0
             v = jj + ll + kk + 0.5
             z = k*n1
-            ln_n2 = np.log(n2**2) * ll
-            ln_n3 = np.log(n3**2) * kk
-            ln_b = np.log(b) * jj
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                ln_n2 = np.log(n2**2) * ll
+                ln_n3 = np.log(n3**2) * kk
+                ln_b = np.log(b) * jj
 
             # prevent issues with log for edge cases
             ln_n2[np.isnan(ln_n2)] = 0
