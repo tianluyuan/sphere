@@ -521,17 +521,14 @@ class FB8Distribution(object):
                     lnormalize = np.log(2 * np.pi) + k - \
                         np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
                 else:
-                    # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
-                    # approximation in Bingham-Mardia (1978), converting F to
-                    # c, where c is the normalization in the Kent paper, with
-                    # a correction factor for floating eta
+                    # normal approx. in z = cos(theta) with correction factor for floating eta
+                    # correction factor by fixing sin(theta)**2 = (1-k**2/(4*b**2)), corresponding to theta_max
                     # Written in terms of 1F1 using A&S (13.1.27) in which
                     # I(0, z) = M(1/2, 1, -2z) exp(z)
-                    z = 0.5 * (1 + m) * np.pi * b
-                    lnormalize = (
-                        0.5 * (np.log(np.pi) - np.log(b)) + np.log(4 * np.pi) + b * (1 + (k / (2 * b))**2) +
-                        np.log(H1F1(0.5, 1, -2*z))
-                    )
+                    _ = k**2/(4*b**2)
+                    z = (1+m) * b * (1-_)/2
+                    lnormalize = ((np.log(np.pi) - np.log(b))/2 + b*(1+_) + 
+                                      np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
                     
             return lnormalize
 
