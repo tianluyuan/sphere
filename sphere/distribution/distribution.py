@@ -519,7 +519,7 @@ class FB8Distribution(object):
                 m = self.eta
                 if k > 2 * b:
                     lnormalize = np.log(2 * np.pi) + k - \
-                        np.log((k - 2 * b) * (k + 2 * b)) / 2.
+                        np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
                 else:
                     # c = sqrt(pi/b)*4*pi/exp(-b*(1+(k/2*b)**2)) this is the
                     # approximation in Bingham-Mardia (1978), converting F to
