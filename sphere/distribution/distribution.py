@@ -497,24 +497,34 @@ class FB8Distribution(object):
             return cache[k, b, m, n1, n2]
 
     def _approx_log_normalize(self):
-            assert self.nu[0] == 1. # should only reach here if it's FB6
-            k = self.kappa
-            b = self.beta
-            m = self.eta
-            if k > 2 * b:
-                lnormalize = np.log(2 * np.pi) + k - \
-                    np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
-            else:
-                # normal approx. in z = cos(theta) with correction factor for floating eta
-                # correction factor by fixing sin(theta)**2 = (1-k**2/(4*b**2)), corresponding to theta_max
-                # Written in terms of 1F1 using A&S (13.1.27) in which
-                # I(0, z) = M(1/2, 1, -2z) exp(z)
-                _ = k**2/(4*b**2)
-                z = (1+m) * b * (1-_)/2
-                lnormalize = ((np.log(np.pi) - np.log(b))/2 + b*(1+_) + 
-                                  np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
+        """
+        >>> from itertools import product
+        >>> for x in product([0], [0], [0], range(10, 200, 10),
+        ...                 range(10, 200, 10),
+        ...                 np.linspace(-1, 1, 5), [0], [0]):
+        ...    lnorm = np.log(fb8(*x).normalize())
+        ...    lnormapprox = fb8(*x)._approx_log_normalize()
+        ...    if np.abs(lnorm-lnormapprox)/lnorm > 0.1:
+        ...        print fb8(*x), lnorm, lnormapprox
+        """
+        assert self.nu[0] == 1. # should only reach here if it's FB6
+        k = self.kappa
+        b = self.beta
+        m = self.eta
+        if k > 2 * b:
+            lnormalize = np.log(2 * np.pi) + k - \
+                np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
+        else:
+            # normal approx. in z = cos(theta) with correction factor for floating eta
+            # correction factor by fixing sin(theta)**2 = (1-k**2/(4*b**2)), corresponding to theta_max
+            # Written in terms of 1F1 using A&S (13.1.27) in which
+            # I(0, z) = M(1/2, 1, -2z) exp(z)
+            _ = k**2/(4*b**2)
+            z = (1+m) * b * (1-_)/2
+            lnormalize = ((np.log(np.pi) - np.log(b))/2 + b*(1+_) + 
+                              np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
 
-            return lnormalize
+        return lnormalize
         
     def log_normalize(self):
         """
@@ -522,14 +532,14 @@ class FB8Distribution(object):
 
 
         >>> from itertools import product
-        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256], [0, 2, 32, 128, 256], np.linspace(-1, 1, 5), np.linspace(0.0, np.pi, 3), np.linspace(0, np.pi/3, 3)):
-        ...    lnorm, lnnorm = fb8(*x).log_normalize(), np.log(fb8(*x)._nnormalize())
+        >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256],
+        ...                  [0, 2, 32, 128, 256], np.linspace(-1, 1, 5),
+        ...                  np.linspace(0.0, np.pi, 3),
+        ...                  np.linspace(0, np.pi/3, 3)):
+        ...    lnorm = fb8(*x).log_normalize()
+        ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print fb8(*x), lnorm, lnnorm
-        >>> for x in product([0], [0], [0], [10, 100, 1000, 2000], [10, 100, 1000, 2000], np.linspace(-1, 1, 5), 0, 0):
-        ...    lnorm, lnnormapprox = fb8(*x).log_normalize(), fb8(*x)._approx_log_normalize()
-        ...    if np.abs(lnorm-lnnormapprox)/lnorm > 0.1:
-        ...        print fb8(*x), lnorm, lnnormapprox
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
