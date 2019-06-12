@@ -24,7 +24,7 @@ class spa(object):
 
     
     def Kj(self, t, j):
-        return np.sum(np.math.factorial(j-1)/2. *1/(self._ls - t)**2+
+        return np.sum(np.math.factorial(j-1)/2. *1/(self._ls - t)**j+
                       np.math.factorial(j)/4. *self._gs**2/(self._ls-t)**(j+1))
 
     
