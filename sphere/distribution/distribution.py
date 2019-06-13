@@ -414,7 +414,7 @@ class FB8Distribution(object):
                             logging.warn('Series result is infinity')
                             raise RuntimeWarning
                         j += 1
-                        if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_a:
+                        if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_a:
                             break
                         prev_abs_a = abs_sa
             # FB8
@@ -454,7 +454,7 @@ class FB8Distribution(object):
                                     raise RuntimeWarning
                                 j += 1
                                 jj += 1
-                                if abs_sa < np.abs(result) * 1E-12 and abs_sa < prev_abs_sa_jj:
+                                if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_sa_jj:
                                     break
                                 prev_abs_sa_jj = abs_sa
                                 ### DEBUG ###
@@ -472,7 +472,7 @@ class FB8Distribution(object):
                             # print ll, kk, curr_abs_sa_kk, result
                             # assert not curr_abs_sa_kk < 0
                             kk += 1
-                            if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk < prev_abs_sa_kk:
+                            if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
                                 break
                             prev_abs_sa_kk = curr_abs_sa_kk
 
@@ -480,7 +480,7 @@ class FB8Distribution(object):
                         ### DEBUG ###
                         # print ll, curr_abs_sa_ll, result
                         ll += 1
-                        if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll < prev_abs_sa_ll:
+                        if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
                             break
                         prev_abs_sa_ll = curr_abs_sa_ll
                 except (RuntimeWarning, OverflowError) as e:
