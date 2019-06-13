@@ -23,9 +23,9 @@ def make_title(fb8):
             return FBtitle(5, kapbet)
         if fb8.eta == -1.:
             return FBtitle(4, kapbet)
-        return FBtitle(6, kapbet+r', \eta={:.1f}'.format(fb8.eta))
-    return FBtitle(8, kapbet+r', \eta={:.1f}, \vec{{\nu}}=({:.2f},{:.2f},{:.2f})'.format(
-        fb8.eta, np.round(fb8.nu[0],2), np.round(fb8.nu[1],2), np.round(fb8.nu[2]),2))
+        return FBtitle(6, kapbet+r', \eta={:.1g}'.format(fb8.eta))
+    return FBtitle(8, kapbet+r', \eta={:.1g}, \vec{{\nu}}=({:.3g},{:.3g},{:.3g})'.format(
+        fb8.eta, fb8.nu[0], fb8.nu[1], fb8.nu[2]))
 
 
 def plot_fb8(fb8, npts):
@@ -66,7 +66,7 @@ def approx_norm(kappa, eta):
     plt.ylabel(r'$\ln c_6(\beta)$')
     plt.legend()
     plt.text(0.03,0.7,
-             r'$\kappa={}, \eta={}$'.format(kappa, eta),
+             r'$\kappa={}, \eta={:.1g}$'.format(kappa, eta),
              transform=plt.gca().transAxes, fontsize=14)
 
     plt.tight_layout(0.1)
@@ -86,11 +86,11 @@ def numerical_norm(kappa, eta, alpha, rho):
     plt.ylabel(r'$\ln c_8(\beta)$')
     plt.legend()
     plt.text(0.03,0.7,
-             r'$\kappa={}, \eta={}$'.format(kappa, eta),
+             r'$\kappa={}, \eta={:.1g}$'.format(kappa, eta),
              transform=plt.gca().transAxes, fontsize=14)
     _ = fb8(0,0,0,kappa,10,eta,alpha,rho)
     plt.text(0.03,0.6,
-             r'$\vec{{\nu}}=({:.2f},{:.2f},{:.2f})$'.format(
+             r'$\vec{{\nu}}=({:.3g},{:.3g},{:.3g})$'.format(
                  _.nu[0], _.nu[1], _.nu[2]),
              transform=plt.gca().transAxes, fontsize=14)
     plt.tight_layout(0.1)
