@@ -25,7 +25,7 @@ def make_title(fb8):
             return FBtitle(4, kapbet)
         return FBtitle(6, kapbet+r', \eta={:.1g}'.format(fb8.eta))
     return FBtitle(8, kapbet+r', \eta={:.1g}, \vec{{\nu}}=({:.3g},{:.3g},{:.3g})'.format(
-        fb8.eta, fb8.nu[0], fb8.nu[1], fb8.nu[2]))
+        fb8.eta, np.round(fb8.nu[0],3), np.round(fb8.nu[1],3), np.round(fb8.nu[2],3)))
 
 
 def plot_fb8(fb8, npts):
