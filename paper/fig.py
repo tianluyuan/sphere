@@ -24,7 +24,8 @@ def make_title(fb8):
         if fb8.eta == -1.:
             return FBtitle(4, kapbet)
         return FBtitle(6, kapbet+r', \eta={:.1f}'.format(fb8.eta))
-    return FBtitle(8, kapbet+r', \eta={:.1f}, \vec{{\nu}}=({:.2f},{:.2f},{:.2f})'.format(fb8.eta, fb8.nu[0], fb8.nu[1], fb8.nu[2]))
+    return FBtitle(8, kapbet+r', \eta={:.1f}, \vec{{\nu}}=({:.2f},{:.2f},{:.2f})'.format(
+        fb8.eta, np.round(fb8.nu[0],2), np.round(fb8.nu[1],2), np.round(fb8.nu[2]),2))
 
 
 def plot_fb8(fb8, npts):
@@ -123,9 +124,10 @@ def toy(seed=92518):
     from matplotlib.patches import Circle
     from mpl_toolkits.mplot3d import art3d
     np.random.seed(seed)
-    toyf8 = fb8(np.pi/16, -np.pi/3,0,55,60,-1.,0.03,0.3)
+    toyf8 = fb8(np.pi/16, -np.pi/3,0,55,60,-1.,0.07,0.3)
     xs = toyf8.rvs(100)
-    fit5 = fb8_mle(xs, True, fb5_only=True)
+    fit5 = fb8_mle(xs, fb5_only=True)
+    print fit5, -fit5.log_likelihood(xs)
     plot_fb8(fit5, 200)
     ax = plt.gca()
     for (_z, _x, _y) in xs:
@@ -134,7 +136,8 @@ def toy(seed=92518):
         art3d.pathpatch_2d_to_3d(p, z=_z, zdir='z')
     plt.savefig('figs/toyfb5.png')
     
-    fit8 = fb8_mle(xs, True)
+    fit8 = fb8_mle(xs)
+    print fit8, -fit8.log_likelihood(xs)
     plot_fb8(fit8, 200)
     ax = plt.gca()
     for (_z, _x, _y) in xs:
@@ -150,7 +153,7 @@ def __main__():
     plot_fb8(fb8(th,ph,ps,10,10,-1,0,0), 200)
     plt.savefig('figs/fb4.png')
     # FB5
-    plot_fb8(fb8(th,ph,ps,10,5,1,0,0), 200)
+    plot_fb8(fb8(th,ph,ps,10,4,1,0,0), 200)
     plt.savefig('figs/fb5.png')
     # FB6
     plot_fb8(fb8(th+np.pi/6,ph,ps,10,10,-0.5,0,0), 200)
