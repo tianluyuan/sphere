@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
-from sphere.distribution import fb8, FB8Distribution, fb8_mle
+from sphere.distribution import fb8, FB8Distribution, fb8_mle, spa
 
 plt.style.use('paper.mplstyle')
 
@@ -56,12 +56,16 @@ def approx_norm(kappa, eta):
     """
     Compare log-c6 vs approx log-c6
     """
-    betas = np.arange(kappa/10, kappa)
+    betas = np.arange(kappa/10., kappa)
     plt.figure()
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta).normalize()) for beta in betas], label='Series')
     plt.plot(betas, [fb8(0,0,0,kappa,beta,eta)._approx_log_normalize() for beta in betas],
              linestyle='--',
              label='Approximate')
+    plt.plot(betas[2*betas<kappa], [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas if 2*beta < kappa],
+             linestyle=':',
+             color='k',
+             label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_6(\beta)$')
     plt.legend()
@@ -82,6 +86,10 @@ def numerical_norm(kappa, eta, alpha, rho):
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho)._nnormalize()) for beta in betas],
              linestyle='--',
              label='Numerical integration')
+    plt.plot(betas[2*betas<kappa], [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas if 2*beta < kappa],
+             linestyle=':',
+             color='k',
+             label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_8(\beta)$')
     plt.legend()

@@ -20,7 +20,7 @@ class spa(object):
 
 
     def K1(self, t):
-        return np.sum(1/2. * 1/(self._ls - t) + 1/4. * self._gs**2/(self._ls-t)**2)
+        return self.Kj(t,1)
 
     
     def Kj(self, t, j):
@@ -44,6 +44,7 @@ class spa(object):
         p = self.p
         lb = self._ls[0] - p/4. - 1/2.*np.sqrt(p**2/4.+p*np.max(self._gs**2))
         ub = self._ls[0] - 1/4. - 1/2.*np.sqrt(1/4.+self._gs[0]**2)
+        # return brentq(lambda t: self.K1(t)-1, lb, self._ls[0])
         return brentq(lambda t: self.K1(t)-1, lb, ub)
 
 
