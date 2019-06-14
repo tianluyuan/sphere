@@ -9,8 +9,9 @@ class spa(object):
 
         self.p = len(fb8.nu)
 
-        self._gs = k*fb8.nu
-        self._ls = np.asarray([0, -b, b*m])
+        _ = np.asarray([0, -b, b*m])
+        self._ls = _[np.argsort(_)]
+        self._gs = (k*fb8.nu)[np.argsort(_)]
         self._t_hat = self.solve_t()
 
 

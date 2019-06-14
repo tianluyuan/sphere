@@ -62,7 +62,7 @@ def approx_norm(kappa, eta):
     plt.plot(betas, [fb8(0,0,0,kappa,beta,eta)._approx_log_normalize() for beta in betas],
              linestyle='--',
              label='Approximate')
-    plt.plot(betas[2*betas<kappa], [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas if 2*beta < kappa],
+    plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
              linestyle=':',
              color='k',
              label='Saddlepoint')
@@ -86,7 +86,7 @@ def numerical_norm(kappa, eta, alpha, rho):
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho)._nnormalize()) for beta in betas],
              linestyle='--',
              label='Numerical integration')
-    plt.plot(betas[2*betas<kappa], [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas if 2*beta < kappa],
+    plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
              linestyle=':',
              color='k',
              label='Saddlepoint')
