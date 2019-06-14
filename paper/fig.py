@@ -56,14 +56,14 @@ def approx_norm(kappa, eta):
     """
     Compare log-c6 vs approx log-c6
     """
-    betas = np.arange(kappa/10., kappa)
+    betas = np.arange(kappa/10., 0.8*kappa)
     plt.figure()
-    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta).normalize()) for beta in betas], label='Series', color='k')
+    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
     plt.plot(betas, [fb8(0,0,0,kappa,beta,eta)._approx_log_normalize() for beta in betas],
-             linestyle=':',
+             linestyle='--',
              label='Approximate')
     plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
-             linestyle='--',
+             linestyle=':',
              label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_6(\beta)$')
@@ -79,14 +79,14 @@ def numerical_norm(kappa, eta, alpha, rho):
     """
     Compare log-c8 (series) vs numerical integration log-c8
     """
-    betas = np.arange(kappa/10, kappa)
+    betas = np.arange(kappa/10, 0.8*kappa)
     plt.figure()
-    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho).normalize()) for beta in betas], label='Series', color='k')
+    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho)._nnormalize()) for beta in betas],
-             linestyle=':',
+             linestyle='--',
              label='Numerical integration')
     plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
-             linestyle='--',
+             linestyle=':',
              label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_8(\beta)$')
