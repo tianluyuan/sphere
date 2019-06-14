@@ -32,9 +32,9 @@ def plot_fb8(fb8, npts):
     """
     Plot fb8 on 3D sphere
     """
-    z,x,y = fb8.spherical_coordinates_to_nu(*grid(npts))
-    xs = np.array([z,x,y]).T
+    xs = fb8.spherical_coordinates_to_nu(*grid(npts))
     pdfs = fb8.pdf(xs)
+    z,x,y = xs.T
 
     fig = plt.figure(figsize=plt.figaspect(1.))
     ax = fig.add_subplot(111, projection='3d')
@@ -100,8 +100,8 @@ def yukspor():
     from matplotlib.patches import Circle
     from mpl_toolkits.mplot3d import art3d
     phs, ths = np.radians(np.loadtxt('yukspor.txt'))
-    z,x,y = FB8Distribution.spherical_coordinates_to_nu(ths, phs)
-    xs = np.array([z,x,y]).T
+    xs = FB8Distribution.spherical_coordinates_to_nu(ths, phs)
+    z,x,y = xs.T
     yuk5 = fb8_mle(xs, True, fb5_only=True)
     plot_fb8(yuk5, 200)
     ax = plt.gca()
