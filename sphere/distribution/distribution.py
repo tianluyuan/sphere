@@ -34,7 +34,7 @@ from scipy.linalg import eig
 
 # helper function
 def MMul(A, B):
-    return np.inner(A, np.transpose(B))
+    return np.matmul(A, B)
 
 
 def norm(x, axis=None):
@@ -116,27 +116,40 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_H(theta, phi):
-        return np.array([
-            [np.cos(theta),          -np.sin(theta),         0.0],
+        theta = np.asarray(theta)
+        phi = np.asarray(phi)
+        _H = np.array([
+            [np.cos(theta),          -np.sin(theta),         np.zeros(theta.shape)],
             [np.sin(theta) * np.cos(phi), np.cos(theta) * np.cos(phi), -np.sin(phi)],
             [np.sin(theta) * np.sin(phi), np.cos(theta) * np.sin(phi), np.cos(phi)]
         ])
+        if len(_H.shape) > 2:
+            return np.rollaxis(_H, 2)
+        else:
+            return _H
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
-        return np.transpose(FB8Distribution.create_matrix_H(theta, phi))
+        return np.swapaxes(FB8Distribution.create_matrix_H(theta, phi),-2,-1)
 
     @staticmethod
     def create_matrix_K(psi):
-        return np.array([
-            [1.0, 0.0,      0.0],
-            [0.0, np.cos(psi), -np.sin(psi)],
-            [0.0, np.sin(psi), np.cos(psi)]
+        psi = np.asarray(psi)
+        zs = np.zeros(psi.shape)
+        os = np.ones(psi.shape)
+        _K = np.array([
+            [os, zs, zs],
+            [zs, np.cos(psi), -np.sin(psi)],
+            [zs, np.sin(psi), np.cos(psi)]
         ])
+        if len(_K.shape) > 2:
+            return np.rollaxis(_K, 2)
+        else:
+            return _K
 
     @staticmethod
     def create_matrix_Kt(psi):
-        return np.transpose(FB8Distribution.create_matrix_K(psi))
+        return np.swapaxes(FB8Distribution.create_matrix_K(psi), -2, -1)
 
     @staticmethod
     def create_matrix_Gamma(theta, phi, psi):
@@ -146,32 +159,33 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_Gammat(theta, phi, psi):
-        return np.transpose(FB8Distribution.create_matrix_Gamma(theta, phi, psi))
+        return np.swapaxes(FB8Distribution.create_matrix_Gamma(theta, phi, psi), -2, -1)
 
     @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
         Gamma = FB8Distribution.create_matrix_Gamma(theta, phi, psi)
-        gamma1 = Gamma[:, 0]
-        gamma2 = Gamma[:, 1]
-        gamma3 = Gamma[:, 2]
+        gamma1 = Gamma[..., 0]
+        gamma2 = Gamma[..., 1]
+        gamma3 = Gamma[..., 2]
         return gamma1, gamma2, gamma3
 
     @staticmethod
     def spherical_coordinates_to_nu(alpha, rho):
-        return FB8Distribution.create_matrix_Gamma(alpha, rho, 0)[:, 0]
+        return FB8Distribution.create_matrix_Gamma(
+            alpha, rho, np.zeros(np.asarray(alpha).shape))[..., 0]
 
     @staticmethod
     def gamma1_to_spherical_coordinates(gamma1):
-        theta = np.arccos(gamma1[0])
-        phi = np.arctan2(gamma1[2], gamma1[1])
+        theta = np.arccos(gamma1[...,0])
+        phi = np.arctan2(gamma1[...,2], gamma1[...,1])
         return theta, phi
 
     @staticmethod
     def gammas_to_spherical_coordinates(gamma1, gamma2):
         theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
         Ht = FB8Distribution.create_matrix_Ht(theta, phi)
-        u = MMul(Ht, np.reshape(gamma2, (3, 1)))
-        psi = np.arctan2(u[2][0], u[1][0])
+        u = MMul(Ht, gamma2.T.reshape(3, np.asarray(theta).size))
+        psi = np.arctan2(u[...,2,:][0], u[...,1,:][0])
         return theta, phi, psi
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
@@ -635,10 +649,7 @@ class FB8Distribution(object):
         """
         Returns the log(pdf) of the fb8 distribution.
         """
-        axis = len(np.shape(xs)) - 1
-        g1x = np.sum(self.gamma1 * xs, axis)
-        g2x = np.sum(self.gamma2 * xs, axis)
-        g3x = np.sum(self.gamma3 * xs, axis)
+        g1x, g2x, g3x = MMul(self.Gamma.T, np.asarray(xs).T)
         k, b, m = self.kappa, self.beta, self.eta
         ngx = self.nu.dot(np.asarray([g1x, g2x, g3x]))
 
@@ -786,7 +797,7 @@ def kent_me(xs):
     K[1:, 1:] = eigvects
 
     G = MMul(H, K)
-    Gt = np.transpose(G)
+    Gt = np.swapaxes(G,-2,-1)
     T = MMul(Gt, MMul(S, G))
 
     r1 = norm(xbar)
