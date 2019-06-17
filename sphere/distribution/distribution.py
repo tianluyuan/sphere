@@ -497,6 +497,9 @@ class FB8Distribution(object):
                         if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
                             break
                         prev_abs_sa_ll = curr_abs_sa_ll
+                    if not result > 0:
+                        logging.warn('Series result not positive')
+                        raise RuntimeWarning
                 except (RuntimeWarning, OverflowError) as e:
                     logging.warn('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
