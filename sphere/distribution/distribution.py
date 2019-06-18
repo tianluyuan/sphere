@@ -765,12 +765,12 @@ class FB8Distribution(object):
             x123 = np.asarray((x1[ok], x2[ok], x3[ok]))
 
             # rotate back into x coordinates
-            x = np.dot(self.Gamma, x123)
+            x = np.dot(self.Gamma, x123).T
         # FB8 approximate
         else:
             npts = 10000
             rvs = self.rvs(npts)
-            x = rvs[np.argsort(np.abs(lev+self.log_pdf(rvs)))[:200]].T
+            x = rvs[np.argsort(np.abs(lev+self.log_pdf(rvs)))[:200]]
         return FB8Distribution.gamma1_to_spherical_coordinates(x)
 
     def __repr__(self):

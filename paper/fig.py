@@ -3,6 +3,9 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from sphere.distribution import fb8, FB8Distribution, fb8_mle, spa
+import timeit
+from itertools import product
+
 
 plt.style.use('paper.mplstyle')
 
@@ -152,6 +155,31 @@ def toy(seed=92518):
         art3d.pathpatch_2d_to_3d(p, z=_z)
     plt.savefig('figs/toyfb8.png')
         
+
+def time(eta=1, alpha=0, rho=0, step=10):
+    """ Plot ratio of time spent on .normalize to ._nnormalize
+    """
+    times_normalize = []
+    times_nnormalize = []
+    kappas = range(1, 200, step)
+    betas = range(1, 200, step)
+    setup = 'from sphere.distribution import fb8'
+    for x in product([0], [0], [0],
+                     kappas, betas,
+                     [eta], [alpha], [rho]):
+        print x
+        times_normalize.append(
+            min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize(dict())').format(*x),
+                              setup=setup,
+                              repeat=1, number=1)))
+        times_nnormalize.append(
+            min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*x),
+                              setup=setup,
+                              repeat=1, number=1)))
+    np.reshape(times_normalize, (len(kappas), len(betas)))
+    np.reshape(times_nnormalize, (len(kappas), len(betas)))
+    return times_normalize, times_nnormalize
+
     
 def __main__():
     th,ph,ps = (np.pi/16, -np.pi/3, 0)
