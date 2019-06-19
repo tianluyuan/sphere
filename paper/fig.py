@@ -180,6 +180,14 @@ def time(eta=1, alpha=0, rho=0, step=10):
     np.reshape(times_nnormalize, (len(kappas), len(betas)))
     return times_normalize, times_nnormalize
 
+
+def appendix(th, ph, ps):
+    for x in product([th], [ph], [ps],
+                     [10,], [1,10],
+                     [-1, -0.8, 1], [0, np.pi/2], [0]):
+        plot_fb8(fb8(*x), 200)
+        # plt.savefig('figs/appendix/fb8_k{:0f}_b{:0f}_e{:1f}_a{:2f}'.format(*x[3:-1]))
+
     
 def __main__():
     th,ph,ps = (np.pi/16, -np.pi/3, 0)
@@ -205,6 +213,8 @@ def __main__():
 
     # toy application
     toy()
+
+    # appendixfb8s
     
 if __name__=='__main__':
     __main__()
