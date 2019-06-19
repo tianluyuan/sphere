@@ -60,6 +60,10 @@ Terdik, Jammalamadaka, Wainwright, [_Simulation and visualization of spherical d
 
 Mardia, Jupp, [_Directional statistics_](https://www.doi.org/10.1002/9780470316979)
 
+Notes
+=================
+Currently the `scipy.special.hyp2f1` is used and may exhibit inaccuracies for large parameters. See github [issues](https://github.com/scipy/scipy/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+hyp2f1).
+
 Contributors
 =================
 
