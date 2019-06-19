@@ -1,5 +1,5 @@
 figure.figsize   : 5, 5   # figure size in inches
-savefig.dpi      : 600      # figure dots per inch
+savefig.dpi      : 300      # figure dots per inch
 
 font.size: 18
 font.family: serif
