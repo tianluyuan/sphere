@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fb8',
-    version='0.1.0',
+    version='0.2.0',
     author='T. Yuan',
     author_email='tyuan@icecube.wisc.edu',
     description='Implementation of Kent (1982) and Bingham-Mardia (1978) distributions on a sphere',

@@ -1,7 +1,46 @@
-sphere
+Getting started
 =================
+`pip install fb8`
 
-Implments the FB8 distribution on a sphere, which is a generalization of the FB6, FB5 (Kent), and FB4 (Bingham-Mardia) distributions described below.
+```Python
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+from sphere.distribution import fb8
+
+
+def grid(npts):
+    return [_.flatten() for _ in np.meshgrid(np.linspace(0, np.pi, npts), np.linspace(0,2*np.pi, npts))]
+
+
+def plot_fb8(fb8, npts):
+    """
+    Plot fb8 on 3D sphere
+    """
+    xs = fb8.spherical_coordinates_to_nu(*grid(npts))
+    pdfs = fb8.pdf(xs)
+    z,x,y = xs.T
+
+    fig = plt.figure(figsize=plt.figaspect(1.))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(x.reshape(npts, npts),
+                    y.reshape(npts, npts),
+                    z.reshape(npts, npts),
+                    alpha=0.5,
+                    rstride=1, cstride=1,
+                    facecolors=cm.plasma(pdfs.reshape(npts, npts)/pdfs.max()))
+    ax.set_axis_off()
+    ax.set_title(make_title(fb8), fontsize=12, y=0.18)
+    plt.tight_layout(-5)
+
+
+plot_fb8(fb8(np.pi/16,-np.pi/3,0,10,10,-1,0.5,0.3), 200)
+```
+
+Basic information
+=================
+Implements the FB8 distribution on a sphere, which is a generalization of the FB6, FB5 (Kent), and FB4 (Bingham-Mardia) distributions described below.
 
 Implements the FB6 distribution that is first introduced in Rivest ([1984](https://www.doi.org/10.1214/aos/1176346724)).
 
@@ -9,7 +48,7 @@ Implements calculation of the density and fitting (using maximum likelihood esti
 
 Implements the Bingham-Mardia distribution whose mode is a small-circle on the sphere based on Bingham, Mardia ([1978](https://doi.org/10.1093/biomet/65.2.379)).
 
-Also calculates directional, percentile contours which can be used to indicate the N% highest-posterior-density regions in the sky.
+Also calculates directional, percentile levels which can be used to indicate the N% highest-posterior-density regions in the sky.
 
 ![maps](https://github.com/tianluyuan/sphere/blob/master/fig/example.png?raw=true)
 
