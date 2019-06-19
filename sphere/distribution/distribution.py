@@ -534,7 +534,7 @@ class FB8Distribution(object):
             lnormalize = np.log(2 * np.pi) + k - \
                 np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
         else:
-            # normal approx. in z = cos(theta) with correction factor for floating eta
+            # normal approximation in z = cos(theta) with correction factor for floating eta
             # correction factor by fixing sin(theta)**2 = (1-k**2/(4*b**2)), corresponding to theta_max
             # Written in terms of 1F1 using A&S (13.1.27) in which
             # I(0, z) = M(1/2, 1, -2z) exp(z)
