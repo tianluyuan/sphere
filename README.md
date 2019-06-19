@@ -31,8 +31,8 @@ def plot_fb8(fb8, npts):
                     rstride=1, cstride=1,
                     facecolors=cm.plasma(pdfs.reshape(npts, npts)/pdfs.max()))
     ax.set_axis_off()
-    ax.set_title(make_title(fb8), fontsize=12, y=0.18)
     plt.tight_layout(-5)
+    plt.show()
 
 
 plot_fb8(fb8(np.pi/16,-np.pi/3,0,10,10,-1,0.5,0.3), 200)
