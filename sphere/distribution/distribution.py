@@ -352,9 +352,9 @@ class FB8Distribution(object):
         >>> np.abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
-        ...     print np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa,
+        ...     print(np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa, end=' ')
         ...
-        True True True True True True True True
+        True True True True True True True True 
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -396,7 +396,7 @@ class FB8Distribution(object):
                     ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
                 ) / np.sqrt(np.pi)
         
-        if not cache.has_key((k, b, m, n1, n2)):
+        if (k, b, m, n1, n2) not in cache:
             result = 0.
             if b == 0. and k == 0.:
                 result = 2
@@ -422,10 +422,10 @@ class FB8Distribution(object):
                         # print j, sa
                         result += sa
                         if np.isnan(result):
-                            logging.warn('Series result is nan')
+                            logging.warning('Series result is nan')
                             raise RuntimeWarning
                         if np.isinf(result):
-                            logging.warn('Series result is infinity')
+                            logging.warning('Series result is infinity')
                             raise RuntimeWarning
                         j += 1
                         if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_a:
@@ -464,7 +464,7 @@ class FB8Distribution(object):
                                 curr_abs_sa_ll += abs_sa
                                 result += sa
                                 if np.isnan(result):
-                                    logging.warn('Series result is nan')
+                                    logging.warning('Series result is nan')
                                     raise RuntimeWarning
                                 j += 1
                                 jj += 1
@@ -498,10 +498,10 @@ class FB8Distribution(object):
                             break
                         prev_abs_sa_ll = curr_abs_sa_ll
                     if not result > 0:
-                        logging.warn('Series result not positive')
+                        logging.warning('Series result not positive')
                         raise RuntimeWarning
                 except (RuntimeWarning, OverflowError) as e:
-                    logging.warn('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
+                    logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
                         # numerical integration
                         result = self._nnormalize()/(2*np.pi)
@@ -524,7 +524,7 @@ class FB8Distribution(object):
         ...    lnorm = np.log(fb8(*x).normalize())
         ...    lnormapprox = fb8(*x)._approx_log_normalize()
         ...    if np.abs(lnorm-lnormapprox)/lnorm > 0.1:
-        ...        print fb8(*x), lnorm, lnormapprox
+        ...        print(fb8(*x), lnorm, lnormapprox)
         """
         assert self.nu[0] == 1. # should only reach here if it's FB6
         k = self.kappa
@@ -558,14 +558,14 @@ class FB8Distribution(object):
         ...    lnorm = fb8(*x).log_normalize()
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
-        ...        print fb8(*x), lnorm, lnnorm
+        ...        print(fb8(*x), lnorm, lnnorm)
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             try:
                 return np.log(self.normalize())
             except (OverflowError, RuntimeWarning) as e:
-                logging.warn('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
+                logging.warning('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 return self._approx_log_normalize()
 
     def max(self):
@@ -719,7 +719,7 @@ class FB8Distribution(object):
             idx, frac = int(loc), loc - int(loc)
             return log_pdf[idx] + frac * (log_pdf[idx + 1] - log_pdf[idx])
         else:
-            print '{} percentile out of bounds'.format(percentile)
+            print('{} percentile out of bounds'.format(percentile))
             return nan
 
     def contour(self, percentile=50):
@@ -817,19 +817,19 @@ def kent_me(xs):
 
 
 def __fb8_mle_output1(k_me, callback):
-    print
-    print "******** Maximum Likelihood Estimation ********"
-    print "Initial estimates are:"
-    print "theta =", k_me.theta
-    print "phi   =", k_me.phi
-    print "psi   =", k_me.psi
-    print "kappa =", k_me.kappa
-    print "beta  =", k_me.beta
-    print "eta   =", k_me.eta
-    print "alpha =", k_me.alpha
-    print "rho   =", k_me.rho
-    print "******** Starting the Gradient Descent ********"
-    print "[iteration]   fb8(theta, phi, psi, kappa, beta, eta, alpha, rho)   -L"
+    print()
+    print("******** Maximum Likelihood Estimation ********")
+    print("Initial estimates are:")
+    print("theta =", k_me.theta)
+    print("phi   =", k_me.phi)
+    print("psi   =", k_me.psi)
+    print("kappa =", k_me.kappa)
+    print("beta  =", k_me.beta)
+    print("eta   =", k_me.eta)
+    print("alpha =", k_me.alpha)
+    print("rho   =", k_me.rho)
+    print("******** Starting the Gradient Descent ********")
+    print("[iteration]   fb8(theta, phi, psi, kappa, beta, eta, alpha, rho)   -L")
 
 
 def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn', fb5_only=False):
@@ -877,7 +877,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         imv = intermediate_values
         imv.append((x, minusL))
         if verbose:
-            print len(imv), kx, minusL
+            print(len(imv), kx, minusL)
 
     # first get estimated moments
     k_me = kent_me(xs)
@@ -922,7 +922,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         _y = minimize(minus_log_likelihood,
                       y_start,
                       method="L-BFGS-B",
-                      bounds=zip([None]*5+[-1,], [None]*5+[1,]),
+                      bounds=list(zip([None]*5+[-1,], [None]*5+[1,])),
                       callback=callback)
 
         # default seed
@@ -950,7 +950,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             _z = minimize(minus_log_likelihood,
                       z_start,
                       method="L-BFGS-B",
-                      bounds=zip([None]*5+[-1,]+[None]*2, [None]*5+[1,]+[None]*2),
+                      bounds=list(zip([None]*5+[-1,]+[None]*2, [None]*5+[1,]+[None]*2)),
                       callback=callback,
                       options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
