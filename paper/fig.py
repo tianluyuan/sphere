@@ -143,7 +143,7 @@ def toy(seed=92518):
         p = Circle((_x, _y), 0.01, ec='k', fc="none")
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z, zdir='z')
-    plt.savefig('figs/toyfb5.png')
+    plt.savefig('figs/Fig4_toyfb5.pdf')
     
     fit8 = fb8_mle(xs)
     print fit8, -fit8.log_likelihood(xs)
@@ -153,7 +153,7 @@ def toy(seed=92518):
         p = Circle((_x, _y), 0.01, ec='k', fc="none")
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z)
-    plt.savefig('figs/toyfb8.png')
+    plt.savefig('figs/Fig4_toyfb8.pdf')
         
 
 def time(eta=1, alpha=0, rho=0, step=10):
@@ -193,23 +193,23 @@ def __main__():
     th,ph,ps = (np.pi/16, -np.pi/3, 0)
     # FB4
     plot_fb8(fb8(th,ph,ps,10,10,-1,0,0), 200)
-    plt.savefig('figs/fb4.png')
+    plt.savefig('figs/Fig1_fb4.pdf')
     # FB5
     plot_fb8(fb8(th,ph,ps,10,4,1,0,0), 200)
-    plt.savefig('figs/fb5.png')
+    plt.savefig('figs/Fig1_fb5.pdf')
     # FB6
     plot_fb8(fb8(th+np.pi/6,ph,ps,10,10,-0.5,0,0), 200)
-    plt.savefig('figs/fb6.png')
+    plt.savefig('figs/Fig2_fb6.pdf')
     # FB8
     plot_fb8(fb8(th,ph,ps,10,10,-1,0.5,0.3), 200)
-    plt.savefig('figs/fb8.png')
+    plt.savefig('figs/Fig2_fb8.pdf')
 
     # approx_c6
     approx_norm(100, -0.5)
-    plt.savefig('figs/approxc6.png')
+    plt.savefig('figs/Fig3_approxc6.pdf')
     # ln_c8
     numerical_norm(100, -0.5, 0.5, 0.3)
-    plt.savefig('figs/lnc8.png')
+    plt.savefig('figs/Fig3_lnc8.pdf')
 
     # toy application
     toy()
