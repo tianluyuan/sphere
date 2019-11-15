@@ -840,7 +840,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
     minimized.
 
     Input:
-      - xs: values on the sphere to be fitted by MLE
+      - xs: values on the sphere to be fitted by MLE, ordering is (z, x, y)
       - verbose: if True, output is given for every step
       - return_intermediate_values: if true the values of all intermediate steps
         are returned as well
