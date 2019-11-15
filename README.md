@@ -20,7 +20,7 @@ def plot_fb8(fb8, npts):
     """
     xs = fb8.spherical_coordinates_to_nu(*grid(npts))
     pdfs = fb8.pdf(xs)
-    z,x,y = xs.T
+    z,x,y = xs.T #!!! Note the ordering for xs here is used consistently throughout. Follows Kent's 1982 paper.
 
     fig = plt.figure(figsize=plt.figaspect(1.))
     ax = fig.add_subplot(111, projection='3d')
