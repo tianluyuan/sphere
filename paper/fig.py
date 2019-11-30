@@ -153,11 +153,11 @@ def hp_fits(ths, phs, nside=64):
     xs = FB8Distribution.spherical_coordinates_to_nu(ths, phs)
     z,x,y = xs.T
     fit5 = fb8_mle(xs, True, fb5_only=True)
-    hp_plot_fb8(fit5, 200)
+    hp_plot_fb8(fit5, nside)
     hp.projscatter(ths, phs, marker='.', s=2, c='k')
 
     fit8 = fb8_mle(xs, True)
-    hp_plot_fb8(fit8, 200)
+    hp_plot_fb8(fit8, nside)
     hp.projscatter(ths, phs, marker='.', s=2, c='k')
 
 
@@ -167,8 +167,8 @@ def yukspor():
 
 
 def bsc5(mag_low=3):
-    bsc5 = np.loadtxt('bsc5.dat', comments='#', skiprows=43)
-    _ = bsc5[bsc5[:,-1]<=mag_low]
+    dat = np.loadtxt('bsc5.dat', comments='#', skiprows=43)
+    _ = dat[dat[:,-1]<=mag_low]
     phs, ths = np.radians([_[:,1], 90.-_[:,2]])
     hp_fits(ths, phs)
 
