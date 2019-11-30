@@ -55,6 +55,26 @@ def plot_fb8(fb8, npts):
     plt.tight_layout(-5)
 
 
+def hp_plot_fb8(fb8, nside):
+    import healpy as hp
+    npix = hp.nside2npix(nside)
+    fb8_map = fb8.pdf(fb8.spherical_coordinates_to_nu(
+        *hp.pix2ang(nside, np.arange(npix))))
+
+    plt.figure(figsize=(9,6))
+    vmap = cm.plasma
+    vmap.set_under('w')
+    vmap.set_bad('w')
+    hp.mollview(fb8_map,
+                title=make_title(fb8),
+                min=0,
+                max=np.round(np.nanmax(fb8_map),2),
+                cmap=vmap, hold=True,
+                cbar=True,
+                xsize=1600)
+    hp.graticule()
+
+
 def approx_norm(kappa, eta):
     """
     Compare log-c6 vs approx log-c6
@@ -105,14 +125,13 @@ def numerical_norm(kappa, eta, alpha, rho):
     plt.tight_layout(0.1)
 
 
-def yukspor():
+def do_fits(ths, phs):
     from matplotlib.patches import Circle
     from mpl_toolkits.mplot3d import art3d
-    phs, ths = np.radians(np.loadtxt('yukspor.txt'))
     xs = FB8Distribution.spherical_coordinates_to_nu(ths, phs)
     z,x,y = xs.T
-    yuk5 = fb8_mle(xs, True, fb5_only=True)
-    plot_fb8(yuk5, 200)
+    fit5 = fb8_mle(xs, True, fb5_only=True)
+    plot_fb8(fit5, 200)
     ax = plt.gca()
     # ax.scatter(x*1.05, y*1.05, z*1.05, color='k', depthshade=False, edgecolors='k', linewidth=0.5)
     for (_x, _y, _z) in zip(x,y,z):
@@ -120,13 +139,38 @@ def yukspor():
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z)
     
-    yuk8 = fb8_mle(xs, True)
-    plot_fb8(yuk8, 200)
+    fit8 = fb8_mle(xs, True)
+    plot_fb8(fit8, 200)
     ax = plt.gca()
     for (_x, _y, _z) in zip(x,y,z):
         p = Circle((_x, _y), 0.01, ec='k', fc="none")
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z)
+
+    
+def hp_fits(ths, phs, nside=64):
+    import healpy as hp
+    xs = FB8Distribution.spherical_coordinates_to_nu(ths, phs)
+    z,x,y = xs.T
+    fit5 = fb8_mle(xs, True, fb5_only=True)
+    hp_plot_fb8(fit5, 200)
+    hp.projscatter(ths, phs, marker='.', s=2, c='k')
+
+    fit8 = fb8_mle(xs, True)
+    hp_plot_fb8(fit8, 200)
+    hp.projscatter(ths, phs, marker='.', s=2, c='k')
+
+
+def yukspor():
+    phs, ths = np.radians(np.loadtxt('yukspor.txt'))
+    do_fits(ths, phs)
+
+
+def bsc5(mag_low=3):
+    bsc5 = np.loadtxt('bsc5.dat', comments='#', skiprows=43)
+    _ = bsc5[bsc5[:,-1]<=mag_low]
+    phs, ths = np.radians([_[:,1], 90.-_[:,2]])
+    hp_fits(ths, phs)
 
 
 def toy(seed=92518):
