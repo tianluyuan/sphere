@@ -14,13 +14,14 @@ def grid(npts):
     return [_.flatten() for _ in np.meshgrid(np.linspace(0, np.pi, npts), np.linspace(0,2*np.pi, npts))]
 
 
-def make_title(fb8):
+def make_title(fb8, kbdec=0):
     def FBname(n):
         return r'\rm{{FB}}_{}'.format(n)
     def FBtitle(n, ps):
         return r'${}({})$'.format(FBname(n), ps)
 
-    kapbet = r'\kappa = {:.0f}, \beta = {:.0f}'.format(fb8.kappa, fb8.beta)
+    kapbet = r'\kappa = {:.'+str(kbdec)+r'f}, \beta = {:.'+str(kbdec)+r'f}'
+    kapbet = kapbet.format(fb8.kappa, fb8.beta)
     if fb8.nu[0] == 1.:
         if fb8.eta == 1.:
             return FBtitle(5, kapbet)
@@ -66,7 +67,7 @@ def hp_plot_fb8(fb8, nside):
     vmap.set_under('w')
     vmap.set_bad('w')
     hp.mollview(fb8_map,
-                title=make_title(fb8),
+                title=make_title(fb8, 1),
                 min=0,
                 max=np.round(np.nanmax(fb8_map),2),
                 cmap=vmap, hold=True,
@@ -154,11 +155,23 @@ def hp_fits(ths, phs, nside=64):
     z,x,y = xs.T
     fit5 = fb8_mle(xs, True, fb5_only=True)
     hp_plot_fb8(fit5, nside)
-    hp.projscatter(ths, phs, marker='.', s=2, c='k')
+    hp.projscatter(ths, phs, marker='.', linewidths=0, s=5, c='k')
+    ax = plt.gca()
+    ax.annotate(r"$\bf{-180^\circ}$", xy=(1.7, 0.625), size="medium")
+    ax.annotate(r"$\bf{180^\circ}$", xy=(-1.95, 0.625), size="medium")
+    ax.annotate("Galactic", xy=(0.8, -0.05),
+                size="medium", xycoords="axes fraction")
+    plt.savefig('figs/Fig5_fb5.pdf')
 
     fit8 = fb8_mle(xs, True)
     hp_plot_fb8(fit8, nside)
-    hp.projscatter(ths, phs, marker='.', s=2, c='k')
+    hp.projscatter(ths, phs, marker='.', linewidths=0, s=5, c='k')
+    ax = plt.gca()
+    ax.annotate(r"$\bf{-180^\circ}$", xy=(1.7, 0.625), size="medium")
+    ax.annotate(r"$\bf{180^\circ}$", xy=(-1.95, 0.625), size="medium")
+    ax.annotate("Galactic", xy=(0.8, -0.05),
+                size="medium", xycoords="axes fraction")
+    plt.savefig('figs/Fig5_fb8.pdf')
 
 
 def yukspor():
@@ -166,7 +179,7 @@ def yukspor():
     do_fits(ths, phs)
 
 
-def bsc5(mag_low=3):
+def bsc5(mag_low=6):
     dat = np.loadtxt('bsc5.dat', comments='#', skiprows=43)
     _ = dat[dat[:,-1]<=mag_low]
     phs, ths = np.radians([_[:,1], 90.-_[:,2]])
