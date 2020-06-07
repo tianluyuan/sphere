@@ -47,7 +47,7 @@ def plot_fb8(fb8, npts):
                     z.reshape(npts, npts),
                     alpha=0.5,
                     rstride=1, cstride=1,
-                    facecolors=cm.plasma(pdfs.reshape(npts, npts)/pdfs.max()))
+                    facecolors=cm.gray(pdfs.reshape(npts, npts)/pdfs.max()))
     # ax.set_xticks([])
     # ax.set_yticks([])
     # ax.set_zticks([])
@@ -63,7 +63,7 @@ def hp_plot_fb8(fb8, nside):
         *hp.pix2ang(nside, np.arange(npix))))
 
     plt.figure(figsize=(9,6))
-    vmap = cm.plasma
+    vmap = cm.gray
     vmap.set_under('w')
     vmap.set_bad('w')
     hp.mollview(fb8_map,
@@ -85,9 +85,11 @@ def approx_norm(kappa, eta):
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
     plt.plot(betas, [fb8(0,0,0,kappa,beta,eta)._approx_log_normalize() for beta in betas],
              linestyle='--',
+             color='gray',
              label='Approximate')
     plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
              linestyle=':',
+             color='gray',
              label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_6(\beta)$')
@@ -108,9 +110,11 @@ def numerical_norm(kappa, eta, alpha, rho):
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
     plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho)._nnormalize()) for beta in betas],
              linestyle='--',
+             color='gray',
              label='Numerical integration')
     plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
              linestyle=':',
+             color='gray',
              label='Saddlepoint')
     plt.xlabel(r'$\beta$')
     plt.ylabel(r'$\ln c_8(\beta)$')
@@ -161,7 +165,7 @@ def hp_fits(ths, phs, nside=64):
     ax.annotate(r"$\bf{180^\circ}$", xy=(-1.95, 0.625), size="medium")
     ax.annotate("Galactic", xy=(0.8, -0.05),
                 size="medium", xycoords="axes fraction")
-    plt.savefig('figs/Fig5_fb5.pdf')
+    plt.savefig('figs/Fig5_fb5.png')
 
     fit8 = fb8_mle(xs, True)
     hp_plot_fb8(fit8, nside)
@@ -171,7 +175,7 @@ def hp_fits(ths, phs, nside=64):
     ax.annotate(r"$\bf{180^\circ}$", xy=(-1.95, 0.625), size="medium")
     ax.annotate("Galactic", xy=(0.8, -0.05),
                 size="medium", xycoords="axes fraction")
-    plt.savefig('figs/Fig5_fb8.pdf')
+    plt.savefig('figs/Fig5_fb8.png')
 
 
 def yukspor():
@@ -193,24 +197,24 @@ def toy(seed=92518):
     toyf8 = fb8(np.pi/16, -np.pi/3,0,55,60,-1.,0.07,0.3)
     xs = toyf8.rvs(100)
     fit5 = fb8_mle(xs, fb5_only=True)
-    print fit5, -fit5.log_likelihood(xs)
+    print(fit5, -fit5.log_likelihood(xs))
     plot_fb8(fit5, 200)
     ax = plt.gca()
     for (_z, _x, _y) in xs:
-        p = Circle((_x, _y), 0.01, ec='k', fc="none")
+        p = Circle((_x, _y), 0.01, ec='w', fc="none")
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z, zdir='z')
-    plt.savefig('figs/Fig4_toyfb5.pdf')
+    plt.savefig('figs/Fig4_toyfb5.png')
     
     fit8 = fb8_mle(xs)
-    print fit8, -fit8.log_likelihood(xs)
+    print(fit8, -fit8.log_likelihood(xs))
     plot_fb8(fit8, 200)
     ax = plt.gca()
     for (_z, _x, _y) in xs:
-        p = Circle((_x, _y), 0.01, ec='k', fc="none")
+        p = Circle((_x, _y), 0.01, ec='w', fc="none")
         ax.add_patch(p)
         art3d.pathpatch_2d_to_3d(p, z=_z)
-    plt.savefig('figs/Fig4_toyfb8.pdf')
+    plt.savefig('figs/Fig4_toyfb8.png')
         
 
 def time(eta=1, alpha=0, rho=0, step=10):
@@ -224,7 +228,7 @@ def time(eta=1, alpha=0, rho=0, step=10):
     for x in product([0], [0], [0],
                      kappas, betas,
                      [eta], [alpha], [rho]):
-        print x
+        print(x)
         times_normalize.append(
             min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize(dict())').format(*x),
                               setup=setup,
@@ -250,16 +254,16 @@ def __main__():
     th,ph,ps = (np.pi/16, -np.pi/3, 0)
     # FB4
     plot_fb8(fb8(th,ph,ps,10,10,-1,0,0), 200)
-    plt.savefig('figs/Fig1_fb4.pdf')
+    plt.savefig('figs/Fig1_fb4.png')
     # FB5
     plot_fb8(fb8(th,ph,ps,10,4,1,0,0), 200)
-    plt.savefig('figs/Fig1_fb5.pdf')
+    plt.savefig('figs/Fig1_fb5.png')
     # FB6
     plot_fb8(fb8(th+np.pi/6,ph,ps,10,10,-0.5,0,0), 200)
-    plt.savefig('figs/Fig2_fb6.pdf')
+    plt.savefig('figs/Fig2_fb6.png')
     # FB8
     plot_fb8(fb8(th,ph,ps,10,10,-1,0.5,0.3), 200)
-    plt.savefig('figs/Fig2_fb8.pdf')
+    plt.savefig('figs/Fig2_fb8.png')
 
     # approx_c6
     approx_norm(100, -0.5)
@@ -271,6 +275,9 @@ def __main__():
     # toy application
     toy()
 
+    # bright stars catalog
+    bsc5()
+    
     # appendixfb8s
     
 if __name__=='__main__':
