@@ -1,10 +1,12 @@
+import timeit
+from itertools import product
+import pickle
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from sphere.distribution import fb8, FB8Distribution, fb8_mle, spa
-import timeit
-from itertools import product
 
 
 plt.style.use('paper.mplstyle')
@@ -76,56 +78,126 @@ def hp_plot_fb8(fb8, nside):
     hp.graticule()
 
 
-def approx_norm(kappa, eta):
+def build_args(kappa, beta, eta, alpha=0., rho=0.):
+    if kappa is None:
+        xvals = np.arange(beta/10., 0.8*beta)
+        idx = 3
+        xlabel='kappa'
+        text = rf'$\beta={beta}, \eta={eta:.1g}$'
+        textx = 0.03
+    elif beta is None:
+        xvals = np.arange(kappa/10., 0.8*kappa)
+        idx = 4
+        xlabel = 'beta'
+        text = rf'$\kappa={kappa}, \eta={eta:.1g}$'
+        textx = 0.03
+    elif eta is None:
+        xvals = np.arange(-1., 1.02, 0.02)
+        idx = 5
+        xlabel = 'eta'
+        text = rf'$\kappa={kappa}, \beta={beta}$'
+        textx = 0.5
+    args = []
+    for x in xvals:
+        arg = [0.,0.,0.,kappa,beta,eta,alpha,rho]
+        arg[idx] = x
+        args.append(arg)
+    return xvals, xlabel, text, textx, args
+
+
+def approx_norm(kappa, beta, eta):
     """
     Compare log-c6 vs approx log-c6
     """
-    betas = np.arange(kappa/10., 0.8*kappa)
+    xvals, xlabel, text, textx, args = build_args(kappa, beta, eta)
     plt.figure()
-    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
-    plt.plot(betas, [fb8(0,0,0,kappa,beta,eta)._approx_log_normalize() for beta in betas],
+    plt.plot(xvals, [np.log(fb8(*_).normalize()) for _ in args], label='Series', color='k', linewidth=3.5)
+    plt.plot(xvals, [fb8(*_)._approx_log_normalize() for _ in args],
              linestyle='--',
              color='gray',
              label='Approximate')
-    plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
+    plt.plot(xvals, [spa(fb8(*_)).log_c3() for _ in args],
              linestyle=':',
              color='gray',
              label='Saddlepoint')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$\ln c_6(\beta)$')
+    plt.xlabel(rf'$\{xlabel}$')
+    plt.ylabel(rf'$\ln c_6(\{xlabel})$')
     plt.legend()
-    plt.text(0.03,0.7,
-             r'$\kappa={}, \eta={:.1g}$'.format(kappa, eta),
+    plt.text(textx,0.7,text,
              transform=plt.gca().transAxes, fontsize=14)
 
     plt.tight_layout(0.1)
 
 
-def numerical_norm(kappa, eta, alpha, rho):
+def numerical_norm(kappa, beta, eta, alpha, rho):
     """
     Compare log-c8 (series) vs numerical integration log-c8
     """
-    betas = np.arange(kappa/10, 0.8*kappa)
+    xvals, xlabel, text, textx, args = build_args(kappa, beta, eta, alpha, rho)
     plt.figure()
-    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho).normalize()) for beta in betas], label='Series', color='k', linewidth=3.5)
-    plt.plot(betas, [np.log(fb8(0,0,0,kappa,beta,eta,alpha,rho)._nnormalize()) for beta in betas],
+    plt.plot(xvals, [np.log(fb8(*_).normalize()) for _ in args],
+             label='Series', color='k', linewidth=3.5)
+    plt.plot(xvals, [np.log(fb8(*_)._nnormalize()) for _ in args],
              linestyle='--',
              color='gray',
              label='Numerical integration')
-    plt.plot(betas, [spa(fb8(0,0,0,kappa,beta,eta)).log_c3() for beta in betas],
+    plt.plot(xvals, [spa(fb8(*_[:-2])).log_c3() for _ in args],
              linestyle=':',
              color='gray',
              label='Saddlepoint')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$\ln c_8(\beta)$')
+    plt.xlabel(rf'$\{xlabel}$')
+    plt.ylabel(rf'$\ln c_8(\{xlabel})$')
     plt.legend()
-    plt.text(0.03,0.7,
-             r'$\kappa={}, \eta={:.1g}$'.format(kappa, eta),
+    plt.text(textx,0.7,text,
              transform=plt.gca().transAxes, fontsize=14)
-    _ = fb8(0,0,0,kappa,10,eta,alpha,rho)
-    plt.text(0.03,0.6,
-             r'$\vec{{\nu}}=({:.3g},{:.3g},{:.3g})$'.format(
-                 _.nu[0], _.nu[1], _.nu[2]),
+    _ = fb8(0.,0.,0.,100.,10.,-0.5,alpha,rho)
+    textnu = rf'$\vec{{\nu}}=({_.nu[0]:.3g},{_.nu[1]:.3g},{_.nu[2]:.3g})$'
+    plt.text(textx,0.6,textnu,
+             transform=plt.gca().transAxes, fontsize=14)
+    plt.tight_layout(0.1)
+
+
+def time_norm(kappa, beta, eta, alpha, rho):
+    """ Plot execution time of .normalize to ._nnormalize
+    """
+    xvals, xlabel, text, textx, args = build_args(kappa, beta, eta, alpha, rho)
+    tfile = os.path.join('figs', 'time', 'timec8.pkl')
+    if os.path.isfile(tfile) and str(args) in pickle.load(open(tfile, 'rb')):
+        times_normalize, times_nnormalize = pickle.load(open(tfile, 'rb'))[str(args)]
+    else:                  
+        times_normalize = []
+        times_nnormalize = []
+        setup = 'from sphere.distribution import fb8'
+        for _ in args:
+            times_normalize.append(
+                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize()').format(*_),
+                                  setup=setup, repeat=3, number=1)))
+            times_nnormalize.append(
+                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*_),
+                                  setup=setup, repeat=3, number=1)))
+        if os.path.isfile(tfile):
+            ddd = pickle.load(open(tfile, 'rb'))
+        else:
+            ddd = {}
+        ddd[str(args)] = [times_normalize, times_nnormalize]
+        with open(tfile, 'wb') as f:
+            pickle.dump(ddd, f)
+    plt.figure()
+    plt.plot(xvals, times_normalize,
+             label='Series', color='k', linewidth=3.5)
+    plt.plot(xvals, times_nnormalize,
+             linestyle='--',
+             color='gray',
+             label='Numerical integration')
+    plt.xlabel(rf'$\{xlabel}$')
+    plt.ylabel(rf'Runtime [s]')
+    plt.yscale('log')
+    plt.legend()
+    plt.text(0.5,0.7,text,
+             transform=plt.gca().transAxes, fontsize=14)
+    _ = fb8(0.,0.,0.,100.,10.,-0.5,alpha,rho)
+    textnu = rf'$\vec{{\nu}}=({_.nu[0]:.3g},{_.nu[1]:.3g},{_.nu[2]:.3g})$'
+    plt.text(0.5,0.6,textnu,
              transform=plt.gca().transAxes, fontsize=14)
     plt.tight_layout(0.1)
 
@@ -230,13 +302,11 @@ def time(eta=1, alpha=0, rho=0, step=10):
                      [eta], [alpha], [rho]):
         print(x)
         times_normalize.append(
-            min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize(dict())').format(*x),
-                              setup=setup,
-                              repeat=1, number=1)))
+            min(timeit.timeit(stmt=('fb8('+','.join(['{}']*8)+').normalize(dict())').format(*x),
+                              setup=setup, number=1)))
         times_nnormalize.append(
-            min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*x),
-                              setup=setup,
-                              repeat=1, number=1)))
+            min(timeit.timeit(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*x),
+                              setup=setup, number=1)))
     np.reshape(times_normalize, (len(kappas), len(betas)))
     np.reshape(times_nnormalize, (len(kappas), len(betas)))
     return times_normalize, times_nnormalize
@@ -247,7 +317,7 @@ def appendix(th, ph, ps):
                      [10,], [1,10],
                      [-1, -0.8, 1], [0, np.pi/2], [0]):
         plot_fb8(fb8(*x), 200)
-        # plt.savefig('figs/appendix/fb8_k{:0f}_b{:0f}_e{:1f}_a{:2f}'.format(*x[3:-1]))
+        plt.savefig('figs/appendix/fb8_k{:.0f}_b{:.0f}_e{:.1f}_a{:.2f}.png'.format(*x[3:-1]))
 
     
 def __main__():
@@ -266,12 +336,27 @@ def __main__():
     plt.savefig('figs/Fig2_fb8.png')
 
     # approx_c6
-    approx_norm(100, -0.5)
-    plt.savefig('figs/Fig3_approxc6.pdf')
+    approx_norm(None, 100., -0.5)
+    plt.savefig('figs/Fig3_approxc6_kappa.pdf')
+    approx_norm(100., None, -0.5)
+    plt.savefig('figs/Fig3_approxc6_beta.pdf')
+    approx_norm(100., 100., None)
+    plt.savefig('figs/Fig3_approxc6_eta.pdf')
     # ln_c8
-    numerical_norm(100, -0.5, 0.5, 0.3)
-    plt.savefig('figs/Fig3_lnc8.pdf')
-
+    numerical_norm(None, 100., -0.5, 0.5, 0.3)
+    plt.savefig('figs/Fig3_lnc8_kappa.pdf')
+    numerical_norm(100., None, -0.5, 0.5, 0.3)
+    plt.savefig('figs/Fig3_lnc8_beta.pdf')
+    numerical_norm(100., 100., None, 0.5, 0.3)
+    plt.savefig('figs/Fig3_lnc8_eta.pdf')
+    # time_c8
+    time_norm(None, 100., -0.5, 0.5, 0.3)
+    plt.savefig('figs/Fig3_timec8_kappa.pdf')
+    time_norm(100., None, -0.5, 0.5, 0.3)
+    plt.savefig('figs/Fig3_timec8_beta.pdf')
+    time_norm(100., 100., None, 0.5, 0.3)
+    plt.savefig('figs/Fig3_timec8_eta.pdf')
+    
     # toy application
     toy()
 
@@ -279,6 +364,8 @@ def __main__():
     bsc5()
     
     # appendixfb8s
+    appendix(0,0,0)
     
+
 if __name__=='__main__':
     __main__()
