@@ -170,7 +170,7 @@ def time_norm(kappa, beta, eta, alpha, rho):
         setup = 'from sphere.distribution import fb8'
         for _ in args:
             times_normalize.append(
-                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize()').format(*_),
+                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize(cache=dict())').format(*_),
                                   setup=setup, repeat=3, number=1)))
             times_nnormalize.append(
                 min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*_),
@@ -191,7 +191,7 @@ def time_norm(kappa, beta, eta, alpha, rho):
              label='Numerical integration')
     plt.xlabel(rf'$\{xlabel}$')
     plt.ylabel(rf'Runtime [s]')
-    plt.yscale('log')
+    # plt.yscale('log')
     plt.legend()
     plt.text(0.5,0.7,text,
              transform=plt.gca().transAxes, fontsize=14)
