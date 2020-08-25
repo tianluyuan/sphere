@@ -11,14 +11,12 @@ class enct(object):
         b = fb8.beta
         m = fb8.eta
 
-        self.p = len(fb8.nu)
-
         _ = np.asarray([0, -b, b*m])
         self._c = np.abs(np.min(_))+1
-        self._ts = _[np.argsort(_)]+self._c
+        self._ts = _+self._c
         assert np.all(self._ts) > 0
 
-        self._gs = (k*fb8.nu)[np.argsort(_)]
+        self._gs = (k*fb8.nu)
 
         d = np.min(self._ts)/2.
         assert N >= 2*d*(wu+wd)*wu**2/(np.pi*wd**2)
@@ -27,11 +25,12 @@ class enct(object):
         self._p = np.sqrt(N*self._h/wd)
         self._q = np.sqrt(wd*N*self._h/4.)
         self._N = N
+        self._ns = np.arange(-self._N-1, self._N+1)*self._h
 
 
     def A(self, t):
-        return np.product(np.exp(self._gs[:,None]**2/(4*(self._ts[:,None]-1j*t)))/
-                          np.sqrt(self._ts[:,None]-1j*t), axis=0)
+        return np.exp(np.sum(self._gs[:,None]**2/(4*(self._ts[:,None]-1j*t))-0.5*np.log(
+                          self._ts[:,None]-1j*t), axis=0))
 
 
     def w(self, x):
@@ -39,6 +38,5 @@ class enct(object):
                                               
 
     def c(self):
-        _ = np.arange(-self._N-1, self._N+1)*self._h
         return (np.sqrt(np.pi)*np.exp(self._c)*self._h*np.sum(
-            self.w(np.abs(_))*self.A(_)*np.exp(-1j*_))).real
+            self.w(np.abs(self._ns))*self.A(self._ns)*np.exp(-1j*self._ns))).real
