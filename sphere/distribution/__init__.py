@@ -6,5 +6,7 @@ from .distribution import FB8Distribution
 from .distribution import fb8_mle
 from .distribution import kent_me
 from .saddle import spa
+from .effnum import enct
 del distribution
 del saddle
+del effnum
