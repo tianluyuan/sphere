@@ -193,11 +193,11 @@ def time_norm(kappa, beta, eta, alpha, rho):
     plt.ylabel(rf'Runtime [s]')
     # plt.yscale('log')
     plt.legend()
-    plt.text(0.5,0.7,text,
+    plt.text(0.42,0.38,text,
              transform=plt.gca().transAxes, fontsize=14)
     _ = fb8(0.,0.,0.,100.,10.,-0.5,alpha,rho)
     textnu = rf'$\vec{{\nu}}=({_.nu[0]:.3g},{_.nu[1]:.3g},{_.nu[2]:.3g})$'
-    plt.text(0.5,0.6,textnu,
+    plt.text(0.42,0.28,textnu,
              transform=plt.gca().transAxes, fontsize=14)
     plt.tight_layout(0.1)
 
