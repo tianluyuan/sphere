@@ -506,7 +506,8 @@ class FB8Distribution(object):
                         # numerical integration
                         result = self._nnormalize()/(2*np.pi)
                     except RuntimeWarning as e:
-                        return np.inf
+                        result = np.inf
+                    j = -1
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result
 
@@ -977,6 +978,7 @@ if __name__ == "__main__":
 >>> from numpy.random import seed
 >>> test_example_normalization(gridsize=10)
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0*j+1
+with eta=1.0, alpha=0.0, rho=0.0
 Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
   2   3   5   6   7   8   9  10   x   x
@@ -989,6 +991,26 @@ Iterations necessary to calculate normalize(kappa, beta):
   2   2   2   3   4   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
+
+>>> logging.getLogger().setLevel('ERROR')
+
+>>> test_example_normalization(gridsize=10,alpha=0.5)
+Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0*j+1
+with eta=1.0, alpha=0.5, rho=0.0
+Calculating normalization factor for combinations of kappa and beta:
+Iterations necessary to calculate normalize(kappa, beta):
+  6  25  42  57  73  88 103 119   x   x
+ 12  65 110 153 192 233 273   x   x   x
+ 18  83 150 234 304 367 434   x   x   x
+ 21  95 181 286 374 457   x   x   x   x
+ 24  96 202 304 433   x   x   x   x   x
+ 30  99 202 338   x   x   x   x   x   x
+ 33 100 215   x   x   x   x   x   x   x
+ 36   x   x   x   x   x   x   x   x   x
+  x   x   x   x   x   x   x   x   x   x
+  x   x   x   x   x   x   x   x   x   x
+
+>>> logging.getLogger().setLevel('WARNING')
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 >>> ks = [

@@ -16,9 +16,12 @@ import sys
 seed(2323)
 
 
-def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True):
+def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True,
+                               eta=1., alpha=0., rho=0.):
     scale = (1000.0 / gridsize)
-    print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" % (scale, scale))
+    print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" %
+          (scale,scale))
+    print("with eta=%.1f, alpha=%.1f, rho=%.1f" % (eta, alpha, rho))
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         c_grid = np.zeros((gridsize, gridsize)) - 1.0
@@ -33,7 +36,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
             kappa = scale * i + 1.0
             for j in range(gridsize):
                 beta = scale * j + 1.0
-                f = sphere.distribution.fb8(0.0, 0.0, 0.0, kappa, beta)
+                f = sphere.distribution.fb8(0.0, 0.0, 0.0, kappa, beta, eta, alpha, rho)
                 try:
                     c, cnum = f.normalize(return_num_iterations=True)
                     c_grid[i, j] = np.log(c)
