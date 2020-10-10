@@ -14,5 +14,6 @@ setup(
                       'scipy'],
     extras_require={
         'plotting':  ['matplotlib', 'healpy']
-    }
+    },
+    python_requires='>=3.3',
     )
