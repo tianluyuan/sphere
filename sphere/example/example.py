@@ -69,7 +69,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
         ]:
             print(message)
             for i, line in enumerate(grid):
-                print(" ".join(['  x' if n == -1.0 else '%3i' % n for n in line]))
+                print(" ".join(['  x' if n == -1 else '%3i' % n for n in line]))
 
 
 def test_example_mle(showplots=False):

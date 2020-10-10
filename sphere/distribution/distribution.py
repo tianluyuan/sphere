@@ -993,7 +993,6 @@ Iterations necessary to calculate normalize(kappa, beta):
   x   x   x   x   x   x   x   x   x   x
 
 >>> logging.getLogger().setLevel('ERROR')
-
 >>> test_example_normalization(gridsize=10,alpha=0.5)
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0*j+1
 with eta=1.0, alpha=0.5, rho=0.0
@@ -1009,7 +1008,6 @@ Iterations necessary to calculate normalize(kappa, beta):
  36   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
-
 >>> logging.getLogger().setLevel('WARNING')
 
 A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
