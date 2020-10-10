@@ -18,7 +18,7 @@ seed(2323)
 
 def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True):
     scale = (1000.0 / gridsize)
-    print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f+j*1" % (scale, scale))
+    print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" % (scale, scale))
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         c_grid = np.zeros((gridsize, gridsize)) - 1.0
@@ -42,6 +42,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                     pass
         if showplots:
             from pylab import figure, show
+            from matplotlib.ticker import FuncFormatter
             for name, grid in zip(
                 [
                     r"$\mathrm{Calculated\ values\ of\ }c(\kappa,\beta)$",
@@ -54,10 +55,8 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                 cb = ax.imshow(grid, interpolation="nearest")
                 f.colorbar(cb)
                 ax.set_title(name + " $(-1=\mathrm{overflow}$)")
-                ax.set_xticklabels([str(int(t * scale + 1))
-                                    for t in ax.get_xticks()])
-                ax.set_yticklabels([str(int(t * scale + 1))
-                                    for t in ax.get_yticks()])
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
                 ax.set_ylabel(r"$\kappa$")
                 ax.set_xlabel(r"$\beta$")
     print()
@@ -167,7 +166,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             samples = k.rvs(num_samples)
             k_me = sphere.distribution.kent_me(samples)
             k_mle = sphere.distribution.fb8_mle(samples, warning=sys.stdout, fb5_only=True)
-            assert k_me.log_likelihood(samples) < k_mle.log_likelihood(samples)
+            assert k_me.log_likelihood(samples) - k_mle.log_likelihood(samples) < 1e-5
             kappas_me.append(k_me.kappa)
             betas_me.append(k_me.beta)
             kappas_mle.append(k_mle.kappa)
