@@ -1,3 +1,5 @@
+[![PyPI version](https://badgen.net/pypi/v/fb8)](https://pypi.org/project/fb8) [![Build Status](https://travis-ci.com/tianluyuan/sphere.svg?branch=master)](https://travis-ci.com/tianluyuan/sphere) [![Python versions](https://img.shields.io/pypi/pyversions/fb8)](https://pypi.org/project/fb8)
+
 Getting started
 =================
 `pip install fb8`

@@ -7,6 +7,7 @@ Plots will be shown unless this script is called with the --no-plots
 option.
 """
 
+from __future__ import print_function
 import numpy as np
 import sphere.distribution
 from numpy.random import seed, uniform

@@ -11,6 +11,7 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
+from __future__ import print_function
 import sys
 import warnings
 import logging
