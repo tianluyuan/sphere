@@ -16,4 +16,5 @@ setup(
         'plotting':  ['matplotlib', 'healpy']
     },
     python_requires='>=2.7',
+    license=open('LICENSE').readline().split()[0],
     )
