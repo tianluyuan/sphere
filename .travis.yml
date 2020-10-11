@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.5"
+  - "3.7"
+  - "3.8"
+install:
+  - sudo apt-get update
+  - python --version
+  - pip install .
+
+script:
+  # Your test script goes here
+  - python sphere/distribution/distribution.py
+  

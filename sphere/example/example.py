@@ -26,13 +26,10 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
         warnings.simplefilter("error")
         c_grid = np.zeros((gridsize, gridsize)) - 1.0
         cnum_grid = np.zeros((gridsize, gridsize), dtype=np.int32) - 1
-        sys.stdout.write(
-            "Calculating normalization factor for combinations of kappa and beta:")
+        print("Calculating normalization factor for combinations of kappa and beta:", end='')
         for i in range(gridsize):
             if verbose:
-                sys.stdout.write("%s/%s " %
-                                 (i * gridsize, gridsize * gridsize))
-                sys.stdout.flush()
+                print("%s/%s " % (i * gridsize, gridsize * gridsize), end=' ', flush=True)
             kappa = scale * i + 1.0
             for j in range(gridsize):
                 beta = scale * j + 1.0
@@ -161,8 +158,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             print("beta (max 2.0) = %s*kappa : kappa (max %.1f) = " % (beta_ratio, max_kappa), end=' ')
         for kappa in real_kappas:
             if verbose:
-                print("%.1f" % kappa, end=' ')
-                sys.stdout.flush()
+                print("%.1f" % kappa, end=' ', flush=True)
             beta = kappa * beta_ratio
             k = sphere.distribution.fb8(uniform(0, np.pi), uniform(0, 2 * np.pi),
                     uniform(0, 2 * np.pi), kappa, beta)
