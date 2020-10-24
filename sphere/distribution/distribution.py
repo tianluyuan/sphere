@@ -125,7 +125,7 @@ class FB8Distribution(object):
             [np.sin(theta) * np.sin(phi), np.cos(theta) * np.sin(phi), np.cos(phi)]
         ])
         if len(_H.shape) > 2:
-            return np.rollaxis(_H, 2)
+            return np.moveaxis(_H, 2, 0)
         else:
             return _H
 
@@ -144,7 +144,7 @@ class FB8Distribution(object):
             [zs, np.sin(psi), np.cos(psi)]
         ])
         if len(_K.shape) > 2:
-            return np.rollaxis(_K, 2)
+            return np.moveaxis(_K, 2, 0)
         else:
             return _K
 
