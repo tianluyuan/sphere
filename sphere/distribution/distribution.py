@@ -486,7 +486,7 @@ class FB8Distribution(object):
                             # hack around H2F1 inaccuracy
                             a[(evens) & (a < 0)] = 0
                         sa = a.sum()
-                        abs_sa = np.abs(sa).sum()
+                        abs_sa = np.abs(a).sum()
                         ### DEBUG ###
                         # print j, sa
                         result += sa
