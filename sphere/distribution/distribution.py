@@ -437,7 +437,7 @@ class FB8Distribution(object):
                 try:
                     ll = 0
                     prev_abs_sa_ll = 0
-                    _l, _k, _j = 14, 14, 14
+                    _l, _k, _j = (14,)*3
                     while True:
                         curr_abs_sa_ll = 0
                         kk = 0
