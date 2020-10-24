@@ -406,7 +406,7 @@ class FB8Distribution(object):
                    b*np.sin(th)**2*(np.cos(ph)**2-m*np.sin(ph)**2)),
                    0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
                    epsabs=epsabs, epsrel=epsrel)[0]
-    
+
     def normalize(self, cache=dict(), return_num_iterations=False):
         """
         Returns the normalization constant of the FB8 distribution.
@@ -464,7 +464,7 @@ class FB8Distribution(object):
                     LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
                     ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
                 ) / np.sqrt(np.pi)
-        
+
         if (k, b, m, n1, n2) not in cache:
             result = 0.
             if b == 0. and k == 0.:
@@ -639,6 +639,30 @@ class FB8Distribution(object):
             except (OverflowError, RuntimeWarning) as e:
                 logging.warning('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 return self._approx_log_normalize()
+
+    def grad_log_normalize(self, cache=dict()):
+        """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
+        """
+        k, b, m = self.kappa, self.beta, self.eta
+        n1, n2, n3 = self.nu
+
+        def grad_lna_c6(j, b, k, m):
+            v = j+0.5
+            _Da_b = j/b
+            _Da_k = I(v+1,k)/I(v, k)
+            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/((0.5-j)*H2F1(0.5, -j, 0.5-j, -m))
+            return _Da_k, _Da_b, _Da_m, 0, 0, 0
+
+        def grad_lna_c8(jj, kk, ll, b, k, m, n1, n2, n3):
+            v = jj + ll + kk + 0.5
+            z = k*n1
+            _Da_b = jj/b
+            _Da_k = 2/k*(kk+ll) + n1 * I(1+v, z)/I(v, z)
+            _Da_m = jj*(kk+0.5)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m)/((0.5-jj-ll)*H2F1(-jj, 0.5-kk, 0.5-jj-ll, -m))
+            _Da_n1 = k*I(1+v,z)/I(v,z)
+            _Da_n2 = 2*ll/n2
+            _Da_n3 = 2*kk/n3
+            return _Da_k, _Da_b, _Da_m, _Da_n1, _Da_n2, _Da_n3
 
     def max(self):
         k, b, m = self.kappa, self.beta, self.eta
