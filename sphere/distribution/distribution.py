@@ -437,6 +437,7 @@ class FB8Distribution(object):
                 try:
                     ll = 0
                     prev_abs_sa_ll = 0
+                    _l, _k, _j = 14, 14, 14
                     while True:
                         curr_abs_sa_ll = 0
                         kk = 0
@@ -446,7 +447,6 @@ class FB8Distribution(object):
                             jj = 0
                             prev_abs_sa_jj = 0
                             while True:
-                                _l, _k, _j = 14, 14, 14
                                 jjs, kks, lls = np.meshgrid(np.arange(jj*_j,(jj+1)*_j),
                                                             np.arange(kk*_k,(kk+1)*_k),
                                                             np.arange(ll*_l,(ll+1)*_l))
@@ -885,7 +885,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
     # first get estimated moments
     k_me = kent_me(xs)
-    theta, phi, psi, kappa, beta, eta, alpha, rho = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta, k_me.eta, k_me.alpha, k_me.rho
+    theta, phi, psi, kappa, beta = k_me.theta, k_me.phi, k_me.psi, k_me.kappa, k_me.beta
 
     # here the mle is done
     x_start = np.array([theta, phi, psi, kappa, beta])
