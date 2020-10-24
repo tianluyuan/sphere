@@ -163,6 +163,62 @@ class FB8Distribution(object):
         return np.swapaxes(FB8Distribution.create_matrix_Gamma(theta, phi, psi), -2, -1)
 
     @staticmethod
+    def create_matrix_DH_theta(theta, phi):
+        theta = np.asarray(theta)
+        phi = np.asarray(phi)
+        zs = np.zeros(theta.shape)
+        _DH = np.array([
+            [-np.sin(theta),          -np.cos(theta),         zs],
+            [np.cos(theta) * np.cos(phi), -np.sin(theta) * np.cos(phi), zs],
+            [np.cos(theta) * np.sin(phi), -np.sin(theta) * np.sin(phi), zs]
+        ])
+        if len(_DH.shape) > 2:
+            return np.moveaxis(_DH, 2, 0)
+        else:
+            return _DH
+
+    @staticmethod
+    def create_matrix_DH_phi(theta, phi):
+        theta = np.asarray(theta)
+        phi = np.asarray(phi)
+        zs = np.zeros(theta.shape)
+        _DH = np.array([
+            [zs, zs, zs],
+            [-np.sin(theta) * np.sin(phi), -np.cos(theta) * np.sin(phi), -np.cos(phi)],
+            [np.cos(phi) * np.sin(theta), np.cos(theta) * np.cos(phi), -np.sin(phi)]
+        ])
+        if len(_DH.shape) > 2:
+            return np.moveaxis(_DH, 2, 0)
+        else:
+            return _DH
+        
+    @staticmethod
+    def create_matrix_DK_psi(psi):
+        psi = np.asarray(psi)
+        zs = np.zeros(psi.shape)
+        _DK = np.array([
+            [zs, zs, zs],
+            [zs, -np.sin(psi), -np.cos(psi)],
+            [zs, np.cos(psi), -np.sin(psi)],
+        ])
+        if len(_DK.shape) > 2:
+            return np.moveaxis(_DK, 2, 0)
+        else:
+            return _DK
+
+    @staticmethod
+    def create_matrix_DGamma_theta(theta, phi, psi):
+        return MMul(FB8Distribution.create_matrix_DH_theta, FB8Distribution.create_matrix_K(psi))
+
+    @staticmethod
+    def create_matrix_DGamma_phi(theta, phi, psi):
+        return MMul(FB8Distribution.create_matrix_DH_phi, FB8Distribution.create_matrix_K(psi))
+    
+    @staticmethod
+    def create_matrix_DGamma_psi(theta, phi, psi):
+        return MMul(FB8Distribution.create_matrix_H(theta,phi), FB8Distribution.create_matrix_DK_psi(psi))
+    
+    @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
         Gamma = FB8Distribution.create_matrix_Gamma(theta, phi, psi)
         gamma1 = Gamma[..., 0]
@@ -324,6 +380,18 @@ class FB8Distribution(object):
     def Gamma(self):
         return self.create_matrix_Gamma(self.theta, self.phi, self.psi)
 
+    @property
+    def DGamma_theta(self):
+        return self.create_matrix_DGamma_theta(self.theta, self.phi, self.psi)
+
+    @property
+    def DGamma_phi(self):
+        return self.create_matrix_DGamma_phi(self.theta, self.phi, self.psi)
+
+    @property
+    def DGamma_psi(self):
+        return self.create_matrix_DGamma_psi(self.theta, self.phi, self.psi)
+    
     def _nnormalize(self, epsabs=1e-3, epsrel=1e-3):
         """
         Perform numerical integration with dblquad. This function can be used for testing and 
