@@ -208,11 +208,11 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_DGamma_theta(theta, phi, psi):
-        return MMul(FB8Distribution.create_matrix_DH_theta, FB8Distribution.create_matrix_K(psi))
+        return MMul(FB8Distribution.create_matrix_DH_theta(theta, phi), FB8Distribution.create_matrix_K(psi))
 
     @staticmethod
     def create_matrix_DGamma_phi(theta, phi, psi):
-        return MMul(FB8Distribution.create_matrix_DH_phi, FB8Distribution.create_matrix_K(psi))
+        return MMul(FB8Distribution.create_matrix_DH_phi(theta, phi), FB8Distribution.create_matrix_K(psi))
     
     @staticmethod
     def create_matrix_DGamma_psi(theta, phi, psi):
@@ -681,6 +681,14 @@ class FB8Distribution(object):
         alpha, rho = self.alpha, self.rho
 
         def grad_a_c6(j, b, k, m):
+            if k == 0.:
+                k += 1e-6
+            if b == 0.:
+                b += 1e-6
+            if m == -1.:
+                m += 1e-6
+            elif m == 1.:
+                m -= 1e-6
             v = j + 0.5
             h0f1_c6 = H0F1(v+1, k**2/4)
             h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
@@ -692,6 +700,18 @@ class FB8Distribution(object):
             return _Da_k, _Da_b, _Da_m
 
         def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
+            if k == 0.:
+                k += 1e-6
+            if b == 0.:
+                b += 1e-6
+            if m == -1.:
+                m += 1e-6
+            elif m == 1.:
+                m -= 1e-6
+            if n2 == 0.:
+                n2 += 1e-6
+            if n3 == 0.:
+                n3 += 1e-6
             v = jj + ll + kk + 0.5
             z = k*n1
             a_c8_st = self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
@@ -910,23 +930,24 @@ class FB8Distribution(object):
         """
         Returns the gradient of the log(pdf(xs)) over the parameters.
         """
-        g1x, g2x, g3x = MMul(self.Gamma.T, np.asarray(xs).T)
+        gx = MMul(self.Gamma.T, np.asarray(xs).T)
+        dgx_theta = MMul(self.DGamma_theta.T, np.asarray(xs).T)
+        dgx_phi = MMul(self.DGamma_phi.T, np.asarray(xs).T)
+        dgx_psi = MMul(self.DGamma_psi.T, np.asarray(xs).T)
         k, b, m = self.kappa, self.beta, self.eta
-        ngx = self.nu.dot(np.asarray([g1x, g2x, g3x]))
+        ngx = self.nu.dot(gx)
 
         # f = k * ngx + b * (g2x**2 - m * g3x**2)
         Df_k = ngx
-        Df_b = g2x**2 - m * g3x**2
-        Df_m = -b * g3x**2
-        # Df_theta =
-        # Df_phi = 
-        # Df_psi =
-        # Df_alpha = 
-        # Df_rho =
-        if normalize:
-            return f - self.log_normalize()
-        else:
-            return f
+        Df_b = gx[1]**2 - m * gx[2]**2
+        Df_m = -b * gx[2]**2
+        Df_theta = k * self.nu.dot(dgx_theta) + 2*b*(gx[1]*dgx_theta[1]-m*gx[2]*dgx_theta[2])
+        Df_phi = k * self.nu.dot(dgx_phi) + 2*b*(gx[1]*dgx_phi[1]-m*gx[2]*dgx_phi[2])
+        Df_psi = k * self.nu.dot(dgx_psi) + 2*b*(gx[1]*dgx_psi[1]-m*gx[2]*dgx_psi[2])
+        Df_alpha = k * self.Dnu_alpha.dot(gx)
+        Df_rho = k * self.Dnu_rho.dot(gx)
+        _ = self._grad_log_normalize()
+        return Df_theta, Df_phi, Df_psi, Df_k-_[0], Df_b-_[1], Df_m-_[2], Df_alpha-_[3], Df_rho-_[4]
 
     def log_likelihood(self, xs):
         """
@@ -934,6 +955,13 @@ class FB8Distribution(object):
         """
         retval = self.log_pdf(xs)
         return sum(retval, len(np.shape(retval)) - 1)
+
+    def grad_log_likelihood(self, xs):
+        """
+        Returns the log likelihood for xs.
+        """
+        gradval = self._grad_log_pdf(xs)
+        return [sum(_, len(np.shape(_)) - 1) for _ in gradval]
 
     def _rvs_helper(self):
         num_samples = 10000
@@ -1134,6 +1162,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #     return np.inf
         return -fb8(*x).log_likelihood(xs) / len(xs)
 
+    def jac(x):
+        return np.asarray([-_ for _ in fb8(*x).grad_log_likelihood(xs)[:len(x)]])
+
     # callback for keeping track of the values
     intermediate_values = list()
 
@@ -1165,6 +1196,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
              "fun": lambda x: x[4]})
     all_values = minimize(minus_log_likelihood,
                           x_start,
+                          jac=jac,
                           method="SLSQP",
                           constraints=cons,
                           callback=callback,
@@ -1187,8 +1219,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #         #  "fun": lambda x: -x[3] + 2 * x[4]})
         _y = minimize(minus_log_likelihood,
                       y_start,
+                      jac=jac,
                       method="L-BFGS-B",
-                      bounds=list(zip([None]*5+[-1,], [None]*5+[1,])),
+                      bounds=list(zip([None]*3+[0,0,-1,], [None]*5+[1,])),
                       callback=callback)
 
         # default seed
@@ -1197,9 +1230,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts.append(np.concatenate((_y.x, [0.,0.])))
+            z_starts.append(np.concatenate((_y.x, [0,0])))
         else:
-            z_starts.append(np.concatenate((all_values.x, [0.9,0.,0.])))
+            z_starts.append(np.concatenate((all_values.x, [0.9,0,0])))
 
         for z_start in z_starts:
             if verbose:
@@ -1214,11 +1247,12 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             #                       options={"disp": False,
             #                                "maxiter": 100})).lowest_optimization_result
             _z = minimize(minus_log_likelihood,
-                      z_start,
-                      method="L-BFGS-B",
-                      bounds=list(zip([None]*5+[-1,]+[None]*2, [None]*5+[1,]+[None]*2)),
-                      callback=callback,
-                      options={'ftol':1e-8, 'gtol':1e-4})
+                          z_start,
+                          jac=jac,
+                          method="L-BFGS-B",
+                          bounds=list(zip([None]*3+[0,0,-1,]+[None]*2, [None]*5+[1,]+[None]*2)),
+                          callback=callback,
+                          options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
                 all_values = _z
     if not all_values.success:
