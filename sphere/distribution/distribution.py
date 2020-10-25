@@ -477,9 +477,12 @@ class FB8Distribution(object):
         j = 0
 
         def a_c6(j, b, k, m):
+            v = j + 0.5
             return self.a_c6_star(j, b, k, m) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
 
         def a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
+            v = jj + ll + kk + 0.5
+            z = k*n1
             return (self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3) *
                     H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m))
     
@@ -659,34 +662,49 @@ class FB8Distribution(object):
 
     def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):
         """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
+
+
+        >>> def func(x):
+        ...     return fb8(0,0,0,*x).log_normalize()
+        >>> def grad(x):
+        ...     return fb8(0,0,0,*x)._grad_log_normalize()
+        >>> from scipy.optimize import check_grad
+        >>> from itertools import product
+        >>> for x in product([0.0, 2, 32, 128, 256],
+        ...                  [0.0, 2, 32, 128, 256], np.linspace(-0.99, 0.99, 5),
+        ...                  np.linspace(0, np.pi+1e-3, 3),
+        ...                  np.linspace(0, np.pi/3+1e-3, 3)):
+        ...     check_grad(func, grad, x)
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         alpha, rho = self.alpha, self.rho
 
         def grad_a_c6(j, b, k, m):
+            v = j + 0.5
             h0f1_c6 = H0F1(v+1, k**2/4)
             h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
             v = j+0.5
-            a_c6_st = a_c6_star(j,b,k,m)
+            a_c6_st = self.a_c6_star(j,b,k,m)
             _Da_b = j/b * a_c6_st * h0f1_c6 * h2f1_c6
             _Da_k = H0F1(v+2,k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
-            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/(0.5-j) * a_c6 * h0f1_c6
+            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/(0.5-j) * a_c6_st * h0f1_c6
             return _Da_k, _Da_b, _Da_m
 
         def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
             v = jj + ll + kk + 0.5
             z = k*n1
-            a_c8_st = a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
+            a_c8_st = self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
             h0f1_c8 = H0F1(v+1, z**2/4)
             h2f1_c8 = H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            hprd_c8 = h0f1_c8 * h2f1_c8
             
-            _Da_b = jj/b * a_c8_st
+            _Da_b = jj/b * a_c8_st * hprd_c8
             _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2/(2*(v+1))*H0F1(2+v, z**2/4)) * a_c8_st * h2f1_c8
             _Da_m = jj*(kk+0.5)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m)/(0.5-jj-ll) * a_c8_st * h0f1_c8
             _Da_n1 = k**2*n1/(2*(v+1))*H0F1(v+2, z**2/4) * a_c8_st * h2f1_c8
-            _Da_n2 = 2*ll/n2 * a_c8_st * h0f1_c8 * h2f1_c8
-            _Da_n3 = 2*kk/n3 * a_c8_st * h0f1_c8 * h2f1_c8
+            _Da_n2 = 2*ll/n2 * a_c8_st * hprd_c8
+            _Da_n3 = 2*kk/n3 * a_c8_st * hprd_c8
             _Da_nu = np.asarray([_Da_n1, _Da_n2, _Da_n3])
             
             return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
@@ -784,12 +802,7 @@ class FB8Distribution(object):
                             break
                         prev_abs_sa_ll = curr_abs_sa_ll
                 except (RuntimeWarning, OverflowError) as e:
-                    logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
-                    try:
-                        # numerical integration
-                        result = self._nnormalize()/(2*np.pi)
-                    except RuntimeWarning as e:
-                        result = np.inf
+                    logging.warning('Series calculation of gradient failed... '+self.__repr__())
                     j = -1
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result / norm
@@ -888,6 +901,28 @@ class FB8Distribution(object):
         ngx = self.nu.dot(np.asarray([g1x, g2x, g3x]))
 
         f = k * ngx + b * (g2x**2 - m * g3x**2)
+        if normalize:
+            return f - self.log_normalize()
+        else:
+            return f
+
+    def _grad_log_pdf(self, xs, normalize=True):
+        """
+        Returns the gradient of the log(pdf(xs)) over the parameters.
+        """
+        g1x, g2x, g3x = MMul(self.Gamma.T, np.asarray(xs).T)
+        k, b, m = self.kappa, self.beta, self.eta
+        ngx = self.nu.dot(np.asarray([g1x, g2x, g3x]))
+
+        # f = k * ngx + b * (g2x**2 - m * g3x**2)
+        Df_k = ngx
+        Df_b = g2x**2 - m * g3x**2
+        Df_m = -b * g3x**2
+        # Df_theta =
+        # Df_phi = 
+        # Df_psi =
+        # Df_alpha = 
+        # Df_rho =
         if normalize:
             return f - self.log_normalize()
         else:
