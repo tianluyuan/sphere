@@ -17,7 +17,7 @@ import warnings
 import logging
 
 import numpy as np
-from scipy.optimize import minimize, basinhopping
+from scipy.optimize import minimize, basinhopping, approx_fprime
 from scipy.special import gamma as G
 from scipy.special import gammaln as LG
 from scipy.special import iv as I
@@ -670,11 +670,13 @@ class FB8Distribution(object):
         ...     return fb8(0,0,0,*x)._grad_log_normalize()
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
+        >>> epsilons = [np.sqrt(np.finfo(float).eps), 1e-40]
         >>> for x in product([0.0, 2, 32, 256],
-        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 5),
-        ...                  np.linspace(0, np.pi+1e-3, 3),
-        ...                  np.linspace(0, np.pi/3+1e-3, 3)):
-        ...     assert check_grad(func, grad, x, epsilon=1e-20) < 0.01
+        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 5)+1e-5,
+        ...                  np.linspace(0, np.pi-1e-3, 3),
+        ...                  np.linspace(0, np.pi/3-1e-3, 3)):
+        ...     assert (check_grad(func, grad, x, epsilon=epsilons[0]) < 0.01 or 
+        ...             check_grad(func, grad, x, epsilon=epsilons[1]) < 0.01)
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -693,8 +695,6 @@ class FB8Distribution(object):
             _Da_b = j/b * a_c6_st * h0f1_c6 * h2f1_c6
             _Da_k = H0F1(v+2,k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
             _Da_m = 0.5*j*H2F1(1-j, 1.5, 1.5-j, -m)/(0.5-j) * a_c6_st * h0f1_c6
-            print(a_c6_st*h0f1_c6)
-            print(_Da_m)
             return _Da_k, _Da_b, _Da_m
 
         def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
@@ -758,11 +758,15 @@ class FB8Distribution(object):
                         # print(result*2*np.pi/norm)
                         result[:3] += sa
                         if np.any(np.isnan(result)):
-                            logging.warning('Series gradient is nan')
-                            raise RuntimeWarning
+                            logging.warning('Series gradient ln(c6) is nan')
+                            return approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                                 1.49e-8)
+                            # raise RuntimeWarning
                         if np.any(np.isinf(result)):
-                            logging.warning('Series gradient is infinity')
-                            raise RuntimeWarning
+                            logging.warning('Series gradient ln(c6) is infinity')
+                            return approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                                 1.49e-8)
+                            # raise RuntimeWarning
                         j += 1
                         if np.all(abs_sa <= np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
                             break
@@ -796,7 +800,9 @@ class FB8Distribution(object):
                                 # import pdb
                                 # pdb.set_trace()
                                 logging.warning('Series gradient is nan')
-                                break
+                                return approx_fprime((k,b,m,alpha,rho), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                                     1.49e-8)
+                                # break
                             curr_abs_sa_kk += abs_sa
                             curr_abs_sa_ll += abs_sa
                             result += sa
@@ -1237,7 +1243,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                       y_start,
                       jac=jac,
                       method="L-BFGS-B",
-                      bounds=list(zip([None]*3+[0,0,-1,], [None]*5+[1,])),
+                      bounds=list(zip([0,0,0,0,0,-1,],
+                                      [np.pi, 2*np.pi, 2*np.pi, None, None,1,])),
                       callback=callback)
 
         # default seed
@@ -1266,7 +1273,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                           z_start,
                           jac=jac,
                           method="L-BFGS-B",
-                          bounds=list(zip([None]*3+[0,0,-1,]+[None]*2, [None]*5+[1,]+[None]*2)),
+                          bounds=list(zip([0,0,0,0,0,-1,0,0],
+                                          [np.pi, 2*np.pi, 2*np.pi, None, None, 1, np.pi, 2*np.pi])),
                           callback=callback,
                           options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
