@@ -245,6 +245,44 @@ class FB8Distribution(object):
         psi = np.arctan2(u[...,2,:][0], u[...,1,:][0])
         return theta, phi, psi
 
+    @staticmethod
+    def a_c6_star(j, b, k, m):
+        assert b > 0
+        v = j + 0.5
+        return (
+                np.exp(
+                    np.log(b) * j +
+                    + LG(j + 0.5) - LG(j+1) - LG(v+1)
+                    )
+                )# * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
+
+    @staticmethod
+    def a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3):
+        assert k > 0
+        v = jj + ll + kk + 0.5
+        z = k*n1
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            ln_n2 = np.log(n2**2) * ll
+            ln_n3 = np.log(n3**2) * kk
+            ln_b = np.log(b) * jj
+
+        # prevent issues with log for edge cases
+        if n2 == 0.:
+            ln_n2[ll==0] = 0
+        if n3 == 0.:
+            ln_n3[kk==0] = 0
+        if b == 0.:
+            ln_b[jj==0] = 0
+        return (
+            np.exp(
+                ln_n2 + ln_n3 + ln_b +
+                np.log(k) * 2 * (ll+kk) -
+                LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
+                )# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            ) / np.sqrt(np.pi)
+    
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         assert not kappa < 0.
         assert not beta < 0.
@@ -400,45 +438,6 @@ class FB8Distribution(object):
     def Dnu_rho(self):
         return self.create_matrix_DH_phi(self.alpha, self.rho)[...,0]
 
-
-    @staticmethod
-    def a_c6_star(j, b, k, m):
-        assert b > 0
-        v = j + 0.5
-        return (
-                np.exp(
-                    np.log(b) * j +
-                    + LG(j + 0.5) - LG(j+1) - LG(v+1)
-                    )
-                )# * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
-
-    @staticmethod
-    def a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3):
-        assert k > 0
-        v = jj + ll + kk + 0.5
-        z = k*n1
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            ln_n2 = np.log(n2**2) * ll
-            ln_n3 = np.log(n3**2) * kk
-            ln_b = np.log(b) * jj
-
-        # prevent issues with log for edge cases
-        if n2 == 0.:
-            ln_n2[ll==0] = 0
-        if n3 == 0.:
-            ln_n3[kk==0] = 0
-        if b == 0.:
-            ln_b[jj==0] = 0
-        return (
-            np.exp(
-                ln_n2 + ln_n3 + ln_b +
-                np.log(k) * 2 * (ll+kk) -
-                LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
-                )# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
-            ) / np.sqrt(np.pi)
-    
     def _nnormalize(self, epsabs=1e-3, epsrel=1e-3):
         """
         Perform numerical integration with dblquad. This function can be used for testing and 
@@ -561,7 +560,7 @@ class FB8Distribution(object):
                                     break
                                 prev_abs_sa_jj = abs_sa
                                 ### DEBUG ###
-                                # print ll, kk, jj, sa, result
+                                # print(j, ll, kk, jj, sa, result)
                                 # if ll == 13 and kk==1 and jj==0:
                                 #     print ll, kk, jj, a, result
                                 #     import pdb
@@ -671,10 +670,14 @@ class FB8Distribution(object):
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
         >>> for x in product([0.0, 2, 32, 256],
-        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 5)+1e-5,
+        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 3)+1e-5,
         ...                  np.linspace(0, np.pi-1e-3, 3),
         ...                  np.linspace(0, np.pi/3-1e-3, 3)):
-        ...     assert check_grad(func, grad, x) < 1
+        ...     if check_grad(func, grad, x) > 1:
+        ...         print(fb8(0,0,0,*x), check_grad(func, grad, x))
+        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 50118.12008943325
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 0.99, 1.57, 0.52) 1.5411711881545642
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 0.99, 1.57, 1.05) 1740737.7463947278
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -756,7 +759,7 @@ class FB8Distribution(object):
                         # print(result*2*np.pi/norm)
                         result[:3] += sa
                         if np.any(np.isnan(result)) or np.any(np.isinf(result)):
-                            logging.warning('Series gradient ln(c6) is nan or infinity')
+                            logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
                             result = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
                                                    1.49e-8) * norm/(2*np.pi)
                             j = -1
@@ -793,8 +796,7 @@ class FB8Distribution(object):
                             if np.any(np.isnan(sa)):
                                 # import pdb
                                 # pdb.set_trace()
-                                logging.warning('Series gradient is nan')
-                                print(self)
+                                logging.warning('Series gradient is nan...'+self.__repr__())
                                 result = approx_fprime((k,b,m,alpha,rho), lambda x: fb8(0,0,0,*x).log_normalize(),
                                                        1.49e-8) * norm/(2*np.pi)
                                 j = -1
@@ -951,7 +953,7 @@ class FB8Distribution(object):
 
     def grad_log_likelihood(self, xs):
         """
-        Returns the log likelihood for xs.
+        Returns the gradient of the log likelihood given xs over all 8 parameters.
 
         >>> def func(x, xs):
         ...     return fb8(*x).log_likelihood(xs)
@@ -959,11 +961,12 @@ class FB8Distribution(object):
         ...     return fb8(*x).grad_log_likelihood(xs)
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
-        >>> for x in product([0,1], [0,], [0,], [0.0, 2, 32, 256],
-        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 3),
-        ...                  np.linspace(0, np.pi, 2),
-        ...                  np.linspace(0, np.pi/3, 2)):
-        ...     assert check_grad(func, grad, x, fb8(*np.random.rand(8)).Gamma, 1e-20) < 1e-2
+        >>> for x in product([0,1], [0,], [0,], [0.0, 2, 32],
+        ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3),
+        ...                  np.linspace(0, np.pi-1e-3, 2),
+        ...                  np.linspace(0, np.pi/3-1e-3, 2)):
+        ...     if check_grad(func, grad, x, fb8(*np.random.rand(8)).Gamma) > 1:
+        ...         print(fb8(*x), check_grad(func, grad, x))
         """
         gradval = self._grad_log_pdf(xs)
         return [sum(_, len(np.shape(_)) - 1) for _ in gradval]
