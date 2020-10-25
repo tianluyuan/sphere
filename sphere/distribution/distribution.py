@@ -689,12 +689,21 @@ class FB8Distribution(object):
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         alpha, rho = self.alpha, self.rho
+        ee = self.minimum_value_for_kappa
+        if k == 0.:
+            k = ee
+        if b == 0.:
+            b = ee
+        if m == -1.:
+            m = -1+1e-6
+        elif m == 1.:
+            m = 1-1e-6
+        if n2 == 0.:
+            n2 = 1e-6
+        if n3 == 0.:
+            n3 = 1e-6
 
         def grad_a_c6(j, b, k, m):
-            if m == -1.:
-                m = -1+1e-6
-            elif m == 1.:
-                m = 1-1e-6
             v = j + 0.5
             h0f1_c6 = H0F1(v+1, k**2/4)
             h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
@@ -706,16 +715,6 @@ class FB8Distribution(object):
             return _Da_k, _Da_b, _Da_m
 
         def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
-            if m == -1.:
-                m = -1+1e-6
-            elif m == 1.:
-                m = 1-1e-6
-            if b == 0.:
-                b = 1e-6
-            if n2 == 0.:
-                n2 = 1e-6
-            if n3 == 0.:
-                n3 = 1e-6
             v = jj + ll + kk + 0.5
             z = k*n1
             a_c8_st = self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
@@ -746,35 +745,35 @@ class FB8Distribution(object):
             norm = self.normalize()
             j = 0
             result = np.zeros([5,])
-            if b == 0. and k == 0.:
-                pass
-            # FB6 or BM4-with-eta
+            # if b == 0. and k == 0.:
+            #     pass
+            # FB6
             # This is faster than the full FB8 sum
-            elif n1 == 1. or k == 0.:
+            if n1 == 1.:
                 # exact solution (vmF)
-                if b == 0.0:
-                    result[0] = (1./np.tanh(k)-1./k) * norm/(2*np.pi)
-                else:
-                    prev_abs_a = 0
-                    while True:
-                        js = np.arange(j*100,(j+1)*100)
-                        grad_a = np.asarray(grad_a_c6(js, b, k, m))
-                        sa = grad_a.sum(axis=1)
-                        abs_sa = np.abs(grad_a).sum(axis=1)
-                        ### DEBUG ###
-                        # print(j, sa)
-                        # print(result*2*np.pi/norm)
-                        result[:3] += sa
-                        if np.any(np.isnan(result)) or np.any(np.isinf(result)):
-                            logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
-                            result = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
-                                                   1.49e-8) * norm/(2*np.pi)
-                            j = -1
-                            break
-                        j += 1
-                        if np.all(abs_sa <= np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
-                            break
-                        prev_abs_a = abs_sa
+                # if b == 0.0:
+                #     result[0] = (1./np.tanh(k)-1./k) * norm/(2*np.pi)
+                # else:
+                prev_abs_a = 0
+                while True:
+                    js = np.arange(j*100,(j+1)*100)
+                    grad_a = np.asarray(grad_a_c6(js, b, k, m))
+                    sa = grad_a.sum(axis=1)
+                    abs_sa = np.abs(grad_a).sum(axis=1)
+                    ### DEBUG ###
+                    # print(j, sa)
+                    # print(result*2*np.pi/norm)
+                    result[:3] += sa
+                    if np.any(np.isnan(result)) or np.any(np.isinf(result)):
+                        logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
+                        result = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                               1.49e-8) * norm/(2*np.pi)
+                        j = -1
+                        break
+                    j += 1
+                    if np.all(abs_sa <= np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
+                        break
+                    prev_abs_a = abs_sa
             # FB8
             else:
                 ll = 0
@@ -949,7 +948,7 @@ class FB8Distribution(object):
         Df_alpha = k * self.Dnu_alpha.dot(gx)
         Df_rho = k * self.Dnu_rho.dot(gx)
         _ = self._grad_log_normalize()
-        # print(Df_k, _[0])
+        # print(Df_b, _[1])
         return Df_theta, Df_phi, Df_psi, Df_k-_[0], Df_b-_[1], Df_m-_[2], Df_alpha-_[3], Df_rho-_[4]
 
     def log_likelihood(self, xs):
