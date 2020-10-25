@@ -742,7 +742,7 @@ class FB8Distribution(object):
             return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
 
         if (k, b, m, n1, n2) not in cache:
-            norm = self.normalize()
+            log_norm = self.log_normalize()
             j = 0
             result = np.zeros([5,])
             # if b == 0. and k == 0.:
@@ -763,11 +763,11 @@ class FB8Distribution(object):
                     ### DEBUG ###
                     # print(j, sa)
                     # print(result*2*np.pi/norm)
-                    result[:3] += sa
+                    result[:3] += np.exp(np.log(sa)-log_norm) * 2 * np.pi
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
                         logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
-                        result = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
-                                               1.49e-8) * norm/(2*np.pi)
+                        result[:3] = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                                   1.49e-8)
                         j = -1
                         break
                     j += 1
@@ -804,12 +804,12 @@ class FB8Distribution(object):
                                 # pdb.set_trace()
                                 logging.warning('Series gradient is nan...'+self.__repr__())
                                 result = approx_fprime((k,b,m,alpha,rho), lambda x: fb8(0,0,0,*x).log_normalize(),
-                                                       1.49e-8) * norm/(2*np.pi)
+                                                       1.49e-8)
                                 j = -1
                                 break
                             curr_abs_sa_kk += abs_sa
                             curr_abs_sa_ll += abs_sa
-                            result += sa
+                            result += np.exp(np.log(sa) - log_norm)*2*np.pi
                             j += 1
                             jj += 1
                             if np.all(abs_sa <= np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
@@ -826,7 +826,7 @@ class FB8Distribution(object):
                         break
                     prev_abs_sa_ll = curr_abs_sa_ll
 
-            cache[k, b, m, n1, n2] = 2 * np.pi * result / norm
+            cache[k, b, m, n1, n2] = result
 
         if return_num_iterations:
             return cache[k, b, m, n1, n2], j
