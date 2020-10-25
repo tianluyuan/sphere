@@ -1151,7 +1151,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
     Generates a FB8Distribution fitted to xs using maximum likelihood estimation
     For a first approximation kent_me() is used. The function
     -k.log_likelihood(xs)/len(xs) (where k is an instance of FB8Distribution) is
-    minimized.
+    minimized. If fb5_only=False, sequentially fit a Kent, FB6 and then FB8
+    distribution. Gradients are used for the FB6 and FB8 fits.
 
     Input:
       - xs: values on the sphere to be fitted by MLE, ordering is (z, x, y)
@@ -1163,6 +1164,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         - a file object: which results in any warning message being written to a file
           (e.g. stdout)
         - "none": or any other value for this argument results in no warnings to be issued
+      - fb5_only: perform fit to Kent distribution only
     Output:
       - an instance of the fitted FB8Distribution
     Extra output:
@@ -1184,6 +1186,10 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         return -fb8(*x).log_likelihood(xs)/lenxs
 
     def jac(x):
+        if np.any(np.isnan(x)):
+            return np.zeros(8)
+        if x[3] < 0 or x[4] < 0:
+            return np.zeros(8)
         return -np.asarray(fb8(*x).grad_log_likelihood(xs)[:len(x)])/lenxs
 
     # callback for keeping track of the values
