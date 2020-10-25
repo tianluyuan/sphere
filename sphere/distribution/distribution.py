@@ -392,6 +392,53 @@ class FB8Distribution(object):
     def DGamma_psi(self):
         return self.create_matrix_DGamma_psi(self.theta, self.phi, self.psi)
     
+    @property
+    def Dnu_alpha(self):
+        return self.create_matrix_DH_theta(self.alpha, self.rho)[...,0]
+
+    @property
+    def Dnu_rho(self):
+        return self.create_matrix_DH_phi(self.alpha, self.rho)[...,0]
+
+
+    @staticmethod
+    def a_c6_star(j, b, k, m):
+        assert b > 0
+        v = j + 0.5
+        return (
+                np.exp(
+                    np.log(b) * j +
+                    + LG(j + 0.5) - LG(j+1) - LG(v+1)
+                    )
+                )# * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
+
+    @staticmethod
+    def a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3):
+        assert k > 0
+        v = jj + ll + kk + 0.5
+        z = k*n1
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            ln_n2 = np.log(n2**2) * ll
+            ln_n3 = np.log(n3**2) * kk
+            ln_b = np.log(b) * jj
+
+        # prevent issues with log for edge cases
+        if n2 == 0.:
+            ln_n2[ll==0] = 0
+        if n3 == 0.:
+            ln_n3[kk==0] = 0
+        if b == 0.:
+            ln_b[jj==0] = 0
+        return (
+            np.exp(
+                ln_n2 + ln_n3 + ln_b +
+                np.log(k) * 2 * (ll+kk) -
+                LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
+                )# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            ) / np.sqrt(np.pi)
+    
     def _nnormalize(self, epsabs=1e-3, epsrel=1e-3):
         """
         Perform numerical integration with dblquad. This function can be used for testing and 
@@ -430,41 +477,12 @@ class FB8Distribution(object):
         j = 0
 
         def a_c6(j, b, k, m):
-            assert b > 0
-            v = j + 0.5
-            return (
-                    np.exp(
-                        np.log(b) * j +
-                        + LG(j + 0.5) - LG(j+1) - LG(v+1)
-                        )
-                    ) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
+            return self.a_c6_star(j, b, k, m) * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
 
         def a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
-            assert k > 0
-            v = jj + ll + kk + 0.5
-            z = k*n1
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                ln_n2 = np.log(n2**2) * ll
-                ln_n3 = np.log(n3**2) * kk
-                ln_b = np.log(b) * jj
-
-            # prevent issues with log for edge cases
-            if n2 == 0.:
-                ln_n2[ll==0] = 0
-            if n3 == 0.:
-                ln_n3[kk==0] = 0
-            if b == 0.:
-                ln_b[jj==0] = 0
-            return (
-                np.exp(
-                    ln_n2 + ln_n3 + ln_b +
-                    np.log(k) * 2 * (ll+kk) -
-                    LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                    LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
-                    ) * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
-                ) / np.sqrt(np.pi)
-
+            return (self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3) *
+                    H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m))
+    
         if (k, b, m, n1, n2) not in cache:
             result = 0.
             if b == 0. and k == 0.:
@@ -639,29 +657,147 @@ class FB8Distribution(object):
                 logging.warning('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 return self._approx_log_normalize()
 
-    def grad_log_normalize(self, cache=dict()):
+    def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):
         """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
+        alpha, rho = self.alpha, self.rho
 
-        def grad_lna_c6(j, b, k, m):
+        def grad_a_c6(j, b, k, m):
+            h0f1_c6 = H0F1(v+1, k**2/4)
+            h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
             v = j+0.5
-            _Da_b = j/b
-            _Da_k = I(v+1,k)/I(v, k)
-            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/((0.5-j)*H2F1(0.5, -j, 0.5-j, -m))
-            return _Da_k, _Da_b, _Da_m, 0, 0, 0
+            a_c6_st = a_c6_star(j,b,k,m)
+            _Da_b = j/b * a_c6_st * h0f1_c6 * h2f1_c6
+            _Da_k = H0F1(v+2,k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
+            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/(0.5-j) * a_c6 * h0f1_c6
+            return _Da_k, _Da_b, _Da_m
 
-        def grad_lna_c8(jj, kk, ll, b, k, m, n1, n2, n3):
+        def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
             v = jj + ll + kk + 0.5
             z = k*n1
-            _Da_b = jj/b
-            _Da_k = 2/k*(kk+ll) + n1 * I(1+v, z)/I(v, z)
-            _Da_m = jj*(kk+0.5)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m)/((0.5-jj-ll)*H2F1(-jj, 0.5-kk, 0.5-jj-ll, -m))
-            _Da_n1 = k*I(1+v,z)/I(v,z)
-            _Da_n2 = 2*ll/n2
-            _Da_n3 = 2*kk/n3
-            return _Da_k, _Da_b, _Da_m, _Da_n1, _Da_n2, _Da_n3
+            a_c8_st = a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
+            h0f1_c8 = H0F1(v+1, z**2/4)
+            h2f1_c8 = H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            
+            _Da_b = jj/b * a_c8_st
+            _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2/(2*(v+1))*H0F1(2+v, z**2/4)) * a_c8_st * h2f1_c8
+            _Da_m = jj*(kk+0.5)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m)/(0.5-jj-ll) * a_c8_st * h0f1_c8
+            _Da_n1 = k**2*n1/(2*(v+1))*H0F1(v+2, z**2/4) * a_c8_st * h2f1_c8
+            _Da_n2 = 2*ll/n2 * a_c8_st * h0f1_c8 * h2f1_c8
+            _Da_n3 = 2*kk/n3 * a_c8_st * h0f1_c8 * h2f1_c8
+            _Da_nu = np.asarray([_Da_n1, _Da_n2, _Da_n3])
+            
+            return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
+
+        if (k, b, m, n1, n2) not in cache:
+            norm = self.normalize()
+            j = 0
+            result = np.zeros([5,])
+            if b == 0. and k == 0.:
+                pass
+            # FB6 or BM4-with-eta
+            # This is faster than the full FB8 sum
+            elif n1 == 1. or k == 0.:
+                # exact solution (vmF)
+                if b == 0.0:
+                    result[0] = 1./np.tanh(k)-1./k
+                else:
+                    prev_abs_a = 0
+                    while True:
+                        js = np.arange(j*100,(j+1)*100)
+                        grad_a = np.asarray(grad_a_c6(js, b, k, m))
+                        sa = grad_a.sum(axis=1)
+                        abs_sa = np.abs(grad_a).sum(axis=1)
+                        ### DEBUG ###
+                        # print(j, sa)
+                        # print(result*2*np.pi/norm)
+                        result[:3] += sa
+                        if np.any(np.isnan(result)):
+                            logging.warning('Series gradient is nan')
+                            raise RuntimeWarning
+                        if np.any(np.isinf(result)):
+                            logging.warning('Series gradient is infinity')
+                            raise RuntimeWarning
+                        j += 1
+                        if np.all(abs_sa < np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
+                            break
+                        prev_abs_a = abs_sa
+            # FB8
+            else:
+                try:
+                    ll = 0
+                    prev_abs_sa_ll = 0
+                    _l, _k, _j = (14,)*3
+                    _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                    while True:
+                        curr_abs_sa_ll = 0
+                        kk = 0
+                        prev_abs_sa_kk = 0
+                        while True:
+                            curr_abs_sa_kk = 0
+                            jj = 0
+                            prev_abs_sa_jj = 0
+                            while True:
+                                jjs = jj*_j+_jjs
+                                grad_a = np.asarray(grad_a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3))
+                                # import pdb
+                                # pdb.set_trace()
+                                sa = grad_a.sum(axis=(1,2,3))
+                                abs_sa = np.abs(grad_a).sum(axis=(1,2,3))
+                                ### DEBUG ###
+                                # print ll, kk, jj, sa, abs_sa
+                                # print j, a, I(j+0.5, k)
+                                curr_abs_sa_kk += abs_sa
+                                curr_abs_sa_ll += abs_sa
+                                result += sa
+                                if np.any(np.isnan(result)):
+                                    logging.warning('Series gradient is nan')
+                                    raise RuntimeWarning
+                                j += 1
+                                jj += 1
+                                if np.all(abs_sa < np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
+                                    break
+                                prev_abs_sa_jj = abs_sa
+                                ### DEBUG ###
+                                # print(ll, kk, jj, sa, result)
+                                # if ll == 13 and kk==1 and jj==0:
+                                #     print ll, kk, jj, a, result
+                                #     import pdb
+                                #     pdb.set_trace()
+
+                            ### DEBUG ###
+                            # if ll == 2 and kk==44:
+                            #     import pdb
+                            #     pdb.set_trace()
+                            # print ll, kk, curr_abs_sa_kk, result
+                            # assert not curr_abs_sa_kk < 0
+                            kk += 1
+                            if np.all(curr_abs_sa_kk < np.abs(result) * 1E-3) and np.all(curr_abs_sa_kk <= prev_abs_sa_kk):
+                                break
+                            prev_abs_sa_kk = curr_abs_sa_kk
+                        ### DEBUG ###
+                        # print ll, curr_abs_sa_ll, result
+                        ll += 1
+                        if np.all(curr_abs_sa_ll < np.abs(result) * 1E-3) and np.all(curr_abs_sa_ll <= prev_abs_sa_ll):
+                            break
+                        prev_abs_sa_ll = curr_abs_sa_ll
+                except (RuntimeWarning, OverflowError) as e:
+                    logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
+                    try:
+                        # numerical integration
+                        result = self._nnormalize()/(2*np.pi)
+                    except RuntimeWarning as e:
+                        result = np.inf
+                    j = -1
+
+            cache[k, b, m, n1, n2] = 2 * np.pi * result / norm
+
+        if return_num_iterations:
+            return cache[k, b, m, n1, n2], j
+        else:
+            return cache[k, b, m, n1, n2]
 
     def max(self):
         k, b, m = self.kappa, self.beta, self.eta
