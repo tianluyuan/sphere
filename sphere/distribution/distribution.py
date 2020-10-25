@@ -286,9 +286,9 @@ class FB8Distribution(object):
                 ln_n2 + ln_n3 + ln_b +
                 np.log(k) * 2 * (ll+kk) -
                 LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1)
-                )# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
-            ) / np.sqrt(np.pi)
+                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1) -
+                0.5 * np.log(np.pi))# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            )
     
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         assert not kappa < 0.
@@ -742,7 +742,7 @@ class FB8Distribution(object):
             return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
 
         if (k, b, m, n1, n2) not in cache:
-            log_norm = self.log_normalize()
+            norm = np.exp(self.log_normalize())
             j = 0
             result = np.zeros([5,])
             # if b == 0. and k == 0.:
@@ -763,7 +763,7 @@ class FB8Distribution(object):
                     ### DEBUG ###
                     # print(j, sa)
                     # print(result*2*np.pi/norm)
-                    result[:3] += np.exp(np.log(sa)-log_norm) * 2 * np.pi
+                    result[:3] += sa/norm * 2 * np.pi
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
                         logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
                         result[:3] = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
@@ -809,7 +809,7 @@ class FB8Distribution(object):
                                 break
                             curr_abs_sa_kk += abs_sa
                             curr_abs_sa_ll += abs_sa
-                            result += np.exp(np.log(sa) - log_norm)*2*np.pi
+                            result += sa/norm*2*np.pi
                             j += 1
                             jj += 1
                             if np.all(abs_sa <= np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
