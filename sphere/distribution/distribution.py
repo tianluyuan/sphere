@@ -765,7 +765,8 @@ class FB8Distribution(object):
                     # print(result*2*np.pi/norm)
                     result[:3] += sa/norm * 2 * np.pi
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
-                        logging.warning('Series gradient ln(c6) is nan or infinity...'+self.__repr__())
+                        logging.warning(
+                            'Series grad(ln(c6)) is nan or infinity, using approx_fprime...'+self.__repr__())
                         result[:3] = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
                                                    1.49e-8)
                         j = -1
@@ -802,7 +803,8 @@ class FB8Distribution(object):
                             if np.any(np.isnan(sa)):
                                 # import pdb
                                 # pdb.set_trace()
-                                logging.warning('Series gradient is nan...'+self.__repr__())
+                                logging.warning(
+                                    'Series grad(ln(c_8)) is nan, using approx_fprime...'+self.__repr__())
                                 result = approx_fprime((k,b,m,alpha,rho), lambda x: fb8(0,0,0,*x).log_normalize(),
                                                        1.49e-8)
                                 j = -1
