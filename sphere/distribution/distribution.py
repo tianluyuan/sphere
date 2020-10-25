@@ -1252,14 +1252,14 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                       callback=callback)
 
         # default seed
-        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.001]),]
+        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.]),]
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts.append(np.concatenate((_y.x, [0.001,0.001])))
+            z_starts.append(np.concatenate((_y.x, [1e-6,0.])))
         else:
-            z_starts.append(np.concatenate((all_values.x, [0.9,0.001,0.001])))
+            z_starts.append(np.concatenate((all_values.x, [0.9,1e-6,0.])))
 
         for z_start in z_starts:
             if verbose:
