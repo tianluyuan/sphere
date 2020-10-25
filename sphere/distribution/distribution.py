@@ -1215,7 +1215,6 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
              "fun": lambda x: x[4]})
     all_values = minimize(minus_log_likelihood,
                           x_start,
-                          jac=jac,
                           method="SLSQP",
                           constraints=cons,
                           callback=callback,
