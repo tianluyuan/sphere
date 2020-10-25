@@ -55,7 +55,14 @@ def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
     gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
     nu = FB8Distribution.spherical_coordinates_to_nu(alpha, rho)
-    return FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    fdist = FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
+    # these values are undefined if theta=0 or alpha=0, but matter for gradients
+    if theta == 0.:
+        fdist.phi = phi
+        fdist.psi = psi
+    if alpha == 0.:
+        fdist.rho = rho
+    return fdist
 
 
 def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
@@ -941,8 +948,8 @@ class FB8Distribution(object):
         Df_psi = k * self.nu.dot(dgx_psi) + 2*b*(gx[1]*dgx_psi[1]-m*gx[2]*dgx_psi[2])
         Df_alpha = k * self.Dnu_alpha.dot(gx)
         Df_rho = k * self.Dnu_rho.dot(gx)
-        print(self, self.Dnu_alpha, gx, Df_alpha)
         _ = self._grad_log_normalize()
+        # print(Df_k, _[0])
         return Df_theta, Df_phi, Df_psi, Df_k-_[0], Df_b-_[1], Df_m-_[2], Df_alpha-_[3], Df_rho-_[4]
 
     def log_likelihood(self, xs):
@@ -969,9 +976,8 @@ class FB8Distribution(object):
         ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3),
         ...                  np.linspace(0, np.pi-1e-3, 2),
         ...                  np.linspace(0, np.pi/3-1e-3, 2)):
-        ...     if check_grad(func_llh, grad_llh, x, xs) > 3:
-        ...         print(x)
-        ...         print(fb8(*x), check_grad(func_llh, grad_llh, x, xs))
+        ...     if check_grad(func_llh, grad_llh, x, xs) > 1:
+        ...         print(x, check_grad(func_llh, grad_llh, x, xs))
         """
         gradval = self._grad_log_pdf(xs)
         return [sum(_, len(np.shape(_)) - 1) for _ in gradval]
@@ -1231,12 +1237,12 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #          "fun": lambda x: 1 - np.abs(x[5])})
         #         # {"type": "ineq",
         #         #  "fun": lambda x: -x[3] + 2 * x[4]})
+        lb, ub = [0,0,0,0,0,-1,0,0], [np.pi, 2*np.pi, 2*np.pi, None, None, 1, np.pi, 2*np.pi]
         _y = minimize(minus_log_likelihood,
                       y_start,
                       jac=jac,
                       method="L-BFGS-B",
-                      bounds=list(zip([0,0,0,0,0,-1,],
-                                      [np.pi, 2*np.pi, 2*np.pi, None, None,1,])),
+                      bounds=list(zip(lb[:6], ub[:6])),
                       callback=callback)
 
         # default seed
@@ -1265,8 +1271,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                           z_start,
                           jac=jac,
                           method="L-BFGS-B",
-                          bounds=list(zip([0,0,0,0,0,-1,0,0],
-                                          [np.pi, 2*np.pi, 2*np.pi, None, None, 1, np.pi, 2*np.pi])),
+                          bounds=list(zip(lb, ub)),
                           callback=callback,
                           options={'ftol':1e-8, 'gtol':1e-4})
             if _z.success and _z.fun < all_values.fun:
