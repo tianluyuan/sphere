@@ -921,7 +921,7 @@ class FB8Distribution(object):
         else:
             return f
 
-    def _grad_log_pdf(self, xs, normalize=True):
+    def _grad_log_pdf(self, xs):
         """
         Returns the gradient of the log(pdf(xs)) over the parameters.
         """
@@ -941,6 +941,7 @@ class FB8Distribution(object):
         Df_psi = k * self.nu.dot(dgx_psi) + 2*b*(gx[1]*dgx_psi[1]-m*gx[2]*dgx_psi[2])
         Df_alpha = k * self.Dnu_alpha.dot(gx)
         Df_rho = k * self.Dnu_rho.dot(gx)
+        print(self, self.Dnu_alpha, gx, Df_alpha)
         _ = self._grad_log_normalize()
         return Df_theta, Df_phi, Df_psi, Df_k-_[0], Df_b-_[1], Df_m-_[2], Df_alpha-_[3], Df_rho-_[4]
 
@@ -955,18 +956,22 @@ class FB8Distribution(object):
         """
         Returns the gradient of the log likelihood given xs over all 8 parameters.
 
-        >>> def func(x, xs):
+        >>> def func_llh(x, xs):
         ...     return fb8(*x).log_likelihood(xs)
-        >>> def grad(x, xs):
+        >>> def grad_llh(x, xs):
         ...     return fb8(*x).grad_log_likelihood(xs)
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
+        >>> xs = np.array([[ 0.72692034, -0.58196172,  0.36456465],
+        ...                [ 0.58726806,  0.25163898, -0.76928152],
+        ...                [ 0.35595372,  0.77330355,  0.52468902]])
         >>> for x in product([0,1], [0,], [0,], [0.0, 2, 32],
         ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3),
         ...                  np.linspace(0, np.pi-1e-3, 2),
         ...                  np.linspace(0, np.pi/3-1e-3, 2)):
-        ...     if check_grad(func, grad, x, fb8(*np.random.rand(8)).Gamma) > 1:
-        ...         print(fb8(*x), check_grad(func, grad, x))
+        ...     if check_grad(func_llh, grad_llh, x, xs) > 3:
+        ...         print(x)
+        ...         print(fb8(*x), check_grad(func_llh, grad_llh, x, xs))
         """
         gradval = self._grad_log_pdf(xs)
         return [sum(_, len(np.shape(_)) - 1) for _ in gradval]
