@@ -670,25 +670,21 @@ class FB8Distribution(object):
         ...     return fb8(0,0,0,*x)._grad_log_normalize()
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
-        >>> for x in product([0.0, 2, 32, 128, 256],
-        ...                  [0.0, 2, 32, 128, 256], np.linspace(-0.99, 0.99, 5),
+        >>> for x in product([0.0, 2, 32, 256],
+        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 5),
         ...                  np.linspace(0, np.pi+1e-3, 3),
         ...                  np.linspace(0, np.pi/3+1e-3, 3)):
-        ...     check_grad(func, grad, x)
+        ...     assert check_grad(func, grad, x, epsilon=1e-20) < 0.01
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         alpha, rho = self.alpha, self.rho
 
         def grad_a_c6(j, b, k, m):
-            if k == 0.:
-                k += 1e-6
-            if b == 0.:
-                b += 1e-6
             if m == -1.:
-                m += 1e-6
+                m = -1+1e-6
             elif m == 1.:
-                m -= 1e-6
+                m = 1-1e-6
             v = j + 0.5
             h0f1_c6 = H0F1(v+1, k**2/4)
             h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
@@ -696,22 +692,22 @@ class FB8Distribution(object):
             a_c6_st = self.a_c6_star(j,b,k,m)
             _Da_b = j/b * a_c6_st * h0f1_c6 * h2f1_c6
             _Da_k = H0F1(v+2,k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
-            _Da_m = H2F1(1.5, 1-j, 1.5-j, -m)/(0.5-j) * a_c6_st * h0f1_c6
+            _Da_m = 0.5*j*H2F1(1-j, 1.5, 1.5-j, -m)/(0.5-j) * a_c6_st * h0f1_c6
+            print(a_c6_st*h0f1_c6)
+            print(_Da_m)
             return _Da_k, _Da_b, _Da_m
 
         def grad_a_c8(jj, kk, ll, b, k, m, n1, n2, n3):
-            if k == 0.:
-                k += 1e-6
-            if b == 0.:
-                b += 1e-6
             if m == -1.:
-                m += 1e-6
+                m = -1+1e-6
             elif m == 1.:
-                m -= 1e-6
+                m = 1-1e-6
+            if b == 0.:
+                b = 1e-6
             if n2 == 0.:
-                n2 += 1e-6
+                n2 = 1e-6
             if n3 == 0.:
-                n3 += 1e-6
+                n3 = 1e-6
             v = jj + ll + kk + 0.5
             z = k*n1
             a_c8_st = self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
@@ -719,9 +715,18 @@ class FB8Distribution(object):
             h2f1_c8 = H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
             hprd_c8 = h0f1_c8 * h2f1_c8
             
+            # if n2 == 0.:
+            #     ln_n2[ll==0] = 0
+            # if n3 == 0.:
+            #     ln_n3[kk==0] = 0
+            # if b == 0.:
+            #     _D_b[jj==1] = 
             _Da_b = jj/b * a_c8_st * hprd_c8
             _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2/(2*(v+1))*H0F1(2+v, z**2/4)) * a_c8_st * h2f1_c8
-            _Da_m = jj*(kk+0.5)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m)/(0.5-jj-ll) * a_c8_st * h0f1_c8
+            _Da_m = jj*(kk+0.5)/(0.5-jj-ll)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m) * a_c8_st * h0f1_c8
+            # if np.any(np.isnan(_Da_m)):
+            #     import pdb
+            #     pdb.set_trace()
             _Da_n1 = k**2*n1/(2*(v+1))*H0F1(v+2, z**2/4) * a_c8_st * h2f1_c8
             _Da_n2 = 2*ll/n2 * a_c8_st * hprd_c8
             _Da_n3 = 2*kk/n3 * a_c8_st * hprd_c8
@@ -740,7 +745,7 @@ class FB8Distribution(object):
             elif n1 == 1. or k == 0.:
                 # exact solution (vmF)
                 if b == 0.0:
-                    result[0] = 1./np.tanh(k)-1./k
+                    result[0] = (1./np.tanh(k)-1./k) * norm/(2*np.pi)
                 else:
                     prev_abs_a = 0
                     while True:
@@ -759,71 +764,70 @@ class FB8Distribution(object):
                             logging.warning('Series gradient is infinity')
                             raise RuntimeWarning
                         j += 1
-                        if np.all(abs_sa < np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
+                        if np.all(abs_sa <= np.abs(result[:3]) * 1E-3) and np.all(abs_sa <= prev_abs_a):
                             break
                         prev_abs_a = abs_sa
             # FB8
             else:
-                try:
-                    ll = 0
-                    prev_abs_sa_ll = 0
-                    _l, _k, _j = (14,)*3
-                    _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                ll = 0
+                prev_abs_sa_ll = 0
+                _l, _k, _j = (14,)*3
+                _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                while True:
+                    curr_abs_sa_ll = 0
+                    kk = 0
+                    prev_abs_sa_kk = 0
                     while True:
-                        curr_abs_sa_ll = 0
-                        kk = 0
-                        prev_abs_sa_kk = 0
+                        curr_abs_sa_kk = 0
+                        jj = 0
+                        prev_abs_sa_jj = 0
                         while True:
-                            curr_abs_sa_kk = 0
-                            jj = 0
-                            prev_abs_sa_jj = 0
-                            while True:
-                                jjs = jj*_j+_jjs
-                                grad_a = np.asarray(grad_a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3))
+                            jjs = jj*_j+_jjs
+                            grad_a = np.asarray(grad_a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3))
+                            # import pdb
+                            # pdb.set_trace()
+                            sa = grad_a.sum(axis=(1,2,3))
+                            abs_sa = np.abs(grad_a).sum(axis=(1,2,3))
+                            ### DEBUG ###
+                            # print ll, kk, jj, sa, abs_sa
+                            # print j, a, I(j+0.5, k)
+                            # print(j, result*2*np.pi/norm)
+                            if np.any(np.isnan(sa)):
                                 # import pdb
                                 # pdb.set_trace()
-                                sa = grad_a.sum(axis=(1,2,3))
-                                abs_sa = np.abs(grad_a).sum(axis=(1,2,3))
-                                ### DEBUG ###
-                                # print ll, kk, jj, sa, abs_sa
-                                # print j, a, I(j+0.5, k)
-                                curr_abs_sa_kk += abs_sa
-                                curr_abs_sa_ll += abs_sa
-                                result += sa
-                                if np.any(np.isnan(result)):
-                                    logging.warning('Series gradient is nan')
-                                    raise RuntimeWarning
-                                j += 1
-                                jj += 1
-                                if np.all(abs_sa < np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
-                                    break
-                                prev_abs_sa_jj = abs_sa
-                                ### DEBUG ###
-                                # print(ll, kk, jj, sa, result)
-                                # if ll == 13 and kk==1 and jj==0:
-                                #     print ll, kk, jj, a, result
-                                #     import pdb
-                                #     pdb.set_trace()
-
+                                logging.warning('Series gradient is nan')
+                                break
+                            curr_abs_sa_kk += abs_sa
+                            curr_abs_sa_ll += abs_sa
+                            result += sa
+                            j += 1
+                            jj += 1
+                            if np.all(abs_sa <= np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
+                                break
+                            prev_abs_sa_jj = abs_sa
                             ### DEBUG ###
-                            # if ll == 2 and kk==44:
+                            # print(ll, kk, jj, sa, result)
+                            # if ll == 13 and kk==1 and jj==0:
+                            #     print ll, kk, jj, a, result
                             #     import pdb
                             #     pdb.set_trace()
-                            # print ll, kk, curr_abs_sa_kk, result
-                            # assert not curr_abs_sa_kk < 0
-                            kk += 1
-                            if np.all(curr_abs_sa_kk < np.abs(result) * 1E-3) and np.all(curr_abs_sa_kk <= prev_abs_sa_kk):
-                                break
-                            prev_abs_sa_kk = curr_abs_sa_kk
+
                         ### DEBUG ###
-                        # print ll, curr_abs_sa_ll, result
-                        ll += 1
-                        if np.all(curr_abs_sa_ll < np.abs(result) * 1E-3) and np.all(curr_abs_sa_ll <= prev_abs_sa_ll):
+                        # if ll == 2 and kk==44:
+                        #     import pdb
+                        #     pdb.set_trace()
+                        # print ll, kk, curr_abs_sa_kk, result
+                        # assert not curr_abs_sa_kk < 0
+                        kk += 1
+                        if np.all(curr_abs_sa_kk <= np.abs(result) * 1E-3) and np.all(curr_abs_sa_kk <= prev_abs_sa_kk):
                             break
-                        prev_abs_sa_ll = curr_abs_sa_ll
-                except (RuntimeWarning, OverflowError) as e:
-                    logging.warning('Series calculation of gradient failed... '+self.__repr__())
-                    j = -1
+                        prev_abs_sa_kk = curr_abs_sa_kk
+                    ### DEBUG ###
+                    # print ll, curr_abs_sa_ll, result
+                    ll += 1
+                    if np.all(curr_abs_sa_ll <= np.abs(result) * 1E-3) and np.all(curr_abs_sa_ll <= prev_abs_sa_ll):
+                        break
+                    prev_abs_sa_ll = curr_abs_sa_ll
 
             cache[k, b, m, n1, n2] = 2 * np.pi * result / norm
 
@@ -959,6 +963,18 @@ class FB8Distribution(object):
     def grad_log_likelihood(self, xs):
         """
         Returns the log likelihood for xs.
+
+        >>> def func(x, xs):
+        ...     return fb8(*x).log_likelihood(xs)
+        >>> def grad(x, xs):
+        ...     return fb8(*x).grad_log_likelihood(xs)
+        >>> from scipy.optimize import check_grad
+        >>> from itertools import product
+        >>> for x in product([0,1], [0,], [0,], [0.0, 2, 32, 256],
+        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 3),
+        ...                  np.linspace(0, np.pi, 2),
+        ...                  np.linspace(0, np.pi/3, 2)):
+        ...     assert check_grad(func, grad, x, fb8(*np.random.rand(8)).Gamma, 1e-20) < 1e-2
         """
         gradval = self._grad_log_pdf(xs)
         return [sum(_, len(np.shape(_)) - 1) for _ in gradval]
@@ -1225,14 +1241,14 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                       callback=callback)
 
         # default seed
-        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0]),]
+        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.001]),]
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts.append(np.concatenate((_y.x, [0,0])))
+            z_starts.append(np.concatenate((_y.x, [0.001,0.001])))
         else:
-            z_starts.append(np.concatenate((all_values.x, [0.9,0,0])))
+            z_starts.append(np.concatenate((all_values.x, [0.9,0.001,0.001])))
 
         for z_start in z_starts:
             if verbose:
