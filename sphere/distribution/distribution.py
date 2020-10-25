@@ -1172,6 +1172,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
       a tuple is returned with the FB8Distribution argument as the first element
       and containing the extra requested values in the rest of the elements.
     """
+    lenxs = len(xs)
     # method that generates the minus L to be minimized
     # x = theta phi psi kappa beta eta alpha rho
     def minus_log_likelihood(x):
@@ -1182,10 +1183,10 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         ### DEBUG ###
         # if len(x) > 5 and (x[5] > 1 or x[5] < -1):
         #     return np.inf
-        return -fb8(*x).log_likelihood(xs) / len(xs)
+        return -fb8(*x).log_likelihood(xs)/lenxs
 
     def jac(x):
-        return np.asarray([-_ for _ in fb8(*x).grad_log_likelihood(xs)[:len(x)]])
+        return -np.asarray(fb8(*x).grad_log_likelihood(xs)[:len(x)])/lenxs
 
     # callback for keeping track of the values
     intermediate_values = list()
