@@ -1242,7 +1242,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #          "fun": lambda x: 1 - np.abs(x[5])})
         #         # {"type": "ineq",
         #         #  "fun": lambda x: -x[3] + 2 * x[4]})
-        lb, ub = [0.,-np.pi,-np.pi,0,0,-0.99,0.01,-np.pi], [np.pi, np.pi, np.pi, None, None, 0.99, np.pi, np.pi]
+        lb = [0.,-np.pi,-np.pi,0,0,-1,0.01,-np.pi]
+        ub = [np.pi, np.pi, np.pi, None, None, 1, np.pi, np.pi]
         _y = minimize(minus_log_likelihood,
                       y_start,
                       jac=jac,
@@ -1252,14 +1253,12 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
         # Choose better of FB5 vs FB6 as another seed for FB8
         # Last three parameters determine if FB5, FB6, or FB8
+        z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.]),]
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            eta = 0.9 if _y.x[-1] < 0 else -0.9
-            z_starts = [np.array([theta, phi, psi, beta, kappa, eta, np.pi/4, 0.]),]
-            z_starts.append(np.concatenate((_y.x, [1e-6,0.])))
+            z_starts.append(np.concatenate((_y.x, [0.2,0.])))
         else:
-            z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.]),]
-            z_starts.append(np.concatenate((all_values.x, [0.9,1e-6,0.])))
+            z_starts.append(np.concatenate((all_values.x, [0.9,0.2,0.])))
 
         for z_start in z_starts:
             if verbose:
