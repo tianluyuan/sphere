@@ -50,26 +50,31 @@ def norm(x, axis=None):
 def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
     """
     Generates the FB8 distribution based on the spherical coordinates theta, phi, psi
-    with the concentration parameter kappa and the ovalness beta
+    with the concentration parameter kappa and the ovalness beta.
+    eta, alpha, and rho set the additional three parameters that allow for asymmetric
+    distributions.
     """
     gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(
         theta, phi, psi)
     nu = FB8Distribution.spherical_coordinates_to_nu(alpha, rho)
     fdist = FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
-    # these parameters are undefined if theta/alpha=0, but matter for gradients
-    ang = lambda phi: phi % (2*np.pi) if phi % (2*np.pi) < np.pi else phi % (2*np.pi) - 2*np.pi
-    if theta == 0.:
-        fdist.phi = ang(phi)
-        fdist.psi = ang(psi)
-    if alpha == 0.:
-        fdist.rho = ang(rho)
+    if fdist.theta == 0.:
+        # if theta == 0, phi and psi are degenerate (rotation in phi == rotation in psi)
+        # constructor infers phi as 0 and psi to sum of phi and psi
+        fdist.phi = phi
+        fdist.psi = psi
+    if fdist.alpha == 0.:
+        # constructor infers rho as 0 if alpha == 0
+        fdist.rho = rho
     return fdist
 
 
 def fb82(gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
     """
     Generates the FB8 distribution using the orthonormal vectors gamma1,
-    gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta
+    gamma2 and gamma3, with the concentration parameter kappa and the ovalness beta.
+    eta and nu set the additional three parameters that allow for asymmetric
+    distributions.
     """
     assert np.abs(np.inner(gamma1, gamma2)) < 1E-10
     assert np.abs(np.inner(gamma2, gamma3)) < 1E-10
@@ -371,7 +376,7 @@ class FB8Distribution(object):
 
     @theta.setter
     def theta(self, val):
-        self._theta = val
+        self._theta = np.arccos(np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
         self._cached_rvs = np.empty((0,3))
@@ -382,7 +387,7 @@ class FB8Distribution(object):
 
     @phi.setter
     def phi(self, val):
-        self._phi = val
+        self._phi = np.arctan2(np.sin(val), np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
         self._cached_rvs = np.empty((0,3))
@@ -393,7 +398,7 @@ class FB8Distribution(object):
 
     @psi.setter
     def psi(self, val):
-        self._psi = val
+        self._psi = np.arctan2(np.sin(val), np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
         self._cached_rvs = np.empty((0,3))
@@ -404,7 +409,7 @@ class FB8Distribution(object):
 
     @alpha.setter
     def alpha(self, val):
-        self._alpha = val
+        self._alpha = np.arccos(np.cos(val))
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
         self._level_log_pdf = np.empty((0,))
@@ -416,7 +421,7 @@ class FB8Distribution(object):
 
     @rho.setter
     def rho(self, val):
-        self._rho = val
+        self._rho = np.arctan2(np.sin(val), np.cos(val))
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
         self._level_log_pdf = np.empty((0,))
@@ -972,7 +977,7 @@ class FB8Distribution(object):
         >>> xs = np.array([[ 0.72692034, -0.58196172,  0.36456465],
         ...                [ 0.58726806,  0.25163898, -0.76928152],
         ...                [ 0.35595372,  0.77330355,  0.52468902]])
-        >>> for x in product([0,1], [0,1], [0,], [0.0, 2, 32],
+        >>> for x in product([0,1], [-1,0,1], [-1, 0,1], [0.0, 2, 32],
         ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3),
         ...                  np.linspace(0, np.pi-1e-3, 2),
         ...                  np.linspace(0, np.pi/3-1e-3, 2)):
