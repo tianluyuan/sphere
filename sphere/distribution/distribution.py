@@ -56,12 +56,13 @@ def fb8(theta, phi, psi, kappa, beta, eta=1., alpha=0., rho=0.):
         theta, phi, psi)
     nu = FB8Distribution.spherical_coordinates_to_nu(alpha, rho)
     fdist = FB8Distribution(gamma1, gamma2, gamma3, kappa, beta, eta, nu)
-    # these values are undefined if theta=0 or alpha=0, but matter for gradients
+    # these parameters are undefined if theta/alpha=0, but matter for gradients
+    ang = lambda phi: phi % (2*np.pi) if phi % (2*np.pi) < np.pi else phi % (2*np.pi) - 2*np.pi
     if theta == 0.:
-        fdist.phi = phi
-        fdist.psi = psi
+        fdist.phi = ang(phi)
+        fdist.psi = ang(psi)
     if alpha == 0.:
-        fdist.rho = rho
+        fdist.rho = ang(rho)
     return fdist
 
 
@@ -1241,7 +1242,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #          "fun": lambda x: 1 - np.abs(x[5])})
         #         # {"type": "ineq",
         #         #  "fun": lambda x: -x[3] + 2 * x[4]})
-        lb, ub = [0,0,0,0,0,-1,0,0], [np.pi, 2*np.pi, 2*np.pi, None, None, 1, np.pi, 2*np.pi]
+        lb, ub = [0.,-np.pi,-np.pi,0,0,-0.99,0.01,-np.pi], [np.pi, np.pi, np.pi, None, None, 0.99, np.pi, np.pi]
         _y = minimize(minus_log_likelihood,
                       y_start,
                       jac=jac,
@@ -1253,7 +1254,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts = [np.array([theta, phi, psi, beta, kappa, 0.9, np.pi/4, 0.]),]
+            eta = 0.9 if _y.x[-1] < 0 else -0.9
+            z_starts = [np.array([theta, phi, psi, beta, kappa, eta, np.pi/4, 0.]),]
             z_starts.append(np.concatenate((_y.x, [1e-6,0.])))
         else:
             z_starts = [np.array([theta, phi, psi, beta, kappa, -0.9, np.pi/4, 0.]),]
