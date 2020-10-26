@@ -687,19 +687,19 @@ class FB8Distribution(object):
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         alpha, rho = self.alpha, self.rho
-        ee = self.minimum_value_for_kappa
+        eps = 1e-6
         if k == 0.:
-            k = ee
+            k = eps
         if b == 0.:
-            b = ee
+            b = eps
         if m == -1.:
-            m = -1+1e-6
+            m = -1+eps
         elif m == 1.:
-            m = 1-1e-6
+            m = 1-eps
         if n2 == 0.:
-            n2 = 1e-6
+            n2 = eps
         if n3 == 0.:
-            n3 = 1e-6
+            n3 = eps
 
         def grad_a_c6(j, b, k, m):
             v = j + 0.5
