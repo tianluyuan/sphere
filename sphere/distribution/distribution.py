@@ -655,8 +655,8 @@ class FB8Distribution(object):
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print(fb8(*x), lnorm, lnnorm)
-        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.9290151254215 289.8261422778405
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.23216200690393 400.40834745629957
+        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901512585655 289.8261422778405
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.232162006902 400.40834745629957
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
@@ -677,14 +677,12 @@ class FB8Distribution(object):
         >>> from scipy.optimize import check_grad
         >>> from itertools import product
         >>> for x in product([0.0, 2, 32, 256],
-        ...                  [0.0, 2, 32, 256], np.linspace(-0.99, 0.99, 3)+1e-5,
+        ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3)+1e-5,
         ...                  np.linspace(0, np.pi-1e-3, 3),
         ...                  np.linspace(0, np.pi/3-1e-3, 3)):
         ...     if check_grad(func, grad, x) > 1:
         ...         print(fb8(0,0,0,*x), check_grad(func, grad, x))
-        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 50118.12008943325
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 0.99, 1.57, 0.52) 1.5411711881545642
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 0.99, 1.57, 1.05) 1740737.7463947278
+        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 46524.8536087835
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -973,7 +971,7 @@ class FB8Distribution(object):
         >>> xs = np.array([[ 0.72692034, -0.58196172,  0.36456465],
         ...                [ 0.58726806,  0.25163898, -0.76928152],
         ...                [ 0.35595372,  0.77330355,  0.52468902]])
-        >>> for x in product([0,1], [0,], [0,], [0.0, 2, 32],
+        >>> for x in product([0,1], [0,1], [0,], [0.0, 2, 32],
         ...                  [0.0, 2, 32], np.linspace(-0.99, 0.99, 3),
         ...                  np.linspace(0, np.pi-1e-3, 2),
         ...                  np.linspace(0, np.pi/3-1e-3, 2)):
@@ -1257,6 +1255,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         # Last three parameters determine if FB5, FB6, or FB8
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
+            z_starts[0][-3] = 0.9
             z_starts.append(np.concatenate((_y.x, [1e-6,0.])))
         else:
             z_starts.append(np.concatenate((all_values.x, [0.9,1e-6,0.])))
