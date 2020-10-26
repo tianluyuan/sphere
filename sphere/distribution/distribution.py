@@ -596,6 +596,7 @@ class FB8Distribution(object):
                         # print ll, curr_abs_sa_ll, result
                         ll += 1
                         if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
+                            # print(jj, kk, ll, j)
                             break
                         prev_abs_sa_ll = curr_abs_sa_ll
                     if not result > 0:
@@ -746,7 +747,7 @@ class FB8Distribution(object):
             return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
 
         if (k, b, m, n1, n2) not in cache:
-            norm = np.exp(self.log_normalize())
+            snorm = 2*np.pi/np.exp(self.log_normalize())
             j = 0
             result = np.zeros([5,])
             # if b == 0. and k == 0.:
@@ -762,12 +763,12 @@ class FB8Distribution(object):
                 while True:
                     js = np.arange(j*100,(j+1)*100)
                     grad_a = np.asarray(grad_a_c6(js, b, k, m))
-                    sa = grad_a.sum(axis=1)
-                    abs_sa = np.abs(grad_a).sum(axis=1)
+                    sa = grad_a.sum(axis=1)*snorm
+                    abs_sa = np.abs(grad_a).sum(axis=1)*snorm
                     ### DEBUG ###
                     # print(j, sa)
                     # print(result*2*np.pi/norm)
-                    result[:3] += sa/norm * 2 * np.pi
+                    result[:3] += sa
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
                         logging.warning(
                             'Series grad(ln(c6)) is nan or infinity, using approx_fprime...'+self.__repr__())
@@ -796,8 +797,8 @@ class FB8Distribution(object):
                         while True:
                             jjs = jj*_j+_jjs
                             grad_a = np.asarray(grad_a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3))
-                            sa = grad_a.sum(axis=(1,2,3))
-                            abs_sa = np.abs(grad_a).sum(axis=(1,2,3))
+                            sa = grad_a.sum(axis=(1,2,3))*snorm
+                            abs_sa = np.abs(grad_a).sum(axis=(1,2,3))*snorm
                             ### DEBUG ###
                             # import pdb
                             # pdb.set_trace()
@@ -815,7 +816,7 @@ class FB8Distribution(object):
                                 break
                             curr_abs_sa_kk += abs_sa
                             curr_abs_sa_ll += abs_sa
-                            result += sa/norm*2*np.pi
+                            result += sa
                             j += 1
                             jj += 1
                             if np.all(abs_sa <= np.abs(result) * 1E-3) and np.all(abs_sa <= prev_abs_sa_jj):
@@ -829,6 +830,7 @@ class FB8Distribution(object):
                     ll += 1
                     if (j == -1) or (np.all(curr_abs_sa_ll <= np.abs(result) * 1E-3) and
                                      np.all(curr_abs_sa_ll <= prev_abs_sa_ll)):
+                        # print(jj, kk, ll, j)
                         break
                     prev_abs_sa_ll = curr_abs_sa_ll
 
