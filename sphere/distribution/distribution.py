@@ -629,7 +629,8 @@ class FB8Distribution(object):
         ...    if np.abs(lnorm-lnormapprox)/lnorm > 0.1:
         ...        print(fb8(*x), lnorm, lnormapprox)
         """
-        assert self.nu[0] == 1 or self.kappa == 0 # should only reach here if it's FB6
+        # should only reach here if FB6 or BM4-with-eta
+        assert self.nu[0] == 1 or self.kappa == 0
         k = self.kappa
         b = self.beta
         m = self.eta
