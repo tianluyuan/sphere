@@ -11,5 +11,5 @@ install:
 
 script:
   # Your test script goes here
-  - python sphere/distribution/distribution.py -v
+  - python -m doctest sphere/distribution/distribution.py -v
   
