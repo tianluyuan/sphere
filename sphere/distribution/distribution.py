@@ -690,7 +690,7 @@ class FB8Distribution(object):
         ...                  np.linspace(0, np.pi/3-1e-3, 3)):
         ...     if check_grad(func, grad, x) > 1:
         ...         print(fb8(0,0,0,*x), check_grad(func, grad, x))
-        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 46524.85397749654
+        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 46524.8539775261
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -734,12 +734,6 @@ class FB8Distribution(object):
             # dh2f1_c8[...,-1] = H2F1(1-jj[...,-1], 1.5+kk[...,-1], 1.5-jj[...,-1]-ll[...,-1], -m)
             hprd_c8 = h0f1_c8 * h2f1_c8
             
-            # if n2 == 0.:
-            #     ln_n2[ll==0] = 0
-            # if n3 == 0.:
-            #     ln_n3[kk==0] = 0
-            # if b == 0.:
-            #     _D_b[jj==1] = 
             _Da_b = jj/b * a_c8_st * hprd_c8
             _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2*dh0f1_c8) * a_c8_st * h2f1_c8
             _Da_m = jj*(kk+0.5)/(0.5-jj-ll)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m) * a_c8_st * h0f1_c8
@@ -757,15 +751,9 @@ class FB8Distribution(object):
             snorm = 2*np.pi/np.exp(self.log_normalize())
             j = 0
             result = np.zeros([5,])
-            # if b == 0. and k == 0.:
-            #     pass
             # FB6
             # This is faster than the full FB8 sum
             if n1 == 1.:
-                # exact solution (vmF)
-                # if b == 0.0:
-                #     result[0] = (1./np.tanh(k)-1./k) * norm/(2*np.pi)
-                # else:
                 prev_abs_a = 0
                 while True:
                     js = np.arange(j*100,(j+1)*100)
