@@ -1512,4 +1512,4 @@ MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 """
 
     import doctest
-    doctest.testmod(optionflags=doctest.ELLIPSIS)
+    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=True)
