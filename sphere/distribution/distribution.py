@@ -725,7 +725,13 @@ class FB8Distribution(object):
             z = k*n1
             a_c8_st = self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3)
             h0f1_c8 = H0F1(v+1, z**2/4)
+            dh0f1_c8 = H0F1(v+2, z**2/4)/(2*(v+1))
             h2f1_c8 = H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+            # dh2f1_c8 = np.zeros(h2f1_c8.shape)
+            # dh2f1_c8[:-1,:-1,:-1] = h2f1_c8[1:,1:,1:]
+            # dh2f1_c8[-1,...] = H2F1(1-jj[-1,...], 1.5+kk[-1,...], 1.5-jj[-1,...]-ll[-1,...], -m)
+            # dh2f1_c8[:,-1,:] = H2F1(1-jj[:,-1,:], 1.5+kk[:,-1,:], 1.5-jj[:,-1,:]-ll[:,-1,:], -m)
+            # dh2f1_c8[...,-1] = H2F1(1-jj[...,-1], 1.5+kk[...,-1], 1.5-jj[...,-1]-ll[...,-1], -m)
             hprd_c8 = h0f1_c8 * h2f1_c8
             
             # if n2 == 0.:
@@ -735,12 +741,12 @@ class FB8Distribution(object):
             # if b == 0.:
             #     _D_b[jj==1] = 
             _Da_b = jj/b * a_c8_st * hprd_c8
-            _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2/(2*(v+1))*H0F1(2+v, z**2/4)) * a_c8_st * h2f1_c8
+            _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2*dh0f1_c8) * a_c8_st * h2f1_c8
             _Da_m = jj*(kk+0.5)/(0.5-jj-ll)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m) * a_c8_st * h0f1_c8
             # if np.any(np.isnan(_Da_m)):
             #     import pdb
             #     pdb.set_trace()
-            _Da_n1 = k**2*n1/(2*(v+1))*H0F1(v+2, z**2/4) * a_c8_st * h2f1_c8
+            _Da_n1 = k**2*n1 * dh0f1_c8 * a_c8_st * h2f1_c8
             _Da_n2 = 2*ll/n2 * a_c8_st * hprd_c8
             _Da_n3 = 2*kk/n3 * a_c8_st * hprd_c8
             _Da_nu = np.asarray([_Da_n1, _Da_n2, _Da_n3])
