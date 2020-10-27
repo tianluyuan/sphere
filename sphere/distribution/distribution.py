@@ -629,7 +629,7 @@ class FB8Distribution(object):
         ...    if np.abs(lnorm-lnormapprox)/lnorm > 0.1:
         ...        print(fb8(*x), lnorm, lnormapprox)
         """
-        assert self.nu[0] == 1. # should only reach here if it's FB6
+        assert self.nu[0] == 1 or self.kappa == 0 # should only reach here if it's FB6
         k = self.kappa
         b = self.beta
         m = self.eta
@@ -644,7 +644,7 @@ class FB8Distribution(object):
             _ = k**2/(4*b**2)
             z = (1+m) * b * (1-_)/2
             lnormalize = ((np.log(np.pi) - np.log(b))/2 + b*(1+_) + 
-                              np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
+                          np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
 
         return lnormalize
         
