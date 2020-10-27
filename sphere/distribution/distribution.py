@@ -690,7 +690,7 @@ class FB8Distribution(object):
         ...                  np.linspace(0, np.pi/3-1e-3, 3)):
         ...     if check_grad(func, grad, x) > 1:
         ...         print(fb8(0,0,0,*x), check_grad(func, grad, x))
-        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 46524.8536087835
+        fb8(0.00, 0.00, 0.00, 256.00, 32.00, 0.99, 1.57, 1.05) 46524.85397749654
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
