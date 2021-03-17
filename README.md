@@ -42,7 +42,7 @@ plot_fb8(fb8(np.pi/16,-np.pi/3,0,10,10,-1,0.5,0.3), 200)
 
 Basic information
 =================
-Implements the FB8 distribution on a sphere, which is a generalization of the FB6, FB5 (Kent), and FB4 (Bingham-Mardia) distributions described below.
+Implements calculation of the density and fitting (using maximum likelihood estimate) of the FB8 distribution on a sphere, which is a generalization of the FB6, FB5 (Kent), and FB4 (Bingham-Mardia) distributions described below.
 
 Implements the FB6 distribution that is first introduced in Rivest ([1984](https://www.doi.org/10.1214/aos/1176346724)).
 
