@@ -536,72 +536,141 @@ class FB8Distribution(object):
             # FB8
             else:
                 try:
-                    ll = 0
-                    prev_abs_sa_ll = 0
-                    _l, _k, _j = (14,)*3
-                    _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                    import heapq
+                    approx_argmax = (0,0,0)
+                    edge = 0
+                    step = 1
+                    while edge in approx_argmax:
+                        step *= 2
+                        edge = step**2
+                        tjs, tks, tls = np.mgrid[0:edge+1:step,
+                                                 0:edge+1:step,
+                                                 0:edge+1:step]
+                        
+                        a = a_c8(tjs, tks, tls, b, k, m, n1, n2, n3)
+                        approx_argmax = np.asarray(
+                            np.unravel_index(np.argmax(np.abs(a)),
+                                             a.shape))*step
+                    amj,amk,aml = approx_argmax
+                    result = 0
+                    visited = set([])
+                    hq = []
+                    def push_coord(val, coord):
+                        if coord not in visited:
+                            heapq.heappush(hq, (val, coord))
                     while True:
-                        curr_abs_sa_ll = 0
-                        kk = 0
-                        prev_abs_sa_kk = 0
-                        while True:
-                            curr_abs_sa_kk = 0
-                            jj = 0
-                            prev_abs_sa_jj = 0
-                            while True:
-                                jjs = jj*_j+_jjs
-                                a = a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3)
-                                evens = jjs%2==0
-                                if np.any(a[evens] < 0):
-                                    logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
-                                    # hack around H2F1 inaccuracy
-                                    a[(evens) & (a < 0)] = 0
-                                sa = a.sum()
-                                abs_sa = np.abs(a).sum()
-                                ### DEBUG ###
-                                # print ll, kk, jj, sa, abs_sa
-                                # print j, a, I(j+0.5, k)
-                                curr_abs_sa_kk += abs_sa
-                                curr_abs_sa_ll += abs_sa
-                                result += sa
-                                if np.isnan(result):
-                                    logging.warning('Series result is nan')
-                                    raise RuntimeWarning
-                                j += 1
-                                jj += 1
-                                if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_sa_jj:
-                                    break
-                                prev_abs_sa_jj = abs_sa
-                                ### DEBUG ###
-                                # print(j, ll, kk, jj, sa, result)
-                                # if ll == 13 and kk==1 and jj==0:
-                                #     print ll, kk, jj, a, result
-                                #     import pdb
-                                #     pdb.set_trace()
-
-                            assert not curr_abs_sa_kk < 0
-                            ### DEBUG ###
-                            # if ll == 2 and kk==44:
-                            #     import pdb
-                            #     pdb.set_trace()
-                            # print ll, kk, curr_abs_sa_kk, result
-                            # assert not curr_abs_sa_kk < 0
-                            kk += 1
-                            if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
-                                break
-                            prev_abs_sa_kk = curr_abs_sa_kk
-
-                        assert not curr_abs_sa_ll < 0
-                        ### DEBUG ###
-                        # print ll, curr_abs_sa_ll, result
-                        ll += 1
-                        if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
-                            # print(jj, kk, ll, j)
+                        jjs, kks, lls = np.mgrid[
+                            max(0,amj-step):amj+step,
+                            max(0,amk-step):amk+step,
+                            max(0,aml-step):aml+step]
+                        a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        # if inc == 0:
+                        #     a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        # else:
+                        #     if amj-step-inc < 0:
+                        #         jjs = np.concatenate([jjs[0)
+                        #     jjs = np.concatenate(
+                        #     a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        evens = jjs%2==0
+                        if np.any(a[evens] < 0):
+                            logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
+                        # hack around H2F1 inaccuracy
+                        a[(evens) & (a < 0)] = 0
+                        sa = a.sum()
+                        abs_a = np.abs(a)
+                        abs_sa = abs_a.sum()
+                        result += sa
+                        if abs_sa < np.abs(result) * 1E-12:
                             break
-                        prev_abs_sa_ll = curr_abs_sa_ll
+                        # inc += 1
+                        visited.add((amj, amk, aml))
+                        # jjs, kks, lls = np.mgrid[
+                        #     max(0,amj-step-inc):amj+step+inc,
+                        #     max(0,amk-step-inc):amk+step+inc,
+                        #     max(0,aml-step-inc):aml+step+inc]
+                        # a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        _ = step
+                        push_coord(-abs_a[-_,-_,-1], (amj, amk, aml+2*step))
+                        push_coord(-abs_a[-_,-1,-_], (amj, amk+2*step, aml))
+                        push_coord(-abs_a[-1,-_,-_], (amj+2*step, amk, aml))
+                        if 0<aml-step:
+                            push_coord(-abs_a[-_,-_,0], (amj, amk, aml-2*step))
+                        if 0<amk-step:
+                            push_coord(-abs_a[-_,0,-_], (amj, amk-2*step, aml))
+                        if 0<amj-step:
+                            push_coord(-abs_a[0,-_,-_], (amj-2*step, amk, aml))
+                        amj, amk, aml = heapq.heappop(hq)[1]
+                        
                     if not result > 0:
                         logging.warning('Series result not positive')
                         raise RuntimeWarning
+                        
+                    # ll = 0
+                    # prev_abs_sa_ll = 0
+                    # _l, _k, _j = (14,)*3
+                    # _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                    # while True:
+                    #     curr_abs_sa_ll = 0
+                    #     kk = 0
+                    #     prev_abs_sa_kk = 0
+                    #     while True:
+                    #         curr_abs_sa_kk = 0
+                    #         jj = 0
+                    #         prev_abs_sa_jj = 0
+                    #         while True:
+                    #             jjs = jj*_j+_jjs
+                    #             a = a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3)
+                    #             evens = jjs%2==0
+                    #             if np.any(a[evens] < 0):
+                    #                 logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
+                    #                 # hack around H2F1 inaccuracy
+                    #                 a[(evens) & (a < 0)] = 0
+                    #             sa = a.sum()
+                    #             abs_sa = np.abs(a).sum()
+                    #             ### DEBUG ###
+                    #             # print ll, kk, jj, sa, abs_sa
+                    #             # print j, a, I(j+0.5, k)
+                    #             curr_abs_sa_kk += abs_sa
+                    #             curr_abs_sa_ll += abs_sa
+                    #             result += sa
+                    #             if np.isnan(result):
+                    #                 logging.warning('Series result is nan')
+                    #                 raise RuntimeWarning
+                    #             j += 1
+                    #             jj += 1
+                    #             if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_sa_jj:
+                    #                 break
+                    #             prev_abs_sa_jj = abs_sa
+                    #             ### DEBUG ###
+                    #             # print(j, ll, kk, jj, sa, result)
+                    #             # if ll == 13 and kk==1 and jj==0:
+                    #             #     print ll, kk, jj, a, result
+                    #             #     import pdb
+                    #             #     pdb.set_trace()
+
+                    #         assert not curr_abs_sa_kk < 0
+                    #         ### DEBUG ###
+                    #         # if ll == 2 and kk==44:
+                    #         #     import pdb
+                    #         #     pdb.set_trace()
+                    #         # print ll, kk, curr_abs_sa_kk, result
+                    #         # assert not curr_abs_sa_kk < 0
+                    #         kk += 1
+                    #         if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
+                    #             break
+                    #         prev_abs_sa_kk = curr_abs_sa_kk
+
+                    #     assert not curr_abs_sa_ll < 0
+                    #     ### DEBUG ###
+                    #     # print ll, curr_abs_sa_ll, result
+                    #     ll += 1
+                    #     if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
+                    #         # print(jj, kk, ll, j)
+                    #         break
+                    #     prev_abs_sa_ll = curr_abs_sa_ll
+                    # if not result > 0:
+                    #     logging.warning('Series result not positive')
+                    #     raise RuntimeWarning
                 except (RuntimeWarning, OverflowError) as e:
                     logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
