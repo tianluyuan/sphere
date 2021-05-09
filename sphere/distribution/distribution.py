@@ -15,6 +15,7 @@ from __future__ import print_function
 import sys
 import warnings
 import logging
+import heapq
 
 import numpy as np
 from scipy.optimize import minimize, basinhopping, approx_fprime
@@ -498,6 +499,11 @@ class FB8Distribution(object):
             return (self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3) *
                     H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m))
     
+        def push_coord(val, coord):
+            if coord not in visited and coord not in inheap:
+                heapq.heappush(hq, (val, coord))
+                inheap.add(coord)
+
         if (k, b, m, n1, n2) not in cache:
             result = 0.
             if b == 0. and k == 0.:
@@ -536,7 +542,6 @@ class FB8Distribution(object):
             # FB8
             else:
                 try:
-                    import heapq
                     approx_argmax = (0,0,0)
                     edge = 0
                     step = 1
@@ -556,23 +561,13 @@ class FB8Distribution(object):
                     visited = set([])
                     inheap = set([])
                     hq = []
-                    def push_coord(val, coord):
-                        if coord not in visited and coord not in inheap:
-                            heapq.heappush(hq, (val, coord))
-                            inheap.add(coord)
                     while True:
                         jjs, kks, lls = np.mgrid[
                             max(0,amj-step):amj+step,
                             max(0,amk-step):amk+step,
                             max(0,aml-step):aml+step]
                         a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
-                        # if inc == 0:
-                        #     a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
-                        # else:
-                        #     if amj-step-inc < 0:
-                        #         jjs = np.concatenate([jjs[0)
-                        #     jjs = np.concatenate(
-                        #     a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        visited.add((amj, amk, aml))
                         evens = jjs%2==0
                         if np.any(a[evens] < 0):
                             logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
@@ -582,15 +577,9 @@ class FB8Distribution(object):
                         abs_a = np.abs(a)
                         abs_sa = abs_a.sum()
                         result += sa
-                        visited.add((amj, amk, aml))
+                        j += 1
                         if abs_sa < np.abs(result) * 1E-12:
                             break
-                        # inc += 1
-                        # jjs, kks, lls = np.mgrid[
-                        #     max(0,amj-step-inc):amj+step+inc,
-                        #     max(0,amk-step-inc):amk+step+inc,
-                        #     max(0,aml-step-inc):aml+step+inc]
-                        # a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                         _ = step
                         push_coord(-abs_a[-_,-_,-1], (amj, amk, aml+2*step))
                         push_coord(-abs_a[-_,-1,-_], (amj, amk+2*step, aml))
