@@ -554,10 +554,12 @@ class FB8Distribution(object):
                     amj,amk,aml = approx_argmax
                     result = 0
                     visited = set([])
+                    inheap = set([])
                     hq = []
                     def push_coord(val, coord):
-                        if coord not in visited:
+                        if coord not in visited and coord not in inheap:
                             heapq.heappush(hq, (val, coord))
+                            inheap.add(coord)
                     while True:
                         jjs, kks, lls = np.mgrid[
                             max(0,amj-step):amj+step,
@@ -580,10 +582,10 @@ class FB8Distribution(object):
                         abs_a = np.abs(a)
                         abs_sa = abs_a.sum()
                         result += sa
+                        visited.add((amj, amk, aml))
                         if abs_sa < np.abs(result) * 1E-12:
                             break
                         # inc += 1
-                        visited.add((amj, amk, aml))
                         # jjs, kks, lls = np.mgrid[
                         #     max(0,amj-step-inc):amj+step+inc,
                         #     max(0,amk-step-inc):amk+step+inc,
