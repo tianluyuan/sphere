@@ -544,8 +544,9 @@ class FB8Distribution(object):
                 try:
                     approx_argmax = (0,0,0)
                     edge = 0
-                    step = 4
+                    step = 2
                     while edge in approx_argmax and step < 16:
+                        step *= 2
                         edge = step**2
                         tjs, tks, tls = np.mgrid[0:edge+1:step,
                                                  0:edge+1:step,
@@ -555,7 +556,6 @@ class FB8Distribution(object):
                         approx_argmax = np.asarray(
                             np.unravel_index(np.nanargmax(np.abs(a)),
                                              a.shape))*step
-                        step *= 2
                     amj,amk,aml = approx_argmax
                     result = 0
                     inheap = set([(amj,amk,aml)])
@@ -1567,4 +1567,4 @@ MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 """
 
     import doctest
-    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=True)
+    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False)
