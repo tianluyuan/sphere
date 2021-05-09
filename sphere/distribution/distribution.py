@@ -589,80 +589,11 @@ class FB8Distribution(object):
                         if 0<amj-step:
                             push_coord(-abs_a[:2,:,:].sum(), (amj-2*step, amk, aml))
                         amj, amk, aml = heapq.heappop(hq)[1]
-                        # print(hq)
-                        # import pdb
-                        # pdb.set_trace()
                         
                     if not result > 0:
                         logging.warning('Series result not positive')
                         raise RuntimeWarning
                         
-                    # ll = 0
-                    # prev_abs_sa_ll = 0
-                    # _l, _k, _j = (14,)*3
-                    # _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
-                    # while True:
-                    #     curr_abs_sa_ll = 0
-                    #     kk = 0
-                    #     prev_abs_sa_kk = 0
-                    #     while True:
-                    #         curr_abs_sa_kk = 0
-                    #         jj = 0
-                    #         prev_abs_sa_jj = 0
-                    #         while True:
-                    #             jjs = jj*_j+_jjs
-                    #             a = a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3)
-                    #             evens = jjs%2==0
-                    #             if np.any(a[evens] < 0):
-                    #                 logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
-                    #                 # hack around H2F1 inaccuracy
-                    #                 a[(evens) & (a < 0)] = 0
-                    #             sa = a.sum()
-                    #             abs_sa = np.abs(a).sum()
-                    #             ### DEBUG ###
-                    #             # print ll, kk, jj, sa, abs_sa
-                    #             # print j, a, I(j+0.5, k)
-                    #             curr_abs_sa_kk += abs_sa
-                    #             curr_abs_sa_ll += abs_sa
-                    #             result += sa
-                    #             if np.isnan(result):
-                    #                 logging.warning('Series result is nan')
-                    #                 raise RuntimeWarning
-                    #             j += 1
-                    #             jj += 1
-                    #             if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_sa_jj:
-                    #                 break
-                    #             prev_abs_sa_jj = abs_sa
-                    #             ### DEBUG ###
-                    #             # print(j, ll, kk, jj, sa, result)
-                    #             # if ll == 13 and kk==1 and jj==0:
-                    #             #     print ll, kk, jj, a, result
-                    #             #     import pdb
-                    #             #     pdb.set_trace()
-
-                    #         assert not curr_abs_sa_kk < 0
-                    #         ### DEBUG ###
-                    #         # if ll == 2 and kk==44:
-                    #         #     import pdb
-                    #         #     pdb.set_trace()
-                    #         # print ll, kk, curr_abs_sa_kk, result
-                    #         # assert not curr_abs_sa_kk < 0
-                    #         kk += 1
-                    #         if curr_abs_sa_kk < np.abs(result) * 1E-12 and curr_abs_sa_kk <= prev_abs_sa_kk:
-                    #             break
-                    #         prev_abs_sa_kk = curr_abs_sa_kk
-
-                    #     assert not curr_abs_sa_ll < 0
-                    #     ### DEBUG ###
-                    #     # print ll, curr_abs_sa_ll, result
-                    #     ll += 1
-                    #     if curr_abs_sa_ll < np.abs(result) * 1E-12 and curr_abs_sa_ll <= prev_abs_sa_ll:
-                    #         # print(jj, kk, ll, j)
-                    #         break
-                    #     prev_abs_sa_ll = curr_abs_sa_ll
-                    # if not result > 0:
-                    #     logging.warning('Series result not positive')
-                    #     raise RuntimeWarning
                 except (RuntimeWarning, OverflowError) as e:
                     logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
@@ -724,8 +655,8 @@ class FB8Distribution(object):
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print(fb8(*x), lnorm, lnnorm)
-        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901513671296 289.8261422778405
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.2321624642027 400.40834745629957
+        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901513834045 289.8261422778405
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.232162006908 400.40834745629957
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
@@ -839,16 +770,18 @@ class FB8Distribution(object):
                 _l, _k, _j = (14,)*3
                 _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
                 while True:
+                    lls = ll*_l+_lls
                     curr_abs_sa_ll = 0
                     kk = 0
                     prev_abs_sa_kk = 0
                     while True:
+                        kks = kk*_k+_kks
                         curr_abs_sa_kk = 0
                         jj = 0
                         prev_abs_sa_jj = 0
                         while True:
                             jjs = jj*_j+_jjs
-                            grad_a = np.asarray(grad_a_c8(jjs, kk*_k+_kks, ll*_l+_lls, b, k, m, n1, n2, n3))
+                            grad_a = np.asarray(grad_a_c8(jjs, kks, lls, b, k, m, n1, n2, n3))
                             sa = grad_a.sum(axis=(1,2,3))*snorm
                             abs_sa = np.abs(grad_a).sum(axis=(1,2,3))*snorm
                             ### DEBUG ###
@@ -1380,13 +1313,13 @@ Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, b
 with eta=1.0, alpha=0.5, rho=0.0
 Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
-  3   7  10  13  17  21  24  28   x   x
-  7  15  20  24  31  34  40   x   x   x
-  4  16  22  28  33  37  41   x   x   x
-  4  15  24  31  38  44   x   x   x   x
-  5  15  25  32  35   x   x   x   x   x
-  5  16  26  32   x   x   x   x   x   x
-  5  18  26   x   x   x   x   x   x   x
+  6   7   9   9  11  15  18  22   x   x
+ 11  12  15  21  24  31  34   x   x   x
+  7  15  21  24  29  33  38   x   x   x
+  9  44  21  26  31  39   x   x   x   x
+ 10  15  23  29  34   x   x   x   x   x
+ 13  15  26  31   x   x   x   x   x   x
+  5  15  27   x   x   x   x   x   x   x
   6   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
