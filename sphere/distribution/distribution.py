@@ -554,7 +554,7 @@ class FB8Distribution(object):
                         
                         a = a_c8(tjs, tks, tls, b, k, m, n1, n2, n3)
                         approx_argmax = np.asarray(
-                            np.unravel_index(np.argmax(np.abs(a)),
+                            np.unravel_index(np.argmax(np.abs(np.nan_to_num(a))),
                                              a.shape))*step
                     amj,amk,aml = approx_argmax
                     result = 0
@@ -566,7 +566,7 @@ class FB8Distribution(object):
                             max(0,amj-step):amj+step,
                             max(0,amk-step):amk+step,
                             max(0,aml-step):aml+step]
-                        a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
+                        a = np.nan_to_num(a_c8(jjs, kks, lls, b, k, m, n1, n2, n3))
                         visited.add((amj, amk, aml))
                         evens = jjs%2==0
                         if np.any(a[evens] < 0):
