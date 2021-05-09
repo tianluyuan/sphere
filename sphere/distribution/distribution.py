@@ -500,7 +500,7 @@ class FB8Distribution(object):
                     H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m))
     
         def push_coord(val, coord):
-            if coord not in visited and coord not in inheap:
+            if coord not in inheap:
                 heapq.heappush(hq, (val, coord))
                 inheap.add(coord)
 
@@ -544,9 +544,8 @@ class FB8Distribution(object):
                 try:
                     approx_argmax = (0,0,0)
                     edge = 0
-                    step = 1
+                    step = 4
                     while edge in approx_argmax and step < 16:
-                        step *= 2
                         edge = step**2
                         tjs, tks, tls = np.mgrid[0:edge+1:step,
                                                  0:edge+1:step,
@@ -556,10 +555,10 @@ class FB8Distribution(object):
                         approx_argmax = np.asarray(
                             np.unravel_index(np.nanargmax(np.abs(a)),
                                              a.shape))*step
+                        step *= 2
                     amj,amk,aml = approx_argmax
                     result = 0
-                    visited = set([])
-                    inheap = set([])
+                    inheap = set([(amj,amk,aml)])
                     hq = []
                     while True:
                         jjs, kks, lls = np.mgrid[
@@ -567,7 +566,6 @@ class FB8Distribution(object):
                             max(0,amk-step):amk+step,
                             max(0,aml-step):aml+step]
                         a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
-                        visited.add((amj, amk, aml))
                         evens = jjs%2==0
                         if np.any(a[evens] < 0):
                             logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
@@ -581,16 +579,19 @@ class FB8Distribution(object):
                         if abs_sa < np.abs(result) * 1E-12:
                             break
                         _ = step
-                        push_coord(-abs_a[:,:,-1].sum(), (amj, amk, aml+2*step))
-                        push_coord(-abs_a[:,-1,:].sum(), (amj, amk+2*step, aml))
-                        push_coord(-abs_a[-1,:,:].sum(), (amj+2*step, amk, aml))
+                        push_coord(-abs_a[:,:,-2:].sum(), (amj, amk, aml+2*step))
+                        push_coord(-abs_a[:,-2:,:].sum(), (amj, amk+2*step, aml))
+                        push_coord(-abs_a[-2:,:,:].sum(), (amj+2*step, amk, aml))
                         if 0<aml-step:
-                            push_coord(-abs_a[:,:,0].sum(), (amj, amk, aml-2*step))
+                            push_coord(-abs_a[:,:,:2].sum(), (amj, amk, aml-2*step))
                         if 0<amk-step:
-                            push_coord(-abs_a[:,0,:].sum(), (amj, amk-2*step, aml))
+                            push_coord(-abs_a[:,:2,:].sum(), (amj, amk-2*step, aml))
                         if 0<amj-step:
-                            push_coord(-abs_a[0,:,:].sum(), (amj-2*step, amk, aml))
+                            push_coord(-abs_a[:2,:,:].sum(), (amj-2*step, amk, aml))
                         amj, amk, aml = heapq.heappop(hq)[1]
+                        # print(hq)
+                        # import pdb
+                        # pdb.set_trace()
                         
                     if not result > 0:
                         logging.warning('Series result not positive')
@@ -723,8 +724,8 @@ class FB8Distribution(object):
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print(fb8(*x), lnorm, lnnorm)
-        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901512585655 289.8261422778405
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.232162006902 400.40834745629957
+        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901513671296 289.8261422778405
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.2321624642027 400.40834745629957
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
@@ -1379,13 +1380,13 @@ Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, b
 with eta=1.0, alpha=0.5, rho=0.0
 Calculating normalization factor for combinations of kappa and beta:
 Iterations necessary to calculate normalize(kappa, beta):
-  9   7   9   9  11  15  18  22   x   x
- 11  12  15  21  24  31  35   x   x   x
-  7  15  21  24  29  33  38   x   x   x
- 10  44  21  26  31  39   x   x   x   x
- 10  15  23  30  34   x   x   x   x   x
- 13  15  27  31   x   x   x   x   x   x
-  5  15  27   x   x   x   x   x   x   x
+  3   7  10  13  17  21  24  28   x   x
+  7  15  20  24  31  34  40   x   x   x
+  4  16  22  28  33  37  41   x   x   x
+  4  15  24  31  38  44   x   x   x   x
+  5  15  25  32  35   x   x   x   x   x
+  5  16  26  32   x   x   x   x   x   x
+  5  18  26   x   x   x   x   x   x   x
   6   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
   x   x   x   x   x   x   x   x   x   x
@@ -1566,4 +1567,4 @@ MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 """
 
     import doctest
-    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False)
+    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=True)
