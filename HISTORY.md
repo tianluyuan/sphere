@@ -4,7 +4,7 @@ Faster implementation of the FB8 normalization calculation using `heapq`. The id
 
 27 Oct 2020 v1.0.1
 ------------------
-Optimize normalization calculation by reducing repeated special function calls. Fix a bug and catch an edge.
+Optimize series summations by reducing repeated special function calls. Fix a bug and catch an edge.
 
 26 Oct 2020 v1.0.0
 ------------------
