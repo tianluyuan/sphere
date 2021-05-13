@@ -1,3 +1,7 @@
+13 May 2021 v1.1.1
+-----------------
+Patch an edge case in `FB8Distribution.contour` calculation when `beta` is 0.
+
 9 May 2021 v1.1.0
 -----------------
 Faster implementation of the FB8 normalization calculation using `heapq`. The idea is to first run an increasingly coarser grid search over the indices to find the approximate-maximum summand, then start with a 3D cube around that point. Contributions from its six sides and their next-step coordinates are placed in a heap such that the next-largest contribution is summed next.
