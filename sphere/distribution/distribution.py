@@ -1047,7 +1047,7 @@ class FB8Distribution(object):
             if np.isnan(x2_max):
                 x2_max = 1
             x2 = np.linspace(-x2_max, x2_max, 10000)
-            if np.abs(m) < 1E-4:
+            if m == 0. or b == 0.:
                 x1_0 = -(lev - ln + b * x2**2) / k
                 x1_1 = x1_0
             else:
