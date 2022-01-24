@@ -467,23 +467,9 @@ class FB8Distribution(object):
                    0., 2.*np.pi, lambda x: 0., lambda x: np.pi,
                    epsabs=epsabs, epsrel=epsrel)[0]
 
-    def normalize(self, cache=dict(), return_num_iterations=False):
+    def _normalize(self, cache=dict(), return_num_iterations=False):
         """
-        Returns the normalization constant of the FB8 distribution.
-        The proportional error may be expected not to be greater than
-        1E-11.
-
-
-        >>> gamma1 = np.array([1.0, 0.0, 0.0])
-        >>> gamma2 = np.array([0.0, 1.0, 0.0])
-        >>> gamma3 = np.array([0.0, 0.0, 1.0])
-        >>> tiny = FB8Distribution.minimum_value_for_kappa
-        >>> np.abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
-        True
-        >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
-        ...     print(np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa, end=' ')
-        ...
-        True True True True True True True True 
+        Returns the normalization constant/(2pi) of the FB8 distribution.
         """
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
@@ -603,12 +589,35 @@ class FB8Distribution(object):
                         result = np.inf
                     j = -1
 
-            cache[k, b, m, n1, n2] = 2 * np.pi * result
+            cache[k, b, m, n1, n2] = result
 
         if return_num_iterations:
             return cache[k, b, m, n1, n2], j
         else:
             return cache[k, b, m, n1, n2]
+
+    def normalize(self, return_num_iterations=False):
+        """
+        Returns the normalization constant of the FB8 distribution.
+        The proportional error may be expected not to be greater than
+        1E-11.
+
+
+        >>> gamma1 = np.array([1.0, 0.0, 0.0])
+        >>> gamma2 = np.array([0.0, 1.0, 0.0])
+        >>> gamma3 = np.array([0.0, 0.0, 1.0])
+        >>> tiny = FB8Distribution.minimum_value_for_kappa
+        >>> np.abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
+        True
+        >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
+        ...     print(np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa, end=' ')
+        ...
+        True True True True True True True True 
+        """
+        if return_num_iterations:
+            res, nit = self._normalize(return_num_iterations=return_num_iterations)
+            return 2 * np.pi * res, nit
+        return 2 * np.pi * self._normalize(return_num_iterations=return_num_iterations)
 
     def _approx_log_normalize(self):
         """
@@ -646,6 +655,8 @@ class FB8Distribution(object):
         Returns the logarithm of the normalization constant.
 
 
+        >>> print('Overflow edgecase:', fb8(0.67, 1.02, 0.39, 115.42, 615.17, -0.92, 1.15, 0.49).log_normalize())
+        Overflow edgecase: 710.9592764244503
         >>> from itertools import product
         >>> for x in product([0], [0], [0], [0, 2, 32, 128, 256],
         ...                  [0, 2, 32, 128, 256], np.linspace(-1, 1, 5),
@@ -661,7 +672,7 @@ class FB8Distribution(object):
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             try:
-                return np.log(self.normalize())
+                return np.log(self._normalize())+np.log(2*np.pi)
             except (OverflowError, RuntimeWarning) as e:
                 logging.warning('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 return self._approx_log_normalize()

@@ -302,7 +302,7 @@ def time(eta=1, alpha=0, rho=0, step=10):
                      [eta], [alpha], [rho]):
         print(x)
         times_normalize.append(
-            min(timeit.timeit(stmt=('fb8('+','.join(['{}']*8)+').normalize(dict())').format(*x),
+            min(timeit.timeit(stmt=('fb8('+','.join(['{}']*8)+')._normalize(dict())').format(*x),
                               setup=setup, number=1)))
         times_nnormalize.append(
             min(timeit.timeit(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*x),
