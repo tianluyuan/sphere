@@ -1,3 +1,7 @@
+24 Jan 2022 v1.1.2
+-----------------
+Fix a bug where `OverflowError` would not be caught properly in `normalize` for normalization edge cases near float max.
+
 13 May 2021 v1.1.1
 -----------------
 Patch an edge case in `FB8Distribution.contour` calculation when `beta` is 0.
