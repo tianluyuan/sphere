@@ -665,9 +665,9 @@ class FB8Distribution(object):
         ...    lnorm = fb8(*x).log_normalize()
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
-        ...        print(fb8(*x), lnorm, lnnorm)
-        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901513834045 289.8261422778405
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.232162006908 400.40834745629957
+        ...        print(fb8(*x), round(lnorm, 5), round(lnnorm, 5))
+        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901 289.82614
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.23216 400.40834
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
@@ -1511,4 +1511,4 @@ MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
 """
 
     import doctest
-    doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False)
+    sys.exit(doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False)[0])

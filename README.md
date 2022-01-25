@@ -1,4 +1,4 @@
-[![PyPI version](https://img.shields.io/pypi/v/fb8)](https://pypi.org/project/fb8) [![Build Status](https://travis-ci.com/tianluyuan/sphere.svg?branch=master)](https://travis-ci.com/tianluyuan/sphere) [![Python versions](https://img.shields.io/pypi/pyversions/fb8)](https://pypi.org/project/fb8)
+[![PyPI version](https://img.shields.io/pypi/v/fb8)](https://pypi.org/project/fb8) [![Build Status](https://github.com/tianluyuan/sphere/actions/workflows/python-app.yml/badge.svg)](https://github.com/tianluyuan/sphere/actions) [![Python versions](https://img.shields.io/pypi/pyversions/fb8)](https://pypi.org/project/fb8)
 
 Getting started
 =================
