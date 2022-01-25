@@ -666,8 +666,8 @@ class FB8Distribution(object):
         ...    lnnorm = np.log(fb8(*x)._nnormalize())
         ...    if np.abs(lnorm-lnnorm)/lnorm > 0.1:
         ...        print(fb8(*x), round(lnorm, 5), round(lnnorm, 5))
-        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92901 289.82614
-        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.23216 400.40834
+        fb8(0.00, 0.00, 0.00, 256.00, 128.00, 1.00, 1.57, 1.05) 337.92902 289.82614
+        fb8(0.00, 0.00, 0.00, 256.00, 256.00, 1.00, 1.57, 1.05) 466.23216 400.40835
         """
         with warnings.catch_warnings():
             warnings.simplefilter('error')
