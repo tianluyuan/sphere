@@ -93,7 +93,7 @@ def test_example_mle(showplots=False):
         points = np.array(points)
 
         print("Drawing 10000 samples from k")
-        xs = k.rvs(10000, 8)
+        xs = k.rvs(10000, 3)
         k_me = sphere.distribution.kent_me(xs)
         print("Moment estimation:  k_me =", k_me)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
