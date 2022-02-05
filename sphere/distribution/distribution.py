@@ -26,10 +26,7 @@ from scipy.special import ivp as DI
 from scipy.special import hyp2f1 as H2F1
 from scipy.special import hyp1f1 as H1F1
 from scipy.special import hyp0f1 as H0F1
-from scipy.stats import uniform
 from scipy.integrate import dblquad, IntegrationWarning
-# to avoid confusion with the norm of a vector we give the normal distribution a less confusing name here
-from scipy.stats import norm as gauss
 import scipy.linalg
 from scipy.linalg import eig
 
@@ -321,6 +318,7 @@ class FB8Distribution(object):
         self._alpha, self._rho = FB8Distribution.gamma1_to_spherical_coordinates(self._nu)
 
         self._cached_rvs = np.empty((0,3))
+        self._rng = np.random.default_rng()
 
         # save rvs used to calculated level contours to keep levels self-consistent
         self._level_log_pdf = np.empty((0,))
@@ -902,11 +900,10 @@ class FB8Distribution(object):
         calculated using random points on the sphere to determine wether the pdf is
         properly normalized.
 
-        >>> from numpy.random import seed
-        >>> from scipy.stats import norm as gauss
-        >>> seed(666)
+        >>> from numpy.random import default_rng
+        >>> rng = default_rng(666)
         >>> num_samples = 400000
-        >>> xs = gauss(0, 1).rvs((num_samples, 3))
+        >>> xs = rng.normal(0, 1, (num_samples,3))
         >>> xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
         >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 1.0, 1.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
         >>> assert np.abs(4*np.pi*np.average(fb8(1.0, 2.0, 3.0, 4.0,  2.0).pdf(xs)) - 1.0) < 0.01
@@ -985,7 +982,7 @@ class FB8Distribution(object):
 
     def _rvs_helper(self):
         num_samples = 10000
-        xs = gauss(0, 1).rvs((num_samples, 3))
+        xs = self._rng.normal(0, 1, (num_samples, 3))
         xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
@@ -994,9 +991,9 @@ class FB8Distribution(object):
         # assert lfmax > lpvalues.max()
         ## END
         shifted = lpvalues - lfmax
-        return xs[uniform(0, 1).rvs(num_samples) < np.exp(shifted)]
+        return xs[self._rng.uniform(0, 1, num_samples) < np.exp(shifted)]
 
-    def rvs(self, n_samples=None):
+    def rvs(self, n_samples=None, seed=False):
         """
         Returns random samples from the FB8 distribution by rejection sampling.
         May become inefficient for large kappas.
@@ -1004,8 +1001,21 @@ class FB8Distribution(object):
         The returned random samples are 3D unit vectors.
         If n_samples == None then a single sample x is returned with shape (3,)
         If n_samples is an integer value N then N samples are returned in an array with shape (N, 3)
+
+        If seed is None, int, array_like[ints], SeedSequence, BitGenerator, or Generator, the cache
+        is reset and fresh random variates will be drawn using numpy.random.default_rng(seed).
+
+        If seed is False, the cache will be used, in conjunction with the last rng state if needed.
+        >>> k = fb8(1.0, 2.0, 3.0, 16.0, 8.0)
+        >>> assert np.sum(k.rvs(100, 1)-k.rvs(100, 1)) == 0.
+        >>> assert np.sum(k.rvs(100, 1)-k.rvs(200, 1)[:100]) == 0.
+        >>> assert np.all(k.rvs(100)-k.rvs(100, None))
+        >>> assert len(np.unique(k.rvs(10000, 1)[:,0])) == 10000
         """
-        num_samples = 1 if n_samples == None else n_samples
+        num_samples = 1 if n_samples is None else n_samples
+        if seed is not False:
+            self._rng = np.random.default_rng(seed)
+            self._cached_rvs = np.empty((0,3))
         rvs = self._cached_rvs
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
@@ -1018,14 +1028,14 @@ class FB8Distribution(object):
             retval = rvs[:num_samples]
             return retval
 
-    def level(self, percentile=50, n_samples=10000):
+    def level(self, percentile=50, n_samples=10000, seed=None):
         """
         Returns the -log_pdf level at percentile by generating a set of rvs and their log_pdfs
         """
         if 0 <= percentile < 100:
             curr_len = self._level_log_pdf.size
             if curr_len < n_samples:
-                new_rvs = self.rvs(n_samples)
+                new_rvs = self.rvs(n_samples, seed)
                 self._level_log_pdf = -self.log_pdf(new_rvs)
                 self._level_log_pdf.sort()
             log_pdf = self._level_log_pdf
@@ -1301,7 +1311,6 @@ if __name__ == "__main__":
     __doc__ += """
 >>> import numpy as np
 >>> from sphere.example import test_example_normalization, test_example_mle, test_example_mle2
->>> from numpy.random import seed
 >>> test_example_normalization(gridsize=10)
 Calculating the matrix M_ij of values that can be calculated: kappa=100.0*i+1, beta=100.0*j+1
 with eta=1.0, alpha=0.0, rho=0.0
@@ -1365,14 +1374,13 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 
 A test to ensure that the pdf() and the pdf_max() are calculated
 correctly.
->>> from numpy.random import seed
->>> from scipy.stats import norm as gauss
->>> seed(666)
+>>> from numpy.random import default_rng
+>>> rng = default_rng(808)
 >>> for k, pdf_value in zip(ks, pdf_values):
 ...   assert np.abs(k.pdf(np.array([1.0, 0.0, 0.0])) - pdf_value) < 1E-8
 ...   assert np.abs(k.log_pdf(np.array([1.0, 0.0, 0.0])) - np.log(pdf_value)) < 1E-8
 ...   num_samples = 100000
-...   xs = gauss(0, 1).rvs((num_samples, 3))
+...   xs = rng.normal(0, 1,(num_samples, 3))
 ...   xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
 ...   values = k.pdf(xs, normalize=False)
 ...   fmax = k.pdf_max(normalize=False)
@@ -1389,8 +1397,6 @@ that the derivatives are calculated correctly. In addition some more orthogonali
 testing is done.
 
 >>> from distribution import *
->>> from numpy.random import seed
->>> from scipy.stats import uniform
 >>> def test_orth(k):
 ...   # a bit more orthonormality testing for good measure
 ...   assert(np.abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
@@ -1401,9 +1407,9 @@ testing is done.
 ...   assert(np.abs(np.sum(k.gamma3 * k.gamma3) - 1.0) < 1E-14)
 ...
 >>> # generating some specific boundary values and some random values
->>> seed(666)
->>> upi, u2pi = uniform(0, np.pi), uniform(-np.pi, 2*np.pi)
->>> thetas, phis, psis = list(upi.rvs(925)), list(u2pi.rvs(925)), list(u2pi.rvs(925))
+>>> from functools import partial
+>>> upi, u2pi = partial(rng.uniform, 0, np.pi), partial(rng.uniform, -np.pi, 2*np.pi)
+>>> thetas, phis, psis = list(upi(925)), list(u2pi(925)), list(u2pi(925))
 >>> for a in (0.0, 0.5*np.pi, np.pi):
 ...   for b in (-np.pi, -0.5*np.pi, 0, 0.5*np.pi, np.pi):
 ...     for c in (-np.pi, -0.5*np.pi, 0, 0.5*np.pi, np.pi):
@@ -1424,8 +1430,8 @@ testing is done.
 ...
 >>> # testing consistency of gammas and consistency of back and forth
 >>> # calculations between gammas and angles (specifically fb82(), fb83() and fb84())
->>> kappas = gauss(0, 2).rvs(1000)**2
->>> betas = gauss(0, 2).rvs(1000)**2
+>>> kappas = rng.normal(0, 2, 1000)**2
+>>> betas = rng.normal(0, 2, 1000)**2
 >>> for theta, phi, psi, kappa, beta in zip(thetas, phis, psis, kappas, betas):
 ...   gamma1, gamma2, gamma3 = FB8Distribution.spherical_coordinates_to_gammas(theta, phi, psi)
 ...   theta, phi, psi = FB8Distribution.gammas_to_spherical_coordinates(gamma1, gamma2)
@@ -1468,46 +1474,43 @@ testing is done.
 ...    G = k.Gamma
 ...    for attr in 'theta phi psi kappa beta eta alpha rho'.split():
 ...      curr = k.__getattribute__(attr)
-...      k.__setattr__(attr, curr*gauss(0,1).rvs())
+...      k.__setattr__(attr, curr*rng.uniform(0,1))
 ...      test_orth(k)
 ...      _ = k.rvs()
 ...      assert len(k._cached_rvs) > 0
 ...      k.__setattr__(attr, curr)
 ...      test_orth(k)
-...      assert len(k._cached_rvs) == 0
 
->>> seed(888)
 >>> test_example_mle()
 Original Distribution: k = fb8(0.00, 0.00, 0.00, 1.00, 0.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.01, -1.57, -1.44, 1.43, 0.00, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.01, -1.57, -1.44, 0.96, 0.04, 1.00, 0.00, 0.00)
+Moment estimation:  k_me = fb8(0.01, -1.57, -0.31, 1.47, 0.00, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.01, -1.57, -0.31, 1.03, 0.02, 1.00, 0.00, 0.00)
 Original Distribution: k = fb8(0.75, 2.39, 2.39, 20.00, 0.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.75, 2.40, -1.51, 20.11, 0.16, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.75, 2.40, -1.51, 20.11, 0.18, 1.00, 0.00, 0.00)
+Moment estimation:  k_me = fb8(0.75, 2.40, 0.25, 20.01, 0.18, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.75, 2.40, 0.25, 20.01, 0.21, 1.00, 0.00, 0.00)
 Original Distribution: k = fb8(0.79, 2.36, -2.83, 20.00, 2.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.78, 2.36, 0.30, 20.24, 1.75, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.78, 2.36, 0.30, 20.29, 2.06, 1.00, 0.00, 0.00)
+Moment estimation:  k_me = fb8(0.79, 2.36, 0.33, 19.97, 1.83, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.79, 2.36, 0.33, 20.03, 2.16, 1.00, 0.00, 0.00)
 Original Distribution: k = fb8(0.79, 2.36, -2.95, 20.00, 5.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.79, 2.36, 0.18, 19.55, 3.85, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.79, 2.36, 0.18, 19.94, 4.77, 1.00, 0.00, 0.00)
+Moment estimation:  k_me = fb8(0.78, 2.36, 0.20, 19.68, 4.15, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.78, 2.36, 0.20, 20.16, 5.20, 1.00, 0.00, 0.00)
 Original Distribution: k = fb8(1.10, 2.36, -3.04, 50.00, 25.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(1.10, 2.36, 0.10, 37.52, 14.85, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(1.10, 2.36, 0.10, 50.19, 24.98, 1.00, 0.00, 0.00)
+Moment estimation:  k_me = fb8(1.09, 2.36, 0.10, 37.11, 14.72, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(1.10, 2.36, 0.10, 50.03, 25.01, 1.00, 0.00, 0.00)
 Original Distribution: k = fb8(0.00, 0.00, 0.10, 50.00, 25.00, 1.00, 0.00, 0.00)
 Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.00, 0.24, -0.14, 37.71, 14.95, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.01, 0.21, -0.11, 50.55, 25.18, 1.00, 0.00, 0.00)
->>> seed(2323)
+Moment estimation:  k_me = fb8(0.00, 0.16, -0.06, 37.15, 14.73, 1.00, 0.00, 0.00)
+Fitted with MLE:   k_mle = fb8(0.00, 0.15, -0.06, 50.06, 25.02, 1.00, 0.00, 0.00)
 >>> assert test_example_mle2(300)
 Testing various combinations of kappa and beta for 300 samples.
-MSE of MLE is higher than 0.7 times the moment estimate for beta/kappa <= 0.2
-MSE of MLE is higher than moment estimate for beta/kappa >= 0.3
-MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5
+MSE of ME is higher than 0.7 times the MLE for beta/kappa < 0.3
+MSE of ME is higher than MLE for beta/kappa >= 0.3
+MSE of ME is five times higher than MLE for beta/kappa > 0.5
 """
 
     import doctest

@@ -265,9 +265,8 @@ def bsc5(mag_low=6):
 def toy(seed=92518):
     from matplotlib.patches import Circle
     from mpl_toolkits.mplot3d import art3d
-    np.random.seed(seed)
     toyf8 = fb8(np.pi/16, -np.pi/3,0,55,60,-1.,0.07,0.3)
-    xs = toyf8.rvs(100)
+    xs = toyf8.rvs(100, seed)
     fit5 = fb8_mle(xs, fb5_only=True)
     print(fit5, -fit5.log_likelihood(xs))
     plot_fb8(fit5, 200)

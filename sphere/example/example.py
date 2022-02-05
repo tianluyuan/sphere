@@ -10,12 +10,8 @@ option.
 from __future__ import print_function
 import numpy as np
 import sphere.distribution
-from numpy.random import seed, uniform
 import warnings
 import sys
-
-seed(2323)
-
 
 def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True,
                                eta=1., alpha=0., rho=0.):
@@ -97,7 +93,7 @@ def test_example_mle(showplots=False):
         points = np.array(points)
 
         print("Drawing 10000 samples from k")
-        xs = k.rvs(10000)
+        xs = k.rvs(10000, 8)
         k_me = sphere.distribution.kent_me(xs)
         print("Moment estimation:  k_me =", k_me)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
@@ -145,6 +141,7 @@ def calculate_bias_var_and_mse(x, y):
 
 
 def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0):
+    rng = np.random.default_rng(3)
     max_kappa = 50.0
     real_kappas = np.arange(1.0, max_kappa, stepsize)
     print("Testing various combinations of kappa and beta for", num_samples, "samples.")
@@ -161,9 +158,9 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             if verbose:
                 print("%.1f" % kappa, end=' ', flush=True)
             beta = kappa * beta_ratio
-            k = sphere.distribution.fb8(uniform(0, np.pi), uniform(0, 2 * np.pi),
-                    uniform(0, 2 * np.pi), kappa, beta)
-            samples = k.rvs(num_samples)
+            k = sphere.distribution.fb8(rng.uniform(0, np.pi), rng.uniform(0, 2 * np.pi),
+                                        rng.uniform(0, 2 * np.pi), kappa, beta)
+            samples = k.rvs(num_samples, rng)
             k_me = sphere.distribution.kent_me(samples)
             k_mle = sphere.distribution.fb8_mle(samples, warning=sys.stdout, fb5_only=True)
             assert k_me.log_likelihood(samples) - k_mle.log_likelihood(samples) < 1e-5
@@ -240,20 +237,20 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         biass_mle, vars_mle, mses_mle = list(zip(*bias_var_mse_mle))
         for mse_me, mse_mle, beta_ratio in zip(mses_me, mses_mle, beta_ratios):
             if mse_me < mse_mle * 0.7:
-                print("MSE of MLE is lower than 0.7 times the moment estimate for %s" % name)
+                print("MSE of moment estimate is lower than 0.7 times the MLE for %s" % name)
                 return False
             if beta_ratio >= 0.3:
                 if mse_me < mse_mle:
-                    print("MSE of MLE is lower than moment estimate for %s with beta/kappa >= 0.3" % name)
+                    print("MSE of moment estimate is lower than MLE for %s with beta/kappa >= 0.3" % name)
                     return False
             if beta_ratio > 0.5:
                 if mse_me < 5 * mse_mle:
-                    print("MSE of MLE is not lower than five times the moment estimate %s with beta/kappa >= 0.5" % name)
+                    print("MSE of moment estimate is lower than five times the MLE %s with beta/kappa > 0.5" % name)
                     return False
 
-    print("MSE of MLE is higher than 0.7 times the moment estimate for beta/kappa <= 0.2")
-    print("MSE of MLE is higher than moment estimate for beta/kappa >= 0.3")
-    print("MSE of MLE is five times higher than moment estimates for beta/kappa >= 0.5")
+    print("MSE of ME is higher than 0.7 times the MLE for beta/kappa < 0.3")
+    print("MSE of ME is higher than MLE for beta/kappa >= 0.3")
+    print("MSE of ME is five times higher than MLE for beta/kappa > 0.5")
     return True
 
 
