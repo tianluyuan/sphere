@@ -1236,7 +1236,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                           method="SLSQP",
                           constraints=cons,
                           callback=callback,
-                          options={"disp": False, "ftol": 1e-08,
+                          options={"disp": False, "ftol": 1e-09,
                                    "maxiter": 100})
 
     if not fb5_only:
@@ -1481,10 +1481,11 @@ testing is done.
 ...      k.__setattr__(attr, curr)
 ...      test_orth(k)
 
->>> test_example_mle()
+>>> for _ in range(10):
+...    test_example_mle(seed=_)
 >>> assert test_example_mle2(300)
 Testing various combinations of kappa and beta for 300 samples.
-MSE of ME is higher than 0.7 times the MLE for beta/kappa < 0.3
+MSE of ME is higher than 0.65 times the MLE for beta/kappa < 0.3
 MSE of ME is higher than MLE for beta/kappa >= 0.3
 MSE of ME is five times higher than MLE for beta/kappa > 0.5
 """
