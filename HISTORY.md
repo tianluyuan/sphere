@@ -1,3 +1,7 @@
+5 Feb 2022 v1.2.1
+-----------------
+Update rng seed handling to allow the `rvs` method to take an optional seed. By default, `seed=False` which preserves the previous caching behavior. Passing a seed will clear the cache and generate new/reproducible rvs.
+
 24 Jan 2022 v1.1.2
 -----------------
 Fix a bug where `OverflowError` would not be caught properly in `normalize` for normalization edge cases near float max.
