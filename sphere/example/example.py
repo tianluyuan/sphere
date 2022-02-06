@@ -10,6 +10,7 @@ option.
 from __future__ import print_function
 import numpy as np
 import sphere.distribution
+from sphere.distribution import fb8
 import warnings
 import sys
 
@@ -66,16 +67,35 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                 print(" ".join(['  x' if n == -1 else '%3i' % n for n in line]))
 
 
-def test_example_mle(showplots=False):
-    for k in [
-        sphere.distribution.fb8(0.0,       0.0,     0.0,    1.0,  0.0),
-        sphere.distribution.fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
-        sphere.distribution.fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10,  20.0, 2.0),
-        sphere.distribution.fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16,  20.0, 5.0),
-        sphere.distribution.fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32,  50.0, 25.0),
-        sphere.distribution.fb8(0.0, 0.0, np.pi / 32,  50.0, 25.0),
-    ]:
-        print("Original Distribution: k =", k)
+def test_example_mle(showplots=False, verbose=False):
+    def similar(a, b):
+        for attr in 'theta phi psi kappa beta eta alpha rho'.split():
+            if abs((a.__getattribute__(attr) - b.__getattribute__(attr))) > 0.02:
+                return False
+        return True
+
+    expected_mes = [fb8(0.01, -2.36, -2.12, 1.45, 0.00, 1.00, 0.00, 0.00),
+                    fb8(0.75, 2.39, -1.91, 20.25, 0.17, 1.00, 0.00, 0.00),
+                    fb8(0.79, 2.36, 0.34, 20.16, 1.63, 1.00, 0.00, 0.00),
+                    fb8(0.79, 2.36, 0.19, 19.81, 4.03, 1.00, 0.00, 0.00),
+                    fb8(1.10, 2.35, 0.10, 37.29, 14.81, 1.00, 0.00, 0.00),
+                    fb8(0.00, 0.30, -0.20, 37.84, 15.07, 1.00, 0.00, 0.00)]
+
+    expected_mles = [fb8(0.01, -2.36, -2.12, 0.98, 0.04, 1.00, 0.00, 0.00),
+                     fb8(0.75, 2.39, -1.91, 20.25, 0.20, 1.00, 0.00, 0.00),
+                     fb8(0.79, 2.36, 0.34, 20.20, 1.91, 1.00, 0.00, 0.00),
+                     fb8(0.79, 2.36, 0.19, 20.23, 5.01, 1.00, 0.00, 0.00),
+                     fb8(1.10, 2.36, 0.10, 50.31, 25.16, 1.00, 0.00, 0.00),
+                     fb8(0.00, 0.44, -0.34, 51.11, 25.56, 1.00, 0.00, 0.00)]
+
+    for idx, k in enumerate([
+        fb8(0.0,       0.0,     0.0,    1.0,  0.0),
+        fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10,  20.0, 2.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16,  20.0, 5.0),
+        fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32,  50.0, 25.0),
+        fb8(0.0, 0.0, np.pi / 32,  50.0, 25.0),
+    ]):
         gridsize = 200
         u = np.linspace(0, 2 * np.pi, gridsize)
         v = np.linspace(0, np.pi, gridsize)
@@ -92,13 +112,17 @@ def test_example_mle(showplots=False):
                 keys.append((i, j))
         points = np.array(points)
 
-        print("Drawing 10000 samples from k")
         xs = k.rvs(10000, 3)
-        k_me = sphere.distribution.kent_me(xs.astype(np.float128))
-        print("Moment estimation:  k_me =", k_me)
+        k_me = sphere.distribution.kent_me(xs)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
-        print("Fitted with MLE:   k_mle =", k_mle)
+        assert similar(k_me, expected_mes[idx])
+        assert similar(k_mle, expected_mles[idx])
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
+        if verbose:
+            print(f"Original Distribution: k = {k}")
+            print(f"Moment estimation:  k_me = {k_me}")
+            print(f"Fitted with MLE:   k_mle = {k_mle}")
+            print("***")
 
         value_for_color = k_mle.pdf(points)
         value_for_color /= max(value_for_color)
@@ -161,7 +185,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             k = sphere.distribution.fb8(rng.uniform(0, np.pi), rng.uniform(0, 2 * np.pi),
                                         rng.uniform(0, 2 * np.pi), kappa, beta)
             samples = k.rvs(num_samples, rng)
-            k_me = sphere.distribution.kent_me(samples.astype(np.float128))
+            k_me = sphere.distribution.kent_me(samples)
             k_mle = sphere.distribution.fb8_mle(samples, warning=sys.stdout, fb5_only=True)
             assert k_me.log_likelihood(samples) - k_mle.log_likelihood(samples) < 1e-5
             kappas_me.append(k_me.kappa)

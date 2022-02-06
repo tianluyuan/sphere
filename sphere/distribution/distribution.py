@@ -1482,30 +1482,6 @@ testing is done.
 ...      test_orth(k)
 
 >>> test_example_mle()
-Original Distribution: k = fb8(0.00, 0.00, 0.00, 1.00, 0.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.01, -2.36, -2.12, 1.45, 0.00, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.01, -2.36, -2.12, 0.98, 0.04, 1.00, 0.00, 0.00)
-Original Distribution: k = fb8(0.75, 2.39, 2.39, 20.00, 0.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.75, 2.39, -1.91, 20.25, 0.17, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.75, 2.39, -1.91, 20.25, 0.20, 1.00, 0.00, 0.00)
-Original Distribution: k = fb8(0.79, 2.36, -2.83, 20.00, 2.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.79, 2.36, 0.34, 20.16, 1.63, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.79, 2.36, 0.34, 20.20, 1.91, 1.00, 0.00, 0.00)
-Original Distribution: k = fb8(0.79, 2.36, -2.95, 20.00, 5.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.79, 2.36, 0.19, 19.81, 4.03, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.79, 2.36, 0.19, 20.23, 5.01, 1.00, 0.00, 0.00)
-Original Distribution: k = fb8(1.10, 2.36, -3.04, 50.00, 25.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(1.10, 2.35, 0.10, 37.29, 14.81, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(1.10, 2.36, 0.10, 50.31, 25.16, 1.00, 0.00, 0.00)
-Original Distribution: k = fb8(0.00, 0.00, 0.10, 50.00, 25.00, 1.00, 0.00, 0.00)
-Drawing 10000 samples from k
-Moment estimation:  k_me = fb8(0.00, 0.30, -0.20, 37.84, 15.07, 1.00, 0.00, 0.00)
-Fitted with MLE:   k_mle = fb8(0.00, 0.44, -0.34, 51.11, 25.56, 1.00, 0.00, 0.00)
 >>> assert test_example_mle2(300)
 Testing various combinations of kappa and beta for 300 samples.
 MSE of ME is higher than 0.7 times the MLE for beta/kappa < 0.3
