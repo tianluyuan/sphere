@@ -94,7 +94,7 @@ def test_example_mle(showplots=False):
 
         print("Drawing 10000 samples from k")
         xs = k.rvs(10000, 3)
-        k_me = sphere.distribution.kent_me(xs)
+        k_me = sphere.distribution.kent_me(xs.astype(np.float128))
         print("Moment estimation:  k_me =", k_me)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
         print("Fitted with MLE:   k_mle =", k_mle)
@@ -161,7 +161,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             k = sphere.distribution.fb8(rng.uniform(0, np.pi), rng.uniform(0, 2 * np.pi),
                                         rng.uniform(0, 2 * np.pi), kappa, beta)
             samples = k.rvs(num_samples, rng)
-            k_me = sphere.distribution.kent_me(samples)
+            k_me = sphere.distribution.kent_me(samples.astype(np.float128))
             k_mle = sphere.distribution.fb8_mle(samples, warning=sys.stdout, fb5_only=True)
             assert k_me.log_likelihood(samples) - k_mle.log_likelihood(samples) < 1e-5
             kappas_me.append(k_me.kappa)
