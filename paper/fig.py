@@ -55,7 +55,7 @@ def plot_fb8(fb8, npts):
     # ax.set_zticks([])
     ax.set_axis_off()
     ax.set_title(make_title(fb8), fontsize=12, y=0.18)
-    plt.tight_layout(-5)
+    plt.tight_layout(pad=-5)
 
 
 def hp_plot_fb8(fb8, nside):
@@ -126,7 +126,7 @@ def approx_norm(kappa, beta, eta):
     plt.text(textx,0.7,text,
              transform=plt.gca().transAxes, fontsize=14)
 
-    plt.tight_layout(0.1)
+    plt.tight_layout(pad=0.1)
 
 
 def numerical_norm(kappa, beta, eta, alpha, rho):
@@ -154,7 +154,7 @@ def numerical_norm(kappa, beta, eta, alpha, rho):
     textnu = rf'$\vec{{\nu}}=({_.nu[0]:.3g},{_.nu[1]:.3g},{_.nu[2]:.3g})$'
     plt.text(textx,0.6,textnu,
              transform=plt.gca().transAxes, fontsize=14)
-    plt.tight_layout(0.1)
+    plt.tight_layout(pad=0.1)
 
 
 def time_norm(kappa, beta, eta, alpha, rho):
@@ -170,7 +170,7 @@ def time_norm(kappa, beta, eta, alpha, rho):
         setup = 'from sphere.distribution import fb8'
         for _ in args:
             times_normalize.append(
-                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+').normalize(cache=dict())').format(*_),
+                min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._normalize(cache=dict())').format(*_),
                                   setup=setup, repeat=3, number=1)))
             times_nnormalize.append(
                 min(timeit.repeat(stmt=('fb8('+','.join(['{}']*8)+')._nnormalize()').format(*_),
@@ -199,7 +199,7 @@ def time_norm(kappa, beta, eta, alpha, rho):
     textnu = rf'$\vec{{\nu}}=({_.nu[0]:.3g},{_.nu[1]:.3g},{_.nu[2]:.3g})$'
     plt.text(0.42,0.28,textnu,
              transform=plt.gca().transAxes, fontsize=14)
-    plt.tight_layout(0.1)
+    plt.tight_layout(pad=0.1)
 
 
 def do_fits(ths, phs):
