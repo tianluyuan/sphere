@@ -6,6 +6,11 @@ name: status
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb'
+      - 'paper/**'
+      - 'LICENSE'
   pull_request:
     branches: [ master ]
   schedule:
