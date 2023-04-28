@@ -10,7 +10,7 @@ jobs:
     name: Build and publish to PyPI and TestPyPI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@main
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -30,7 +30,7 @@ jobs:
         --outdir dist/
         .
     - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@main
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}

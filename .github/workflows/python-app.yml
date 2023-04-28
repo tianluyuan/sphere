@@ -5,14 +5,14 @@ name: status
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths-ignore:
       - '**.md'
       - '**.ipynb'
       - 'paper/**'
       - 'LICENSE'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   schedule:
     - cron:  '13 7 * * 2'
 
