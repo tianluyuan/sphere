@@ -1,4 +1,4 @@
-[![PyPI version](https://img.shields.io/pypi/v/fb8)](https://pypi.org/project/fb8) [![Build Status](https://github.com/tianluyuan/sphere/actions/workflows/python-app.yml/badge.svg)](https://github.com/tianluyuan/sphere/actions) [![Python versions](https://img.shields.io/pypi/pyversions/fb8)](https://pypi.org/project/fb8)
+[![PyPI version](https://img.shields.io/pypi/v/fb8)](https://pypi.org/project/fb8) [![Build Status](https://github.com/tianluyuan/sphere/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/sphere/actions) [![Python versions](https://img.shields.io/pypi/pyversions/fb8)](https://pypi.org/project/fb8)
 
 Getting started
 =================
@@ -52,7 +52,7 @@ Implements the Bingham-Mardia distribution whose mode is a small-circle on the s
 
 Also calculates directional, percentile levels which can be used to indicate the N% highest-posterior-density regions in the sky.
 
-![maps](https://github.com/tianluyuan/sphere/blob/master/fig/example.png?raw=true)
+![maps](fig/example.png)
 
 Additional references
 =================
@@ -66,7 +66,7 @@ Notes
 =================
 Currently the `scipy.special.hyp2f1` is used and may exhibit inaccuracies for large parameters. See github [issues](https://github.com/scipy/scipy/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+hyp2f1).
 
-Contributors
+Acknowledgements
 =================
 
 This project was originally developed for the FB5 (Kent) distribution [here](https://github.com/edfraenkel/kent_distribution).
