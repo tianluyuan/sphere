@@ -43,3 +43,17 @@ jobs:
     - name: Test with doctest
       run: |
         python sphere/distribution/distribution.py -v
+
+  results:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Final Results
+    needs: [build]
+    steps:
+      - run: exit 1
+        # see https://stackoverflow.com/a/67532120/4907315
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+          }}
