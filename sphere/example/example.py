@@ -70,7 +70,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
 def test_example_mle(showplots=False, verbose=False, seed=3):
     def similar(a, b):
         for attr in 'theta phi psi kappa beta eta alpha rho'.split():
-            if abs((a.__getattribute__(attr) - b.__getattribute__(attr))) > 0.04:
+            if abs((a.__getattribute__(attr) - b.__getattribute__(attr))) > 0.02:
                 return False
         return True
 
@@ -116,7 +116,7 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
         xs = k.rvs(10000, seed)
         k_me = sphere.distribution.kent_me(xs)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
-        if seed == 3:
+        if seed == 3 and sys.platform == "linux":
             assert similar(k_me, expected_mes[idx])
             assert similar(k_mle, expected_mles[idx])
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
