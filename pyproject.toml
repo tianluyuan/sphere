@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fb8"
+version = "1.2.3"
+authors = [
+  {name = "Daniël Fraenkel", email = "e.d.fraenkel@gmail.com"},
+  {name = "Austin Schneider", email = "aschn@mit.edu"},
+  {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"},
+]
+maintainers = [
+  {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"}
+]
+
+description = "Implementation of FB8, a generalization of the Kent (1982) and Bingham-Mardia (1978) distributions on a sphere"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+requires-python = ">= 3.8"
+dependencies = [
+  "numpy >= 1.17",
+  "scipy"
+]
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+
+[project.optional-dependencies]
+plotting = ["matplotlib", "healpy"]
+
+[project.urls]
+Repository = "https://github.com/tianluyuan/sphere.git"
+
+[tool.setuptools.packages]
+find = {}
