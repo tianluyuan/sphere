@@ -605,7 +605,7 @@ class FB8Distribution(object):
         >>> gamma2 = np.array([0.0, 1.0, 0.0])
         >>> gamma3 = np.array([0.0, 0.0, 1.0])
         >>> tiny = FB8Distribution.minimum_value_for_kappa
-        >>> np.abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
+        >>> abs(fb82(gamma1, gamma2, gamma3, tiny, 0.0).normalize() - 4*np.pi) < 4*np.pi*1E-12
         True
         >>> for kappa in [0.01, 0.1, 0.2, 0.5, 2, 4, 8, 16]:
         ...     print(np.abs(fb82(gamma1, gamma2, gamma3, kappa, 0.0).normalize() - 4*np.pi*np.sinh(kappa)/kappa) < 1E-15*4*np.pi*np.sinh(kappa)/kappa, end=' ')
