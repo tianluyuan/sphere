@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fb8"
-version = "1.2.4"
+version = "1.2.5"
 authors = [
   {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"},
   {name = "Daniël Fraenkel", email = "e.d.fraenkel@gmail.com"},
