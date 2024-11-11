@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fb8"
-version = "1.2.5"
+dynamic = ["version"]
 authors = [
   {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"},
   {name = "Daniël Fraenkel", email = "e.d.fraenkel@gmail.com"},
