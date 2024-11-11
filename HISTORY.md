@@ -1,3 +1,7 @@
+11 Nov 2024 v1.2.6
+-----------------
+Switch build to use `pyproject.toml`, include only package directory. Updates to tests for numpy 2.0. Some housekeeping (since v1.2.2).
+
 6 Feb 2022 v1.2.2
 -----------------
 Decrease `ftol` used by the FB5 minimizer. Previously, for some test cases when the initial seed (moment estimate) is close to optimal the SLSQP minimizer did not find an improved solution.
