@@ -39,6 +39,6 @@ plotting = ["matplotlib", "healpy"]
 Repository = "https://github.com/tianluyuan/sphere.git"
 
 [tool.setuptools.packages.find]
-exclude = ["paper*", "fig*"]
+exclude = ["paper*", "fig*", "build*"]
 
 [tool.setuptools_scm]
