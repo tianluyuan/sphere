@@ -18,7 +18,7 @@ description = "Implementation of FB8, a generalization of the Kent (1982) and Bi
 readme = "README.md"
 license = {file = "LICENSE"}
 
-requires-python = ">= 3.8"
+requires-python = ">= 3.9"
 dependencies = [
   "numpy >= 1.17",
   "scipy >= 1.4"
