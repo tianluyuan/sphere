@@ -14,6 +14,7 @@ from sphere.distribution import fb8
 import warnings
 import sys
 
+
 def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True,
                                eta=1., alpha=0., rho=0.):
     scale = (1000.0 / gridsize)
