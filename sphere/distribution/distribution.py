@@ -18,16 +18,12 @@ import logging
 import heapq
 
 import numpy as np
-from scipy.optimize import minimize, basinhopping, approx_fprime
-from scipy.special import gamma as G
+from scipy.optimize import minimize, approx_fprime
 from scipy.special import gammaln as LG
-from scipy.special import iv as I
-from scipy.special import ivp as DI
 from scipy.special import hyp2f1 as H2F1
 from scipy.special import hyp1f1 as H1F1
 from scipy.special import hyp0f1 as H0F1
-from scipy.integrate import dblquad, IntegrationWarning
-import scipy.linalg
+from scipy.integrate import dblquad
 from scipy.linalg import eig
 
 
@@ -510,8 +506,6 @@ class FB8Distribution(object):
                             a[(evens) & (a < 0)] = 0
                         sa = a.sum()
                         abs_sa = np.abs(a).sum()
-                        ### DEBUG ###
-                        # print j, sa
                         result += sa
                         if np.isnan(result):
                             logging.warning('Series result is nan')
@@ -793,12 +787,6 @@ class FB8Distribution(object):
                             grad_a = np.asarray(grad_a_c8(jjs, kks, lls, b, k, m, n1, n2, n3))
                             sa = grad_a.sum(axis=(1,2,3))*snorm
                             abs_sa = np.abs(grad_a).sum(axis=(1,2,3))*snorm
-                            ### DEBUG ###
-                            # import pdb
-                            # pdb.set_trace()
-                            # print ll, kk, jj, sa, abs_sa
-                            # print j, a, I(j+0.5, k)
-                            # print(j,ll,kk,jj, result*2*np.pi/norm)
                             if np.any(np.isnan(sa)):
                                 logging.warning(
                                     'Series grad(ln(c_8)) is nan, using approx_fprime...'+self.__repr__())
@@ -986,10 +974,6 @@ class FB8Distribution(object):
         xs = np.divide(xs, np.reshape(norm(xs, 1), (num_samples, 1)))
         lpvalues = self.log_pdf(xs, normalize=False)
         lfmax = self.log_pdf_max(normalize=False)
-        ## DEBUG
-        # print lfmax, lpvalues.max()
-        # assert lfmax > lpvalues.max()
-        ## END
         shifted = lpvalues - lfmax
         return xs[self._rng.uniform(0, 1, num_samples) < np.exp(shifted)]
 
@@ -1190,9 +1174,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
             return np.inf
         if x[3] < 0 or x[4] < 0:
             return np.inf
-        ### DEBUG ###
-        # if len(x) > 5 and (x[5] > 1 or x[5] < -1):
-        #     return np.inf
+
         return -fb8(*x).log_likelihood(xs)/lenxs
 
     def jac(x):
