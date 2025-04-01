@@ -10,8 +10,8 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'paper/**'
-      - '.github/workflows/publish.yml'
-      - '.github/dependabot.yml'
+      - '**/publish.yml'
+      - '**/dependabot.yml'
       - 'LICENSE'
   pull_request:
     branches: [ main ]
