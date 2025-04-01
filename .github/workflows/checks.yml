@@ -45,6 +45,8 @@ jobs:
         pip install .
     - name: Test with doctest
       run: python sphere/distribution/distribution.py -v
+    - name: Run example without plots
+      run: python sphere/distribution/example.py --no-plot
 
   results:
     if: ${{ always() }}
