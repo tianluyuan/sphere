@@ -42,7 +42,7 @@ jobs:
       - release-build
     environment:
       name: publish
-      # url: https://pypi.org/p/fb8
+      ## url: https://pypi.org/p/fb8
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
