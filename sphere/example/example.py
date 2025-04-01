@@ -295,4 +295,4 @@ if __name__ == "__main__":
     if showplots:
         from pylab import show
         show()
-    exit()
+    sys.exit()

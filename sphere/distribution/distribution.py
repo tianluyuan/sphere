@@ -448,7 +448,7 @@ class FB8Distribution(object):
         k, b, m = self.kappa, self.beta, self.eta
         n1, n2, n3 = self.nu
         return dblquad(
-            lambda th, ph: np.sin(th) *\
+            lambda th, ph: np.sin(th) *
             np.exp(k * (n1 * np.cos(th) + n2 * np.sin(th) * np.cos(ph) + n3 * np.sin(th) * np.sin(ph)) +
                    b * np.sin(th)**2 * (np.cos(ph)**2 - m * np.sin(ph)**2)),
             0., 2. * np.pi, lambda x: 0., lambda x: np.pi,
@@ -621,8 +621,8 @@ class FB8Distribution(object):
         b = self.beta
         m = self.eta
         if k > 2 * b:
-            lnormalize = np.log(2 * np.pi) + k - \
-                np.log((k - 2 * b) * (k + 2 * b * m)) / 2.
+            lnormalize = np.log(2 * np.pi) + k - np.log(
+                (k - 2 * b) * (k + 2 * b * m)) / 2.
         else:
             # normal approximation in z = cos(theta) with correction factor for floating eta
             # correction factor by fixing sin(theta)**2 = (1-k**2/(4*b**2)), corresponding to theta_max
