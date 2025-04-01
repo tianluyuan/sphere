@@ -138,7 +138,7 @@ class FB8Distribution(object):
 
     @staticmethod
     def create_matrix_Ht(theta, phi):
-        return np.swapaxes(FB8Distribution.create_matrix_H(theta, phi),-2,-1)
+        return np.swapaxes(FB8Distribution.create_matrix_H(theta, phi), -2, -1)
 
     @staticmethod
     def create_matrix_K(psi):
@@ -198,7 +198,7 @@ class FB8Distribution(object):
             return np.moveaxis(_DH, 2, 0)
         else:
             return _DH
-        
+
     @staticmethod
     def create_matrix_DK_psi(psi):
         psi = np.asarray(psi)
@@ -220,11 +220,11 @@ class FB8Distribution(object):
     @staticmethod
     def create_matrix_DGamma_phi(theta, phi, psi):
         return MMul(FB8Distribution.create_matrix_DH_phi(theta, phi), FB8Distribution.create_matrix_K(psi))
-    
+
     @staticmethod
     def create_matrix_DGamma_psi(theta, phi, psi):
-        return MMul(FB8Distribution.create_matrix_H(theta,phi), FB8Distribution.create_matrix_DK_psi(psi))
-    
+        return MMul(FB8Distribution.create_matrix_H(theta, phi), FB8Distribution.create_matrix_DK_psi(psi))
+
     @staticmethod
     def spherical_coordinates_to_gammas(theta, phi, psi):
         Gamma = FB8Distribution.create_matrix_Gamma(theta, phi, psi)
@@ -240,8 +240,8 @@ class FB8Distribution(object):
 
     @staticmethod
     def gamma1_to_spherical_coordinates(gamma1):
-        theta = np.arccos(gamma1[...,0])
-        phi = np.arctan2(gamma1[...,2], gamma1[...,1])
+        theta = np.arccos(gamma1[..., 0])
+        phi = np.arctan2(gamma1[..., 2], gamma1[..., 1])
         return theta, phi
 
     @staticmethod
@@ -249,7 +249,7 @@ class FB8Distribution(object):
         theta, phi = FB8Distribution.gamma1_to_spherical_coordinates(gamma1)
         Ht = FB8Distribution.create_matrix_Ht(theta, phi)
         u = MMul(Ht, gamma2.T.reshape(3, np.asarray(theta).size))
-        psi = np.arctan2(u[...,2,:][0], u[...,1,:][0])
+        psi = np.arctan2(u[..., 2, :][0], u[..., 1, :][0])
         return theta, phi, psi
 
     @staticmethod
@@ -305,14 +305,14 @@ class FB8Distribution(object):
         self._eta = float(eta)
         # FB8 param nu
         if nu is None:
-            nu = FB8Distribution.spherical_coordinates_to_nu(0,0)
+            nu = FB8Distribution.spherical_coordinates_to_nu(0, 0)
         self._nu = nu
 
         self._theta, self._phi, self._psi = FB8Distribution.gammas_to_spherical_coordinates(
             self._gamma1, self._gamma2)
         self._alpha, self._rho = FB8Distribution.gamma1_to_spherical_coordinates(self._nu)
 
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
         self._rng = np.random.default_rng()
 
         # save rvs used to calculated level contours to keep levels self-consistent
@@ -342,7 +342,7 @@ class FB8Distribution(object):
     def kappa(self, val):
         self._kappa = val
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def beta(self):
@@ -352,7 +352,7 @@ class FB8Distribution(object):
     def beta(self, val):
         self._beta = val
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def eta(self):
@@ -362,7 +362,7 @@ class FB8Distribution(object):
     def eta(self, val):
         self._eta = val
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def theta(self):
@@ -373,7 +373,7 @@ class FB8Distribution(object):
         self._theta = np.arccos(np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def phi(self):
@@ -384,7 +384,7 @@ class FB8Distribution(object):
         self._phi = np.arctan2(np.sin(val), np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def psi(self):
@@ -395,7 +395,7 @@ class FB8Distribution(object):
         self._psi = np.arctan2(np.sin(val), np.cos(val))
         self._gamma1, self._gamma2, self._gamma3 = self.Gamma.T
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def alpha(self):
@@ -407,7 +407,7 @@ class FB8Distribution(object):
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def rho(self):
@@ -419,7 +419,7 @@ class FB8Distribution(object):
         self._nu = FB8Distribution.spherical_coordinates_to_nu(
             self._alpha, self._rho)
         self._level_log_pdf = np.empty((0,))
-        self._cached_rvs = np.empty((0,3))
+        self._cached_rvs = np.empty((0, 3))
 
     @property
     def Gamma(self):
@@ -436,14 +436,14 @@ class FB8Distribution(object):
     @property
     def DGamma_psi(self):
         return self.create_matrix_DGamma_psi(self.theta, self.phi, self.psi)
-    
+
     @property
     def Dnu_alpha(self):
-        return self.create_matrix_DH_theta(self.alpha, self.rho)[...,0]
+        return self.create_matrix_DH_theta(self.alpha, self.rho)[..., 0]
 
     @property
     def Dnu_rho(self):
-        return self.create_matrix_DH_phi(self.alpha, self.rho)[...,0]
+        return self.create_matrix_DH_phi(self.alpha, self.rho)[..., 0]
 
     def _nnormalize(self, epsabs=1e-3, epsrel=1e-3):
         """
@@ -477,7 +477,7 @@ class FB8Distribution(object):
             z = k*n1
             return (self.a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3) *
                     H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m))
-    
+
         def push_coord(val, coord):
             if coord not in inheap:
                 heapq.heappush(hq, (val, coord))
@@ -496,7 +496,7 @@ class FB8Distribution(object):
                 else:
                     prev_abs_a = 0
                     while True:
-                        js = np.arange(j*100,(j+1)*100)
+                        js = np.arange(j*100, (j+1)*100)
                         a = a_c6(js, b, k, m)
                         evens = js % 2==0
                         if np.any(a[evens] < 0):
@@ -519,7 +519,7 @@ class FB8Distribution(object):
             # FB8
             else:
                 try:
-                    approx_argmax = (0,0,0)
+                    approx_argmax = (0, 0, 0)
                     edge = 0
                     step = 2
                     while edge in approx_argmax and step < 16:
@@ -528,20 +528,20 @@ class FB8Distribution(object):
                         tjs, tks, tls = np.mgrid[0:edge+1:step,
                                                  0:edge+1:step,
                                                  0:edge+1:step]
-                        
+
                         a = a_c8(tjs, tks, tls, b, k, m, n1, n2, n3)
                         approx_argmax = np.asarray(
                             np.unravel_index(np.nanargmax(np.abs(a)),
                                              a.shape))*step
-                    amj,amk,aml = approx_argmax
+                    amj, amk, aml = approx_argmax
                     result = 0
-                    inheap = set([(amj,amk,aml)])
+                    inheap = set([(amj, amk, aml)])
                     hq = []
                     while True:
                         jjs, kks, lls = np.mgrid[
-                            max(0,amj-step):amj+step,
-                            max(0,amk-step):amk+step,
-                            max(0,aml-step):aml+step]
+                            max(0, amj-step):amj+step,
+                            max(0, amk-step):amk+step,
+                            max(0, aml-step):aml+step]
                         a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                         evens = jjs%2==0
                         if np.any(a[evens] < 0):
@@ -556,15 +556,15 @@ class FB8Distribution(object):
                         if abs_sa < np.abs(result) * 1E-12:
                             break
                         _ = step
-                        push_coord(-abs_a[:,:,-2:].sum(), (amj, amk, aml+2*step))
-                        push_coord(-abs_a[:,-2:,:].sum(), (amj, amk+2*step, aml))
-                        push_coord(-abs_a[-2:,:,:].sum(), (amj+2*step, amk, aml))
+                        push_coord(-abs_a[:, :, -2:].sum(), (amj, amk, aml+2*step))
+                        push_coord(-abs_a[:, -2:, :].sum(), (amj, amk+2*step, aml))
+                        push_coord(-abs_a[-2:, :, :].sum(), (amj+2*step, amk, aml))
                         if 0<aml-step:
-                            push_coord(-abs_a[:,:,:2].sum(), (amj, amk, aml-2*step))
+                            push_coord(-abs_a[:, :, :2].sum(), (amj, amk, aml-2*step))
                         if 0<amk-step:
-                            push_coord(-abs_a[:,:2,:].sum(), (amj, amk-2*step, aml))
+                            push_coord(-abs_a[:, :2, :].sum(), (amj, amk-2*step, aml))
                         if 0<amj-step:
-                            push_coord(-abs_a[:2,:,:].sum(), (amj-2*step, amk, aml))
+                            push_coord(-abs_a[:2, :, :].sum(), (amj-2*step, amk, aml))
                         amj, amk, aml = heapq.heappop(hq)[1]
 
                     if not result > 0:
@@ -640,7 +640,7 @@ class FB8Distribution(object):
                           np.log(2*np.pi) +np.log(H1F1(1/2., 1., -2*z)))
 
         return lnormalize
-        
+
     def log_normalize(self):
         """
         Returns the logarithm of the normalization constant.
@@ -707,9 +707,9 @@ class FB8Distribution(object):
             h0f1_c6 = H0F1(v+1, k**2/4)
             h2f1_c6 = H2F1(-j, 0.5, 0.5-j, -m)
             v = j+0.5
-            a_c6_st = self.a_c6_star(j,b,k,m)
+            a_c6_st = self.a_c6_star(j, b, k, m)
             _Da_b = j/b * a_c6_st * h0f1_c6 * h2f1_c6
-            _Da_k = H0F1(v+2,k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
+            _Da_k = H0F1(v+2, k**2/4)*k/(2*(1+v)) * a_c6_st * h2f1_c6
             _Da_m = 0.5*j*H2F1(1-j, 1.5, 1.5-j, -m)/(0.5-j) * a_c6_st * h0f1_c6
             return _Da_k, _Da_b, _Da_m
 
@@ -726,7 +726,7 @@ class FB8Distribution(object):
             # dh2f1_c8[:,-1,:] = H2F1(1-jj[:,-1,:], 1.5+kk[:,-1,:], 1.5-jj[:,-1,:]-ll[:,-1,:], -m)
             # dh2f1_c8[...,-1] = H2F1(1-jj[...,-1], 1.5+kk[...,-1], 1.5-jj[...,-1]-ll[...,-1], -m)
             hprd_c8 = h0f1_c8 * h2f1_c8
-            
+
             _Da_b = jj/b * a_c8_st * hprd_c8
             _Da_k = (2/k*(kk+ll) * h0f1_c8 + k*n1**2*dh0f1_c8) * a_c8_st * h2f1_c8
             _Da_m = jj*(kk+0.5)/(0.5-jj-ll)*H2F1(1-jj, 1.5+kk, 1.5-jj-ll, -m) * a_c8_st * h0f1_c8
@@ -737,7 +737,7 @@ class FB8Distribution(object):
             _Da_n2 = 2*ll/n2 * a_c8_st * hprd_c8
             _Da_n3 = 2*kk/n3 * a_c8_st * hprd_c8
             _Da_nu = np.asarray([_Da_n1, _Da_n2, _Da_n3])
-            
+
             return _Da_k, _Da_b, _Da_m, np.tensordot(self.Dnu_alpha, _Da_nu, 1), np.tensordot(self.Dnu_rho, _Da_nu, 1)
 
         if (k, b, m, n1, n2) not in cache:
@@ -749,7 +749,7 @@ class FB8Distribution(object):
             if n1 == 1.:
                 prev_abs_a = 0
                 while True:
-                    js = np.arange(j*100,(j+1)*100)
+                    js = np.arange(j*100, (j+1)*100)
                     grad_a = np.asarray(grad_a_c6(js, b, k, m))
                     sa = grad_a.sum(axis=1)*snorm
                     abs_sa = np.abs(grad_a).sum(axis=1)*snorm
@@ -757,7 +757,7 @@ class FB8Distribution(object):
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
                         logging.warning(
                             'Series grad(ln(c6)) is nan or infinity, using approx_fprime...'+self.__repr__())
-                        result[:3] = approx_fprime((k,b,m), lambda x: fb8(0,0,0,*x).log_normalize(),
+                        result[:3] = approx_fprime((k, b, m), lambda x: fb8(0, 0, 0, *x).log_normalize(),
                                                    1.49e-8)
                         j = -1
                         break
@@ -770,7 +770,7 @@ class FB8Distribution(object):
                 ll = 0
                 prev_abs_sa_ll = 0
                 _l, _k, _j = (14,)*3
-                _jjs, _kks, _lls = np.mgrid[0:_j,0:_k,0:_l]
+                _jjs, _kks, _lls = np.mgrid[0:_j, 0:_k, 0:_l]
                 while True:
                     lls = ll*_l+_lls
                     curr_abs_sa_ll = 0
@@ -784,12 +784,12 @@ class FB8Distribution(object):
                         while True:
                             jjs = jj*_j+_jjs
                             grad_a = np.asarray(grad_a_c8(jjs, kks, lls, b, k, m, n1, n2, n3))
-                            sa = grad_a.sum(axis=(1,2,3))*snorm
-                            abs_sa = np.abs(grad_a).sum(axis=(1,2,3))*snorm
+                            sa = grad_a.sum(axis=(1, 2, 3))*snorm
+                            abs_sa = np.abs(grad_a).sum(axis=(1, 2, 3))*snorm
                             if np.any(np.isnan(sa)):
                                 logging.warning(
                                     'Series grad(ln(c_8)) is nan, using approx_fprime...'+self.__repr__())
-                                result = approx_fprime((k,b,m,alpha,rho), lambda x: fb8(0,0,0,*x).log_normalize(),
+                                result = approx_fprime((k, b, m, alpha, rho), lambda x: fb8(0, 0, 0, *x).log_normalize(),
                                                        1.49e-8)
                                 j = -1
                                 break
@@ -843,9 +843,9 @@ class FB8Distribution(object):
 
             curr_max = -np.inf
             x_max = None
-            for sgn_0 in [-1,1]:
-                for sgn_1 in [-1,1]:
-                    x1 = np.linspace(-1,1,ntests)
+            for sgn_0 in [-1, 1]:
+                for sgn_1 in [-1, 1]:
+                    x1 = np.linspace(-1, 1, ntests)
                     x2 = sgn_0*np.sqrt(-radicalz(x1))/(2*m*x1*b+k*n1)
                     x3 = sgn_1*np.sqrt(1-x1**2-x2**2)
 
@@ -864,7 +864,7 @@ class FB8Distribution(object):
             if not _x.success:
                 warning_message = _x.message
                 warnings.warn(warning_message, RuntimeWarning)
-            x1,x2,x3= self.spherical_coordinates_to_nu(*_x.x)
+            x1, x2, x3= self.spherical_coordinates_to_nu(*_x.x)
 
         x = np.dot(self.Gamma, np.asarray((x1, x2, x3)))
         return FB8Distribution.gamma1_to_spherical_coordinates(x)
@@ -877,7 +877,7 @@ class FB8Distribution(object):
         Returns the maximum value of the log(pdf)
         """
         return self.log_pdf(FB8Distribution.spherical_coordinates_to_nu(
-            *self.max()),normalize)
+            *self.max()), normalize)
 
     def pdf(self, xs, normalize=True):
         """
@@ -1000,7 +1000,7 @@ class FB8Distribution(object):
         num_samples = 1 if n_samples is None else n_samples
         if seed is not False:
             self._rng = np.random.default_rng(seed)
-            self._cached_rvs = np.empty((0,3))
+            self._cached_rvs = np.empty((0, 3))
         rvs = self._cached_rvs
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
@@ -1109,7 +1109,7 @@ def kent_me(xs):
     K[1:, 1:] = eigvects
 
     G = MMul(H, K)
-    Gt = np.swapaxes(G,-2,-1)
+    Gt = np.swapaxes(G, -2, -1)
     T = MMul(Gt, MMul(S, G))
 
     r1 = norm(xbar)
@@ -1236,7 +1236,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         #          "fun": lambda x: 1 - np.abs(x[5])})
         #         # {"type": "ineq",
         #         #  "fun": lambda x: -x[3] + 2 * x[4]})
-        lb = [0.,-np.pi,-np.pi,0,0,-1,0.01,-np.pi]
+        lb = [0., -np.pi, -np.pi, 0, 0, -1, 0.01, -np.pi]
         ub = [np.pi, np.pi, np.pi, None, None, 1, np.pi, np.pi]
         _y = minimize(minus_log_likelihood,
                       y_start,
@@ -1250,9 +1250,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         z_starts = [np.array([np.abs(theta-np.pi/2), phi, psi, beta, kappa, -0.9, np.pi/4, 0.]),]
         if _y.success and _y.fun < all_values.fun:
             all_values = _y
-            z_starts.append(np.concatenate((_y.x, [0.2,0.])))
+            z_starts.append(np.concatenate((_y.x, [0.2, 0.])))
         else:
-            z_starts.append(np.concatenate((all_values.x, [0.9,0.2,0.])))
+            z_starts.append(np.concatenate((all_values.x, [0.9, 0.2, 0.])))
 
         for z_start in z_starts:
             if verbose:
@@ -1272,7 +1272,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
                           method="L-BFGS-B",
                           bounds=list(zip(lb, ub)),
                           callback=callback,
-                          options={'ftol':1e-8, 'gtol':1e-4})
+                          options={'ftol': 1e-8, 'gtol': 1e-4})
             if _z.success and _z.fun < all_values.fun:
                 all_values = _z
     if not all_values.success:

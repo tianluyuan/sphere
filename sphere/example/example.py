@@ -19,7 +19,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                                eta=1., alpha=0., rho=0.):
     scale = (1000.0 / gridsize)
     print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" %
-          (scale,scale))
+          (scale, scale))
     print("with eta=%.1f, alpha=%.1f, rho=%.1f" % (eta, alpha, rho))
     with warnings.catch_warnings():
         warnings.simplefilter("error")

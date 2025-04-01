@@ -21,14 +21,14 @@ class spa(object):
 
 
     def K1(self, t):
-        return self.Kj(t,1)
+        return self.Kj(t, 1)
 
-    
+
     def Kj(self, t, j):
         return np.sum(np.math.factorial(j-1)/2. *1/(self._ls - t)**j+
                       np.math.factorial(j)/4. *self._gs**2/(self._ls-t)**(j+1))
 
-    
+
     def Kj_hat(self, j):
         return self.Kj(self._t_hat, j)
 
@@ -57,6 +57,6 @@ class spa(object):
     def log_c2(self):
         return self.log_c1()+np.log(1+self.T())
 
-    
+
     def log_c3(self):
         return self.log_c1()+self.T()
