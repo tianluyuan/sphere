@@ -836,8 +836,10 @@ class FB8Distribution(object):
             # FB8
             # Line search along solution set with BFGS run over x_max
             ntests = 1001
-            radicalz = lambda z: 4*m**2*z**2*(z**2-1)*b**2+\
-              4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
+
+            def radicalz(z):
+                return 4*m**2*z**2*(z**2-1)*b**2+\
+                  4*m*z*(z**2-1)*b*k*n1+k**2*((z**2-1)*n1**2+z**2*n3**2)
 
             curr_max = -np.inf
             x_max = None
@@ -855,10 +857,10 @@ class FB8Distribution(object):
                         x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
-            f = lambda x: -k*(
-                n1*np.cos(x[0])+n2*np.sin(x[0])*np.cos(x[1])+n3*np.sin(x[0])*np.sin(x[1])) -\
-                b*np.sin(x[0])**2*(np.cos(x[1])**2-m*np.sin(x[1])**2)
-            _x = minimize(f, self.gamma1_to_spherical_coordinates(x_max))
+            _x = minimize(-k*(n1*np.cos(x[0])+n2*np.sin(x[0])*np.cos(x[1])+
+                              n3*np.sin(x[0])*np.sin(x[1]))-
+                          b*np.sin(x[0])**2*(np.cos(x[1])**2-m*np.sin(x[1])**2),
+                          self.gamma1_to_spherical_coordinates(x_max))
             if not _x.success:
                 warning_message = _x.message
                 warnings.warn(warning_message, RuntimeWarning)
