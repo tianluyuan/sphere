@@ -47,15 +47,15 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                     r"$\mathrm{Calculated\ values\ of\ }c(\kappa,\beta)$",
                     r"$\mathrm{Iterations\ necessary\ to\ calculate\ }c(\kappa,\beta)$",
                 ],
-                [c_grid,   cnum_grid]
+                [c_grid, cnum_grid]
             ):
                 f = figure()
                 ax = f.add_subplot(111)
                 cb = ax.imshow(grid, interpolation="nearest")
                 f.colorbar(cb)
-                ax.set_title(name + " $(-1=\mathrm{overflow}$)")
-                ax.xaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
-                ax.yaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
+                ax.set_title(name + r" $(-1=\mathrm{overflow}$)")
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv * scale + 1))))
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv * scale + 1))))
                 ax.set_ylabel(r"$\kappa$")
                 ax.set_xlabel(r"$\beta$")
     print()
@@ -91,12 +91,12 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
                      fb8(0.00, 0.77, -0.67, 51.11, 25.56, 1.00, 0.00, 0.00)]
 
     for idx, k in enumerate([
-        fb8(0.0,       0.0,     0.0,    1.0,  0.0),
-        fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
-        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10,  20.0, 2.0),
-        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16,  20.0, 5.0),
-        fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32,  50.0, 25.0),
-        fb8(0.0, 0.0, np.pi / 32,  50.0, 25.0),
+        fb8(0.0, 0.0, 0.0, 1.0, 0.0),
+        fb8(-0.75, -0.75, -0.75, 20.0, 0.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10, 20.0, 2.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16, 20.0, 5.0),
+        fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32, 50.0, 25.0),
+        fb8(0.0, 0.0, np.pi / 32, 50.0, 25.0),
     ]):
         gridsize = 200
         u = np.linspace(0, 2 * np.pi, gridsize)
@@ -144,13 +144,13 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
             ax.plot_surface(x, y, z, rstride=4, cstride=4,
                             facecolors=colors, linewidth=0)
             values_t = r"$\theta=%.2f^\circ,\ \phi=%.2f^\circ,\ \psi=%.2f^\circ,\ \kappa=%.3f,\ \beta=%.3f$"
-            f.text(0.12, 0.99 - 0.025, "$\mathrm{Original\ Values:}$")
-            f.text(0.12, 0.99 - 0.055, "$\mathrm{Moment\ estimates:}$")
-            f.text(0.12, 0.99 - 0.080, "$\mathrm{MLE\ (shown):}$")
+            f.text(0.12, 0.99 - 0.025, r"$\mathrm{Original\ Values:}$")
+            f.text(0.12, 0.99 - 0.055, r"$\mathrm{Moment\ estimates:}$")
+            f.text(0.12, 0.99 - 0.080, r"$\mathrm{MLE\ (shown):}$")
             f.text(0.30, 0.99 - 0.025, values_t % (k.theta * 180 / np.pi,
-                                                   k.phi * 180 / np.pi,     k.psi * 180 / np.pi,     k.kappa,     k.beta))
+                                                   k.phi * 180 / np.pi, k.psi * 180 / np.pi, k.kappa, k.beta))
             f.text(0.30, 0.99 - 0.055, values_t % (k_me.theta * 180 / np.pi,
-                                                   k_me.phi * 180 / np.pi,  k_me.psi * 180 / np.pi,  k_me.kappa,  k_me.beta))
+                                                   k_me.phi * 180 / np.pi, k_me.psi * 180 / np.pi, k_me.kappa, k_me.beta))
             f.text(0.30, 0.99 - 0.080, values_t % (k_mle.theta * 180 / np.pi,
                                                    k_mle.phi * 180 / np.pi, k_mle.psi * 180 / np.pi, k_mle.kappa, k_mle.beta))
             ax.set_xlabel(r"$Q\rightarrow$")
