@@ -256,12 +256,9 @@ class FB8Distribution(object):
     def a_c6_star(j, b, k, m):
         assert b > 0
         v = j + 0.5
-        return (
-                np.exp(
-                    np.log(b) * j +
-                    + LG(j + 0.5) - LG(j + 1) - LG(v + 1)
-                    )
-                )# * H0F1(v+1, k**2/4) * H2F1(-j, 0.5, 0.5-j, -m)
+        return np.exp(
+            np.log(b) * j +
+            + LG(j + 0.5) - LG(j + 1) - LG(v + 1))
 
     @staticmethod
     def a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3):
@@ -280,14 +277,11 @@ class FB8Distribution(object):
             ln_n3[kk == 0] = 0
         if b == 0.:
             ln_b[jj == 0] = 0
-        return (
-            np.exp(
-                ln_n2 + ln_n3 + ln_b +
-                np.log(k) * 2 * (ll + kk) -
-                LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
-                LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1) -
-                0.5 * np.log(np.pi))
-            )
+        return np.exp(ln_n2 + ln_n3 + ln_b +
+                      np.log(k) * 2 * (ll + kk) -
+                      LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
+                      LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1) -
+                      0.5 * np.log(np.pi))
 
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         assert not kappa < 0.
@@ -838,8 +832,9 @@ class FB8Distribution(object):
             ntests = 1001
 
             def radicalz(z):
-                return 4 * m**2 * z**2 * (z**2 - 1) * b**2 +\
-                  4 * m * z * (z**2 - 1) * b * k * n1 + k**2 * ((z**2 - 1) * n1**2 + z**2 * n3**2)
+                return (4 * m**2 * z**2 * (z**2 - 1) * b**2 +
+                        4 * m * z * (z**2 - 1) * b * k * n1 +
+                        k**2 * ((z**2 - 1) * n1**2 + z**2 * n3**2))
 
             curr_max = -np.inf
             x_max = None
@@ -858,7 +853,7 @@ class FB8Distribution(object):
                         curr_max = lpdfs_max
 
             _x = minimize(-k * (n1 * np.cos(x[0]) + n2 * np.sin(x[0]) * np.cos(x[1]) +
-                              n3 * np.sin(x[0]) * np.sin(x[1])) -
+                                n3 * np.sin(x[0]) * np.sin(x[1])) -
                           b * np.sin(x[0])**2 * (np.cos(x[1])**2 - m * np.sin(x[1])**2),
                           self.gamma1_to_spherical_coordinates(x_max))
             if not _x.success:

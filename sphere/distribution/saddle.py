@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import brentq
 
+
 class spa(object):
     def __init__(self, fb8):
         k = fb8.kappa
@@ -43,8 +44,8 @@ class spa(object):
     def log_c1(self):
         p = self.p
         return (np.log(np.sqrt(2) * np.pi**((p - 1) / 2.)) - 1 / 2. * np.log(self.Kj_hat(2)) -
-                    1 / 2. * np.sum(np.log(self._ls - self._t_hat)) - self._t_hat +
-                    1 / 4. * np.sum(self._gs**2 / (self._ls**2 - self._t_hat)))
+                1 / 2. * np.sum(np.log(self._ls - self._t_hat)) - self._t_hat +
+                1 / 4. * np.sum(self._gs**2 / (self._ls**2 - self._t_hat)))
 
     def log_c2(self):
         return self.log_c1() + np.log(1 + self.T())
