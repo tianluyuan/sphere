@@ -1,3 +1,7 @@
+1 Apr 2025 v1.2.7
+-----------------
+Code cleanups, removing unused imports and switching out pylab import. Specify bare-minimum version requirements for dependencies. Drop Python 3.8.
+
 11 Nov 2024 v1.2.6
 -----------------
 Switch build to use `pyproject.toml`, include only package directory. Updates to tests for numpy 2.0. Some housekeeping (since v1.2.2).
