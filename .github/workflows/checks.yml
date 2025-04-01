@@ -31,16 +31,15 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - uses: astral-sh/ruff-action@v3
-      # with:
-      #   src: "./sphere"
+      with:
+        src: "./sphere"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
     - name: Test with doctest
-      run: |
-        python sphere/distribution/distribution.py -v
+      run: python sphere/distribution/distribution.py -v
 
   results:
     if: ${{ always() }}
