@@ -267,7 +267,6 @@ class FB8Distribution(object):
     def a_c8_star(jj, kk, ll, b, k, m, n1, n2, n3):
         assert k > 0
         v = jj + ll + kk + 0.5
-        z = k*n1
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             ln_n2 = np.log(n2**2) * ll
@@ -287,9 +286,9 @@ class FB8Distribution(object):
                 np.log(k) * 2 * (ll+kk) -
                 LG(2 * ll + 1) - LG(2 * kk + 1) - LG(jj + 1) +
                 LG(jj + ll + 0.5) + LG(kk + 0.5) - LG(v + 1) -
-                0.5 * np.log(np.pi))# * H0F1(v+1, z**2/4) * H2F1(-jj, kk+0.5, 0.5-jj-ll, -m)
+                0.5 * np.log(np.pi))
             )
-    
+
     def __init__(self, gamma1, gamma2, gamma3, kappa, beta, eta=1., nu=None):
         assert not kappa < 0.
         assert not beta < 0.
@@ -567,17 +566,17 @@ class FB8Distribution(object):
                         if 0<amj-step:
                             push_coord(-abs_a[:2,:,:].sum(), (amj-2*step, amk, aml))
                         amj, amk, aml = heapq.heappop(hq)[1]
-                        
+
                     if not result > 0:
                         logging.warning('Series result not positive')
                         raise RuntimeWarning
-                        
-                except (RuntimeWarning, OverflowError) as e:
+
+                except (RuntimeWarning, OverflowError):
                     logging.warning('Series calculation of normalization failed. Attempting numerical integration... '+self.__repr__())
                     try:
                         # numerical integration
                         result = self._nnormalize()/(2*np.pi)
-                    except RuntimeWarning as e:
+                    except RuntimeWarning:
                         result = np.inf
                     j = -1
 
