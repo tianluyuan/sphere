@@ -41,7 +41,8 @@ jobs:
     needs:
       - release-build
     environment:
-      name: testpypi
+      name: publish
+      # url: https://pypi.org/p/fb8
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
