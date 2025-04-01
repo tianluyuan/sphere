@@ -10,7 +10,7 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'paper/**'
-      - '.github/**/publish.yml'
+      - '.github/workflows/publish.yml'
       - '.github/dependabot.yml'
       - 'LICENSE'
   pull_request:
@@ -19,7 +19,7 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'paper/**'
-      - '.github/**/publish.yml'
+      - '.github/workflows/publish.yml'
       - '.github/dependabot.yml'
       - 'LICENSE'
   schedule:
