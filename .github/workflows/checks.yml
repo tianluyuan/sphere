@@ -21,8 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-
+  checks:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.x"]
@@ -52,7 +51,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     name: Final Results
-    needs: [build]
+    needs: [checks]
     steps:
       - run: exit 1
         # see https://stackoverflow.com/a/67532120/4907315
