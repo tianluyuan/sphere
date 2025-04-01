@@ -724,9 +724,6 @@ class FB8Distribution(object):
             _Da_b = jj / b * a_c8_st * hprd_c8
             _Da_k = (2 / k * (kk + ll) * h0f1_c8 + k * n1**2 * dh0f1_c8) * a_c8_st * h2f1_c8
             _Da_m = jj * (kk + 0.5) / (0.5 - jj - ll) * H2F1(1 - jj, 1.5 + kk, 1.5 - jj - ll, -m) * a_c8_st * h0f1_c8
-            # if np.any(np.isnan(_Da_m)):
-            #     import pdb
-            #     pdb.set_trace()
             _Da_n1 = k**2 * n1 * dh0f1_c8 * a_c8_st * h2f1_c8
             _Da_n2 = 2 * ll / n2 * a_c8_st * hprd_c8
             _Da_n3 = 2 * kk / n3 * a_c8_st * hprd_c8
@@ -803,7 +800,6 @@ class FB8Distribution(object):
                     ll += 1
                     if (j == -1) or (np.all(curr_abs_sa_ll <= np.abs(result) * 1E-3) and
                                      np.all(curr_abs_sa_ll <= prev_abs_sa_ll)):
-                        # print(jj, kk, ll, j)
                         break
                     prev_abs_sa_ll = curr_abs_sa_ll
 
@@ -847,7 +843,6 @@ class FB8Distribution(object):
                     x = np.asarray((x1, x2, x3))
                     lpdfs = self.log_pdf(np.dot(self.Gamma, x).T, normalize=False)
                     lpdfs_max = np.nanmax(lpdfs)
-                    # print lpdfs_max
                     if lpdfs_max > curr_max:
                         x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
@@ -931,7 +926,6 @@ class FB8Distribution(object):
         Df_alpha = k * self.Dnu_alpha.dot(gx)
         Df_rho = k * self.Dnu_rho.dot(gx)
         _ = self._grad_log_normalize()
-        # print(Df_b, _[1])
         return Df_theta, Df_phi, Df_psi, Df_k - _[0], Df_b - _[1], Df_m - _[2], Df_alpha - _[3], Df_rho - _[4]
 
     def log_likelihood(self, xs):
