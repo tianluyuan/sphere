@@ -37,13 +37,13 @@ jobs:
         path: dist/
 
   pypi-publish:
-    name: publish to PyPI and TestPyPI
+    name: publish to PyPI or TestPyPI
     runs-on: ubuntu-latest
     needs:
       - release-build
     environment:
       name: publish
-      ## url: https://pypi.org/p/fb8
+      url: https://pypi.org/p/fb8
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
@@ -56,5 +56,5 @@ jobs:
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@v1.12.4
       with:
-        repository-url: https://test.pypi.org/legacy/
+        # repository-url: https://test.pypi.org/legacy/
         verbose: true
