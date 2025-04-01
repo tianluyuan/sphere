@@ -45,7 +45,7 @@ jobs:
     - name: Test with doctest
       run: python sphere/distribution/distribution.py -v
     - name: Run example without plots
-      run: python sphere/example/example.py --no-plot
+      run: python sphere/example/example.py --no-plots
 
   results:
     if: ${{ always() }}
