@@ -664,7 +664,7 @@ class FB8Distribution(object):
             warnings.simplefilter('error')
             try:
                 return np.log(self._normalize())+np.log(2*np.pi)
-            except (OverflowError, RuntimeWarning) as e:
+            except (OverflowError, RuntimeWarning):
                 logging.warning('Series calculation of normalization failed. Approximating normalization... '+self.__repr__())
                 return self._approx_log_normalize()
 
@@ -982,7 +982,7 @@ class FB8Distribution(object):
         May become inefficient for large kappas.
 
         The returned random samples are 3D unit vectors.
-        If n_samples == None then a single sample x is returned with shape (3,)
+        If n_samples is None then a single sample x is returned with shape (3,)
         If n_samples is an integer value N then N samples are returned in an array with shape (N, 3)
 
         If seed is None, int, array_like[ints], SeedSequence, BitGenerator, or Generator, the cache
@@ -1003,7 +1003,7 @@ class FB8Distribution(object):
         while len(rvs) < num_samples:
             new_rvs = self._rvs_helper()
             rvs = np.concatenate([rvs, new_rvs])
-        if n_samples == None:
+        if n_samples is None:
             self._cached_rvs = rvs[1:]
             return rvs[0]
         else:

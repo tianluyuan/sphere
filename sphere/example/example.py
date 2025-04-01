@@ -40,7 +40,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                 except (OverflowError, RuntimeWarning):
                     pass
         if showplots:
-            from pylab import figure, show
+            from pylab import figure
             from matplotlib.ticker import FuncFormatter
             for name, grid in zip(
                 [
@@ -134,7 +134,6 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
             colors[i, j] = (1.0 - v, 1.0 - v, 1.0, 1.0)
 
         if showplots:
-            from mpl_toolkits.mplot3d import Axes3D
             import matplotlib.pyplot as plt
 
             f = plt.figure()
@@ -206,7 +205,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         if verbose:
             print()
         if showplots:
-            from pylab import figure, show
+            from pylab import figure
             f = figure(figsize=(12.0, 5))
             ax = f.add_subplot(121)
             ax.plot(real_kappas, kappas_me,
