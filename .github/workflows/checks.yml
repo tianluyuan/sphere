@@ -10,11 +10,18 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'paper/**'
-      - '**/publish.yml'
-      - '**/dependabot.yml'
+      - '.github/**/publish.yml'
+      - '.github/dependabot.yml'
       - 'LICENSE'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb'
+      - 'paper/**'
+      - '.github/**/publish.yml'
+      - '.github/dependabot.yml'
+      - 'LICENSE'
   schedule:
     - cron:  '13 7 * * 2'
 
