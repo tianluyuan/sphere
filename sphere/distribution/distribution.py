@@ -1028,7 +1028,7 @@ class FB8Distribution(object):
             idx, frac = int(loc), loc - int(loc)
             return log_pdf[idx] + frac * (log_pdf[idx + 1] - log_pdf[idx])
         else:
-            print('{} percentile out of bounds'.format(percentile))
+            print(f'{percentile} percentile out of bounds')
             return np.nan
 
     def contour(self, percentile=50):
