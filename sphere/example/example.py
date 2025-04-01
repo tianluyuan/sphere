@@ -19,8 +19,8 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                                eta=1., alpha=0., rho=0.):
     scale = (1000.0 / gridsize)
     print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" %
-          (scale,scale))
-    print("with eta=%.1f, alpha=%.1f, rho=%.1f" % (eta, alpha, rho))
+          (scale, scale))
+    print(f"with eta={eta:.1f}, alpha={alpha:.1f}, rho={rho:.1f}")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         c_grid = np.zeros((gridsize, gridsize)) - 1.0
@@ -28,7 +28,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
         print("Calculating normalization factor for combinations of kappa and beta:", end='')
         for i in range(gridsize):
             if verbose:
-                print("%s/%s " % (i * gridsize, gridsize * gridsize), end=' ', flush=True)
+                print(f"{i * gridsize}/{gridsize * gridsize} ", end=' ', flush=True)
             kappa = scale * i + 1.0
             for j in range(gridsize):
                 beta = scale * j + 1.0
@@ -40,22 +40,22 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                 except (OverflowError, RuntimeWarning):
                     pass
         if showplots:
-            from pylab import figure, show
+            from pylab import figure
             from matplotlib.ticker import FuncFormatter
             for name, grid in zip(
                 [
                     r"$\mathrm{Calculated\ values\ of\ }c(\kappa,\beta)$",
                     r"$\mathrm{Iterations\ necessary\ to\ calculate\ }c(\kappa,\beta)$",
                 ],
-                [c_grid,   cnum_grid]
+                [c_grid, cnum_grid]
             ):
                 f = figure()
                 ax = f.add_subplot(111)
                 cb = ax.imshow(grid, interpolation="nearest")
                 f.colorbar(cb)
-                ax.set_title(name + " $(-1=\mathrm{overflow}$)")
-                ax.xaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
-                ax.yaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv*scale+1))))
+                ax.set_title(name + r" $(-1=\mathrm{overflow}$)")
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv * scale + 1))))
+                ax.yaxis.set_major_formatter(FuncFormatter(lambda tv, tp: str(int(tv * scale + 1))))
                 ax.set_ylabel(r"$\kappa$")
                 ax.set_xlabel(r"$\beta$")
     print()
@@ -91,12 +91,12 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
                      fb8(0.00, 0.77, -0.67, 51.11, 25.56, 1.00, 0.00, 0.00)]
 
     for idx, k in enumerate([
-        fb8(0.0,       0.0,     0.0,    1.0,  0.0),
-        fb8(-0.75,    -0.75,   -0.75,   20.0, 0.0),
-        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10,  20.0, 2.0),
-        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16,  20.0, 5.0),
-        fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32,  50.0, 25.0),
-        fb8(0.0, 0.0, np.pi / 32,  50.0, 25.0),
+        fb8(0.0, 0.0, 0.0, 1.0, 0.0),
+        fb8(-0.75, -0.75, -0.75, 20.0, 0.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10, 20.0, 2.0),
+        fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16, 20.0, 5.0),
+        fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32, 50.0, 25.0),
+        fb8(0.0, 0.0, np.pi / 32, 50.0, 25.0),
     ]):
         gridsize = 200
         u = np.linspace(0, 2 * np.pi, gridsize)
@@ -134,7 +134,6 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
             colors[i, j] = (1.0 - v, 1.0 - v, 1.0, 1.0)
 
         if showplots:
-            from mpl_toolkits.mplot3d import Axes3D
             import matplotlib.pyplot as plt
 
             f = plt.figure()
@@ -145,13 +144,13 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
             ax.plot_surface(x, y, z, rstride=4, cstride=4,
                             facecolors=colors, linewidth=0)
             values_t = r"$\theta=%.2f^\circ,\ \phi=%.2f^\circ,\ \psi=%.2f^\circ,\ \kappa=%.3f,\ \beta=%.3f$"
-            f.text(0.12, 0.99 - 0.025, "$\mathrm{Original\ Values:}$")
-            f.text(0.12, 0.99 - 0.055, "$\mathrm{Moment\ estimates:}$")
-            f.text(0.12, 0.99 - 0.080, "$\mathrm{MLE\ (shown):}$")
+            f.text(0.12, 0.99 - 0.025, r"$\mathrm{Original\ Values:}$")
+            f.text(0.12, 0.99 - 0.055, r"$\mathrm{Moment\ estimates:}$")
+            f.text(0.12, 0.99 - 0.080, r"$\mathrm{MLE\ (shown):}$")
             f.text(0.30, 0.99 - 0.025, values_t % (k.theta * 180 / np.pi,
-                                                   k.phi * 180 / np.pi,     k.psi * 180 / np.pi,     k.kappa,     k.beta))
+                                                   k.phi * 180 / np.pi, k.psi * 180 / np.pi, k.kappa, k.beta))
             f.text(0.30, 0.99 - 0.055, values_t % (k_me.theta * 180 / np.pi,
-                                                   k_me.phi * 180 / np.pi,  k_me.psi * 180 / np.pi,  k_me.kappa,  k_me.beta))
+                                                   k_me.phi * 180 / np.pi, k_me.psi * 180 / np.pi, k_me.kappa, k_me.beta))
             f.text(0.30, 0.99 - 0.080, values_t % (k_mle.theta * 180 / np.pi,
                                                    k_mle.phi * 180 / np.pi, k_mle.psi * 180 / np.pi, k_mle.kappa, k_mle.beta))
             ax.set_xlabel(r"$Q\rightarrow$")
@@ -180,10 +179,10 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         kappas_me, kappas_mle, betas_me, betas_mle = [
             list() for i in range(4)]
         if verbose:
-            print("beta (max 2.0) = %s*kappa : kappa (max %.1f) = " % (beta_ratio, max_kappa), end=' ')
+            print(f"beta (max 2.0) = {beta_ratio}*kappa : kappa (max {max_kappa:.1f}) = ", end=' ')
         for kappa in real_kappas:
             if verbose:
-                print("%.1f" % kappa, end=' ', flush=True)
+                print(f"{kappa:.1f}", end=' ', flush=True)
             beta = kappa * beta_ratio
             k = sphere.distribution.fb8(rng.uniform(0, np.pi), rng.uniform(0, 2 * np.pi),
                                         rng.uniform(0, 2 * np.pi), kappa, beta)
@@ -206,7 +205,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         if verbose:
             print()
         if showplots:
-            from pylab import figure, show
+            from pylab import figure
             f = figure(figsize=(12.0, 5))
             ax = f.add_subplot(121)
             ax.plot(real_kappas, kappas_me,
@@ -244,7 +243,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
                 (mse_me, mse_mle),
             ]:
                 for x, y, br in zip(me, mle, beta_ratios):
-                    ax.text(x, y, "%.2f" % br)
+                    ax.text(x, y, f"{br:.2f}")
             ax.set_xlabel("Moment Estimate")
             ax.set_ylabel("MLE")
             xl = ax.get_xlim()
@@ -264,15 +263,15 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         biass_mle, vars_mle, mses_mle = list(zip(*bias_var_mse_mle))
         for mse_me, mse_mle, beta_ratio in zip(mses_me, mses_mle, beta_ratios):
             if mse_me < mse_mle * 0.65:
-                print("MSE of moment estimate is lower than 0.65 times the MLE for %s" % name)
+                print(f"MSE of moment estimate is lower than 0.65 times the MLE for {name}")
                 return False
             if beta_ratio >= 0.3:
                 if mse_me < mse_mle:
-                    print("MSE of moment estimate is lower than MLE for %s with beta/kappa >= 0.3" % name)
+                    print(f"MSE of moment estimate is lower than MLE for {name} with beta/kappa >= 0.3")
                     return False
             if beta_ratio > 0.5:
                 if mse_me < 5 * mse_mle:
-                    print("MSE of moment estimate is lower than five times the MLE %s with beta/kappa > 0.5" % name)
+                    print(f"MSE of moment estimate is lower than five times the MLE {name} with beta/kappa > 0.5")
                     return False
 
     print("MSE of ME is higher than 0.65 times the MLE for beta/kappa < 0.3")
@@ -296,4 +295,4 @@ if __name__ == "__main__":
     if showplots:
         from pylab import show
         show()
-    exit()
+    sys.exit()

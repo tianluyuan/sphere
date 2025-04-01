@@ -33,7 +33,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-plotting = ["matplotlib", "healpy"]
+plotting = ["matplotlib>=3.2", "healpy"]
 
 [project.urls]
 Repository = "https://github.com/tianluyuan/sphere.git"
