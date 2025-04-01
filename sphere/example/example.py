@@ -40,7 +40,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
                 except (OverflowError, RuntimeWarning):
                     pass
         if showplots:
-            from pylab import figure
+            from matplotlib.pyplot import figure
             from matplotlib.ticker import FuncFormatter
             for name, grid in zip(
                 [
@@ -205,7 +205,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
         if verbose:
             print()
         if showplots:
-            from pylab import figure
+            from matplotlib.pyplot import figure
             f = figure(figsize=(12.0, 5))
             ax = f.add_subplot(121)
             ax.plot(real_kappas, kappas_me,
@@ -293,6 +293,6 @@ if __name__ == "__main__":
         test_example_mle2(300, showplots=showplots, verbose=True)
         test_example_mle2(10000, showplots=showplots, verbose=True)
     if showplots:
-        from pylab import show
+        from matplotlib.pyplot import show
         show()
     sys.exit()
