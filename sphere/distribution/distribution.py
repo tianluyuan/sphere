@@ -25,7 +25,6 @@ from scipy.special import hyp1f1 as H1F1
 from scipy.special import hyp0f1 as H0F1
 from scipy.integrate import dblquad
 from scipy.linalg import eig
-import numpy
 
 
 # helper function
