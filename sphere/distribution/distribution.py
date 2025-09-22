@@ -25,6 +25,7 @@ from scipy.special import hyp1f1 as H1F1
 from scipy.special import hyp0f1 as H0F1
 from scipy.integrate import dblquad
 from scipy.linalg import eig
+import numpy
 
 
 # helper function
@@ -847,8 +848,9 @@ class FB8Distribution(object):
                         x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
-            _x = minimize(-k * (n1 * np.cos(x[0]) + n2 * np.sin(x[0]) * np.cos(x[1]) +
-                                n3 * np.sin(x[0]) * np.sin(x[1])) -
+            _x = minimize(lambda x: -k * (
+                n1 * np.cos(x[0]) + n2 * np.sin(x[0]) * np.cos(x[1]) +
+                n3 * np.sin(x[0]) * np.sin(x[1])) -
                           b * np.sin(x[0])**2 * (np.cos(x[1])**2 - m * np.sin(x[1])**2),
                           self.gamma1_to_spherical_coordinates(x_max))
             if not _x.success:
