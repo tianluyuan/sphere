@@ -1331,6 +1331,8 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.0),
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.1),
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  8.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.1, 1.0, 0.25*np.pi,        0.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  8.0, 0.7, 0.25*np.pi, 0.25*np.pi),
 ... ]
 >>> pdf_values = [
 ...   3.18309886184,
@@ -1339,7 +1341,9 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   0.59668931662,
 ...   0.08780030026,
 ...   0.08768344462,
-...   0.00063128997
+...   0.00063128997,
+...   0.08514958622,
+...   0.00056261014,
 ... ]
 >>> for k in ks:
 ...   assert(np.abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
