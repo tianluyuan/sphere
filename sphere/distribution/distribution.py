@@ -847,8 +847,9 @@ class FB8Distribution(object):
                         x_max = x.T[np.nanargmax(lpdfs)]
                         curr_max = lpdfs_max
 
-            _x = minimize(-k * (n1 * np.cos(x[0]) + n2 * np.sin(x[0]) * np.cos(x[1]) +
-                                n3 * np.sin(x[0]) * np.sin(x[1])) -
+            _x = minimize(lambda x: -k * (
+                n1 * np.cos(x[0]) + n2 * np.sin(x[0]) * np.cos(x[1]) +
+                n3 * np.sin(x[0]) * np.sin(x[1])) -
                           b * np.sin(x[0])**2 * (np.cos(x[1])**2 - m * np.sin(x[1])**2),
                           self.gamma1_to_spherical_coordinates(x_max))
             if not _x.success:
@@ -1330,6 +1331,8 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.0),
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.1),
 ...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  8.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  0.1, 1.0, 0.25*np.pi,        0.0),
+...   fb8(0.0,      0.0,      0.5*np.pi, 0.1,  1.0, 0.7, 0.25*np.pi, 0.25*np.pi),
 ... ]
 >>> pdf_values = [
 ...   3.18309886184,
@@ -1338,7 +1341,9 @@ A test to ensure that the vectors gamma1 ... gamma3 are orthonormal
 ...   0.59668931662,
 ...   0.08780030026,
 ...   0.08768344462,
-...   0.00063128997
+...   0.00063128997,
+...   0.08514958622,
+...   0.06990920060
 ... ]
 >>> for k in ks:
 ...   assert(np.abs(np.sum(k.gamma1 * k.gamma2)) < 1E-14)
