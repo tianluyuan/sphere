@@ -119,7 +119,8 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
         if seed == 3 and sys.platform == "linux":
             assert similar(k_me, expected_mes[idx])
-            print(k_mle)
+            if not similar(k_mle, expected_mles[idx]):
+                print(k_mle)
             assert similar(k_mle, expected_mles[idx])
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
         if verbose:
