@@ -57,10 +57,16 @@ jobs:
       run: python sphere/example/example.py --no-plots
 
   results:
-    if: ${{ always() }}
     runs-on: ubuntu-latest
     name: Final Results
     needs: [checks]
+    if: >-
+      ${{
+      always() &&
+      (contains(needs.*.result, 'success') ||
+      contains(needs.*.result, 'failure') ||
+      contains(needs.*.result, 'cancelled'))
+      }}
     steps:
       - run: exit 1
         # see https://stackoverflow.com/a/67532120/4907315

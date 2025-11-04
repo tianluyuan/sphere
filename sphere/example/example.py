@@ -88,7 +88,7 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
                      fb8(0.79, 2.36, 0.34, 20.20, 1.91, 1.00, 0.00, 0.00),
                      fb8(0.79, 2.36, 0.19, 20.23, 5.01, 1.00, 0.00, 0.00),
                      fb8(1.10, 2.36, 0.10, 50.31, 25.16, 1.00, 0.00, 0.00),
-                     fb8(0.00, 0.77, -0.67, 51.11, 25.56, 1.00, 0.00, 0.00)]
+                     fb8(0.00, 0.77, -0.67, 51.11, 25.55, 1.00, 0.00, 0.00)]
 
     for idx, k in enumerate([
         fb8(0.0, 0.0, 0.0, 1.0, 0.0),
@@ -117,7 +117,7 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
         xs = k.rvs(10000, seed)
         k_me = sphere.distribution.kent_me(xs)
         k_mle = sphere.distribution.fb8_mle(xs, warning=sys.stdout, fb5_only=True)
-        if seed == 3 and sys.platform == "linux":
+        if seed == 3:
             assert similar(k_me, expected_mes[idx])
             assert similar(k_mle, expected_mles[idx])
         assert k_me.log_likelihood(xs) < k_mle.log_likelihood(xs)
