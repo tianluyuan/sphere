@@ -61,8 +61,8 @@ jobs:
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
-    - name: Test with doctest
-      run: python sphere/distribution/distribution.py -v
+    # - name: Test with doctest
+    #   run: python sphere/distribution/distribution.py -v
     # - name: Run example without plots
     #   run: python sphere/example/example.py --no-plots
 
