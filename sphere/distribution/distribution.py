@@ -1298,4 +1298,4 @@ MSE of ME is five times higher than MLE for beta/kappa > 0.5
 """
 
     import doctest
-    sys.exit(doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False)[0])
+    sys.exit(doctest.testmod(optionflags=doctest.ELLIPSIS, raise_on_error=False, verbose=True)[0])
