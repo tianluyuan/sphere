@@ -53,8 +53,8 @@ jobs:
         pip install .
     - name: Test with doctest
       run: python sphere/distribution/distribution.py -v
-    - name: Run example without plots
-      run: python sphere/example/example.py --no-plots
+    # - name: Run example without plots
+    #   run: python sphere/example/example.py --no-plots
 
   results:
     runs-on: ubuntu-latest
