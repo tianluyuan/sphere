@@ -60,7 +60,7 @@ jobs:
       run: python sphere/example/example.py --no-plots
     - name: Setup Debug SSH
       if: failure()
-      uses: mxschmitt/action-tmate@v4
+      uses: mxschmitt/action-tmate@v3
       with:
         limit-access-to-actor: true
 
