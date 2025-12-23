@@ -7,7 +7,6 @@ Plots will be shown unless this script is called with the --no-plots
 option.
 """
 
-from __future__ import print_function
 import numpy as np
 import sphere.distribution
 from sphere.distribution import fb8
@@ -81,14 +80,14 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
                     fb8(0.79, 2.36, 0.34, 20.16, 1.63, 1.00, 0.00, 0.00),
                     fb8(0.79, 2.36, 0.19, 19.81, 4.03, 1.00, 0.00, 0.00),
                     fb8(1.10, 2.35, 0.10, 37.29, 14.81, 1.00, 0.00, 0.00),
-                    fb8(0.00, 0.30, -0.20, 37.84, 15.07, 1.00, 0.00, 0.00)]
+                    fb8(2.04, -1.73, 0.09, 37.14, 14.78, 1.00, 0.00, 0.00)]
 
     expected_mles = [fb8(0.01, -2.36, -2.12, 0.98, 0.04, 1.00, 0.00, 0.00),
                      fb8(0.75, 2.39, -1.91, 20.25, 0.20, 1.00, 0.00, 0.00),
                      fb8(0.79, 2.36, 0.34, 20.20, 1.91, 1.00, 0.00, 0.00),
                      fb8(0.79, 2.36, 0.19, 20.23, 5.01, 1.00, 0.00, 0.00),
                      fb8(1.10, 2.36, 0.10, 50.31, 25.16, 1.00, 0.00, 0.00),
-                     fb8(0.00, 0.77, -0.67, 51.11, 25.55, 1.00, 0.00, 0.00)]
+                     fb8(2.04, -1.73, 0.09, 50.14, 25.07, 1.00, 0.00, 0.00)]
 
     for idx, k in enumerate([
         fb8(0.0, 0.0, 0.0, 1.0, 0.0),
@@ -96,7 +95,7 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
         fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 10, 20.0, 2.0),
         fb8(-0.25 * np.pi, -0.25 * np.pi, np.pi / 16, 20.0, 5.0),
         fb8(-0.35 * np.pi, -0.25 * np.pi, np.pi / 32, 50.0, 25.0),
-        fb8(0.0, 0.0, np.pi / 32, 50.0, 25.0),
+        fb8(-1.35 * np.pi, -0.55 * np.pi, np.pi / 32, 50.0, 25.0), 
     ]):
         gridsize = 200
         u = np.linspace(0, 2 * np.pi, gridsize)
