@@ -36,7 +36,7 @@ jobs:
     - name: Display CPU information
       if: runner.os == 'Linux'
       run: lscpu
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
