@@ -7,11 +7,13 @@ Plots will be shown unless this script is called with the --no-plots
 option.
 """
 
+import sys
+import warnings
+
 import numpy as np
+
 import sphere.distribution
 from sphere.distribution import fb8
-import warnings
-import sys
 
 
 def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True,
@@ -69,8 +71,8 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
 
 def test_example_mle(showplots=False, verbose=False, seed=3):
     def similar(a, b):
-        for attr in 'theta phi psi kappa beta eta alpha rho'.split():
-            if abs((a.__getattribute__(attr) - b.__getattribute__(attr))) > 0.03:
+        for attr in ['theta', 'phi', 'psi', 'kappa', 'beta', 'eta', 'alpha', 'rho']:
+            if abs(a.__getattribute__(attr) - b.__getattribute__(attr)) > 0.03:
                 return False
         return True
 

@@ -11,19 +11,19 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
+import heapq
+import logging
 import sys
 import warnings
-import logging
-import heapq
 
 import numpy as np
-from scipy.optimize import minimize, approx_fprime
-from scipy.special import gammaln as LG
-from scipy.special import hyp2f1 as H2F1
-from scipy.special import hyp1f1 as H1F1
-from scipy.special import hyp0f1 as H0F1
 from scipy.integrate import dblquad
 from scipy.linalg import eig
+from scipy.optimize import approx_fprime, minimize
+from scipy.special import gammaln as LG
+from scipy.special import hyp0f1 as H0F1
+from scipy.special import hyp1f1 as H1F1
+from scipy.special import hyp2f1 as H2F1
 
 
 # helper function
@@ -118,7 +118,7 @@ def __generate_arbitrary_orthogonal_unit_vector(x):
     return v / norm(v)
 
 
-class FB8Distribution(object):
+class FB8Distribution:
     minimum_value_for_kappa = 1E-6
 
     @staticmethod
@@ -817,8 +817,7 @@ class FB8Distribution(object):
                 x1 = 1
             else:
                 x1 = self.kappa / (2 * self.beta)
-            if x1 > 1:
-                x1 = 1
+            x1 = min(x1, 1)
             x2 = np.sqrt(1 - x1**2)
             x3 = 0
         else:

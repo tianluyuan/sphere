@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 
-class spa(object):
+class spa:
     def __init__(self, fb8):
         k = fb8.kappa
         b = fb8.beta
