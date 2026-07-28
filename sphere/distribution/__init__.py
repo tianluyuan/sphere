@@ -9,6 +9,9 @@ from .distribution import (
 )
 from .saddle import spa
 
+del distribution  # noqa: F821
+del saddle  # noqa: F821
+
 __all__ = [
     "FB8Distribution",
     "fb8",
