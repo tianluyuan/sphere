@@ -19,8 +19,7 @@ from sphere.distribution import fb8
 def test_example_normalization(showplots=False, verbose=False, gridsize=100, print_grid=True,
                                eta=1., alpha=0., rho=0.):
     scale = (1000.0 / gridsize)
-    print("Calculating the matrix M_ij of values that can be calculated: kappa=%.1f*i+1, beta=%.1f*j+1" %
-          (scale, scale))
+    print(f"Calculating the matrix M_ij of values that can be calculated: kappa={scale:.1f}*i+1, beta={scale:.1f}*j+1")
     print(f"with eta={eta:.1f}, alpha={alpha:.1f}, rho={rho:.1f}")
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -107,8 +106,8 @@ def test_example_mle(showplots=False, verbose=False, seed=3):
         y = np.outer(np.sin(u), np.sin(v))
         z = np.outer(np.ones(np.size(u)), np.cos(v))
 
-        keys = list()
-        points = list()
+        keys = []
+        points = []
         for i in range(gridsize):
             for j in range(gridsize):
                 points.append([x[i, j], y[i, j], z[i, j]])
@@ -173,12 +172,12 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
     real_kappas = np.arange(1.0, max_kappa, stepsize)
     print("Testing various combinations of kappa and beta for", num_samples, "samples.")
     bias_var_mse_kappa_me, bias_var_mse_kappa_mle, bias_var_mse_beta_me, bias_var_mse_beta_mle = [
-        list() for i in range(4)]
+        [] for i in range(4)]
     beta_ratios = (0.0, 0.05, 0.1, 0.2, 0.3, 0.5)
     for beta_ratio in beta_ratios:
         real_betas = beta_ratio * real_kappas
         kappas_me, kappas_mle, betas_me, betas_mle = [
-            list() for i in range(4)]
+            [] for i in range(4)]
         if verbose:
             print(f"beta (max 2.0) = {beta_ratio}*kappa : kappa (max {max_kappa:.1f}) = ", end=' ')
         for kappa in real_kappas:
@@ -215,7 +214,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             ax.plot(real_kappas, real_kappas, '-.k')
             ax.set_xlabel(r"$\mathrm{Real}\ \kappa$")
             ax.set_xlabel(r"$\mathrm{Fitted}\ \kappa$")
-            ax.set_title(r"$\mathrm{Number of Samples = %s}$" % num_samples)
+            ax.set_title(rf"$\mathrm{{Number of Samples = {num_samples}}}$")
             ax.legend()
             ax = f.add_subplot(122)
             ax.plot(real_betas, betas_me,
@@ -224,7 +223,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             ax.plot(real_betas, real_betas, '-.k')
             ax.set_xlabel(r"$\mathrm{Real}\ \beta$")
             ax.set_xlabel(r"$\mathrm{Fitted}\ \beta$")
-            ax.set_title(r"$\beta = %.1f\kappa$" % beta_ratio)
+            ax.set_title(rf"$\beta = {beta_ratio:.1f}\kappa$")
             ax.legend()
     if showplots:
         for (name, bias_var_mse_mle, bias_var_mse_me) in [
@@ -253,15 +252,15 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             ax.plot(mxl, mxl, '-.k')
             ax.set_xlim(mxl)
             ax.set_ylim(mxl)
-            ax.set_title(r"$\%s$" % name)
+            ax.set_title(rf"$\{name}$")
             ax.legend()
 
     for (name, bias_var_mse_mle, bias_var_mse_me, beta_ratio) in [
         ("kappa", bias_var_mse_kappa_mle, bias_var_mse_kappa_me, beta_ratios),
         ("beta", bias_var_mse_beta_mle, bias_var_mse_beta_me, beta_ratios),
     ]:
-        biass_me, vars_me, mses_me = list(zip(*bias_var_mse_me))
-        biass_mle, vars_mle, mses_mle = list(zip(*bias_var_mse_mle))
+        _biass_me, _vars_me, mses_me = list(zip(*bias_var_mse_me))
+        _biass_mle, _vars_mle, mses_mle = list(zip(*bias_var_mse_mle))
         for mse_me, mse_mle, beta_ratio in zip(mses_me, mses_mle, beta_ratios):
             if mse_me < mse_mle * 0.65:
                 print(f"MSE of moment estimate is lower than 0.65 times the MLE for {name}")
@@ -283,7 +282,7 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
 
 if __name__ == "__main__":
     from sys import argv
-    showplots = False if len(argv) > 1 and '--no-plots' in argv[1:] else True
+    showplots = not (len(argv) > 1 and '--no-plots' in argv[1:])
 
     if not (len(argv) > 1 and '--no-normalization' in argv[1:]):
         test_example_normalization(

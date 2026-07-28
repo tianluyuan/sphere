@@ -35,7 +35,7 @@ def norm(x, axis=None):
     """
     helper function to compute the L2 norm. scipy.linalg.norm is not used because this function does not allow to choose an axis
     """
-    if isinstance(x, list) or isinstance(x, tuple):
+    if isinstance(x, (list, tuple)):
         x = np.array(x)
     return np.sqrt(np.sum(x * x, axis=axis))
 
@@ -453,7 +453,7 @@ class FB8Distribution:
             0., 2. * np.pi, lambda x: 0., lambda x: np.pi,
             epsabs=epsabs, epsrel=epsrel)[0]
 
-    def _normalize(self, cache=dict(), return_num_iterations=False):  # noqa: B006
+    def _normalize(self, cache={}, return_num_iterations=False):  # noqa: B006
         """
         Returns the normalization constant/(2pi) of the FB8 distribution.
         """
@@ -528,7 +528,7 @@ class FB8Distribution:
                                              a.shape)) * step
                     amj, amk, aml = approx_argmax
                     result = 0
-                    inheap = set([(amj, amk, aml)])
+                    inheap = {(amj, amk, aml)}
                     hq = []
                     while True:
                         jjs, kks, lls = np.mgrid[
@@ -661,7 +661,7 @@ class FB8Distribution:
                 logging.warning('Series calculation of normalization failed. Approximating normalization... ' + self.__repr__())
                 return self._approx_log_normalize()
 
-    def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):  # noqa: B006
+    def _grad_log_normalize(self, cache={}, return_num_iterations=False):  # noqa: B006
         """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
 
 
@@ -1178,7 +1178,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         return -np.asarray(fb8(*x).grad_log_likelihood(xs)[:len(x)]) / lenxs
 
     # callback for keeping track of the values
-    intermediate_values = list()
+    intermediate_values = []
     output_count = 0
     def callback(x):
         nonlocal output_count
