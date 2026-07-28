@@ -11,19 +11,21 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
+import heapq
+import logging
 import sys
 import warnings
-import logging
-import heapq
 
 import numpy as np
-from scipy.optimize import minimize, approx_fprime
-from scipy.special import gammaln as LG
-from scipy.special import hyp2f1 as H2F1
-from scipy.special import hyp1f1 as H1F1
-from scipy.special import hyp0f1 as H0F1
 from scipy.integrate import dblquad
 from scipy.linalg import eig
+from scipy.optimize import approx_fprime, minimize
+from scipy.special import gammaln as LG
+from scipy.special import hyp0f1 as H0F1
+from scipy.special import hyp1f1 as H1F1
+from scipy.special import hyp2f1 as H2F1
+
+logger = logging.getLogger(__name__)
 
 
 # helper function
@@ -35,7 +37,7 @@ def norm(x, axis=None):
     """
     helper function to compute the L2 norm. scipy.linalg.norm is not used because this function does not allow to choose an axis
     """
-    if isinstance(x, list) or isinstance(x, tuple):
+    if isinstance(x, (list, tuple)):
         x = np.array(x)
     return np.sqrt(np.sum(x * x, axis=axis))
 
@@ -118,7 +120,7 @@ def __generate_arbitrary_orthogonal_unit_vector(x):
     return v / norm(v)
 
 
-class FB8Distribution(object):
+class FB8Distribution:
     minimum_value_for_kappa = 1E-6
 
     @staticmethod
@@ -453,7 +455,7 @@ class FB8Distribution(object):
             0., 2. * np.pi, lambda x: 0., lambda x: np.pi,
             epsabs=epsabs, epsrel=epsrel)[0]
 
-    def _normalize(self, cache=dict(), return_num_iterations=False):
+    def _normalize(self, cache={}, return_num_iterations=False):  # noqa: B006
         """
         Returns the normalization constant/(2pi) of the FB8 distribution.
         """
@@ -493,17 +495,17 @@ class FB8Distribution(object):
                         a = a_c6(js, b, k, m)
                         evens = js % 2 == 0
                         if np.any(a[evens] < 0):
-                            logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1')
+                            logger.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1')
                             # hack around H2F1 inaccuracy
                             a[(evens) & (a < 0)] = 0
                         sa = a.sum()
                         abs_sa = np.abs(a).sum()
                         result += sa
                         if np.isnan(result):
-                            logging.warning('Series result is nan')
+                            logger.warning('Series result is nan')
                             raise RuntimeWarning
                         if np.isinf(result):
-                            logging.warning('Series result is infinity')
+                            logger.warning('Series result is infinity')
                             raise RuntimeWarning
                         j += 1
                         if abs_sa < np.abs(result) * 1E-12 and abs_sa <= prev_abs_a:
@@ -528,7 +530,7 @@ class FB8Distribution(object):
                                              a.shape)) * step
                     amj, amk, aml = approx_argmax
                     result = 0
-                    inheap = set([(amj, amk, aml)])
+                    inheap = {(amj, amk, aml)}
                     hq = []
                     while True:
                         jjs, kks, lls = np.mgrid[
@@ -538,7 +540,7 @@ class FB8Distribution(object):
                         a = a_c8(jjs, kks, lls, b, k, m, n1, n2, n3)
                         evens = jjs % 2 == 0
                         if np.any(a[evens] < 0):
-                            logging.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
+                            logger.info('a < 0 for even j, masking. This is due to an inaccuracy in H2F1.')
                         # hack around H2F1 inaccuracy
                         a[(evens) & (a < 0)] = 0
                         sa = a.sum()
@@ -561,11 +563,11 @@ class FB8Distribution(object):
                         amj, amk, aml = heapq.heappop(hq)[1]
 
                     if not result > 0:
-                        logging.warning('Series result not positive')
+                        logger.warning('Series result not positive')
                         raise RuntimeWarning
 
                 except (RuntimeWarning, OverflowError):
-                    logging.warning('Series calculation of normalization failed. Attempting numerical integration... ' + self.__repr__())
+                    logger.warning('Series calculation of normalization failed. Attempting numerical integration... ' + self.__repr__())
                     try:
                         # numerical integration
                         result = self._nnormalize() / (2 * np.pi)
@@ -658,10 +660,10 @@ class FB8Distribution(object):
             try:
                 return np.log(self._normalize()) + np.log(2 * np.pi)
             except (OverflowError, RuntimeWarning):
-                logging.warning('Series calculation of normalization failed. Approximating normalization... ' + self.__repr__())
+                logger.warning('Series calculation of normalization failed. Approximating normalization... ' + self.__repr__())
                 return self._approx_log_normalize()
 
-    def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):
+    def _grad_log_normalize(self, cache={}, return_num_iterations=False):  # noqa: B006
         """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
 
 
@@ -745,7 +747,7 @@ class FB8Distribution(object):
                     abs_sa = np.abs(grad_a).sum(axis=1) * snorm
                     result[:3] += sa
                     if np.any(np.isnan(result)) or np.any(np.isinf(result)):
-                        logging.warning(
+                        logger.warning(
                             'Series grad(ln(c6)) is nan or infinity, using approx_fprime...' + self.__repr__())
                         result[:3] = approx_fprime((k, b, m), lambda x: fb8(0, 0, 0, *x).log_normalize(),
                                                    1.49e-8)
@@ -777,7 +779,7 @@ class FB8Distribution(object):
                             sa = grad_a.sum(axis=(1, 2, 3)) * snorm
                             abs_sa = np.abs(grad_a).sum(axis=(1, 2, 3)) * snorm
                             if np.any(np.isnan(sa)):
-                                logging.warning(
+                                logger.warning(
                                     'Series grad(ln(c_8)) is nan, using approx_fprime...' + self.__repr__())
                                 result = approx_fprime((k, b, m, alpha, rho), lambda x: fb8(0, 0, 0, *x).log_normalize(),
                                                        1.49e-8)
@@ -817,8 +819,7 @@ class FB8Distribution(object):
                 x1 = 1
             else:
                 x1 = self.kappa / (2 * self.beta)
-            if x1 > 1:
-                x1 = 1
+            x1 = min(x1, 1)
             x2 = np.sqrt(1 - x1**2)
             x3 = 0
         else:
@@ -1179,9 +1180,8 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
         return -np.asarray(fb8(*x).grad_log_likelihood(xs)[:len(x)]) / lenxs
 
     # callback for keeping track of the values
-    intermediate_values = list()
-
-    def callback(x, output_count=[0]):
+    intermediate_values = []
+    def callback(x):
         kx = fb8(*x)
         minusL = -kx.log_likelihood(xs)
         imv = intermediate_values
