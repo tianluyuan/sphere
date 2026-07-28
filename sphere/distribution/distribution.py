@@ -453,7 +453,7 @@ class FB8Distribution:
             0., 2. * np.pi, lambda x: 0., lambda x: np.pi,
             epsabs=epsabs, epsrel=epsrel)[0]
 
-    def _normalize(self, cache=dict(), return_num_iterations=False):
+    def _normalize(self, cache=dict(), return_num_iterations=False):  # noqa: B006
         """
         Returns the normalization constant/(2pi) of the FB8 distribution.
         """
@@ -661,7 +661,7 @@ class FB8Distribution:
                 logging.warning('Series calculation of normalization failed. Approximating normalization... ' + self.__repr__())
                 return self._approx_log_normalize()
 
-    def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):
+    def _grad_log_normalize(self, cache=dict(), return_num_iterations=False):  # noqa: B006
         """ Derivative of the log-normalization constant wrt k, b, m, alpha, rho
 
 
@@ -1179,8 +1179,9 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
     # callback for keeping track of the values
     intermediate_values = list()
-
-    def callback(x, output_count=[0]):
+    output_count = 0
+    def callback(x):
+        nonlocal output_count
         kx = fb8(*x)
         minusL = -kx.log_likelihood(xs)
         imv = intermediate_values
