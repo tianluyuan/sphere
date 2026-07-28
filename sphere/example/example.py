@@ -65,7 +65,7 @@ def test_example_normalization(showplots=False, verbose=False, gridsize=100, pri
         ]:
             print(message)
             for i, line in enumerate(grid):
-                print(" ".join(['  x' if n == -1 else '%3i' % n for n in line]))
+                print(" ".join(['  x' if n == -1 else f'{n:3d}' for n in line]))
 
 
 def test_example_mle(showplots=False, verbose=False, seed=3):
@@ -265,14 +265,12 @@ def test_example_mle2(num_samples, showplots=False, verbose=False, stepsize=1.0)
             if mse_me < mse_mle * 0.65:
                 print(f"MSE of moment estimate is lower than 0.65 times the MLE for {name}")
                 return False
-            if beta_ratio >= 0.3:
-                if mse_me < mse_mle:
-                    print(f"MSE of moment estimate is lower than MLE for {name} with beta/kappa >= 0.3")
-                    return False
-            if beta_ratio > 0.5:
-                if mse_me < 5 * mse_mle:
-                    print(f"MSE of moment estimate is lower than five times the MLE {name} with beta/kappa > 0.5")
-                    return False
+            if beta_ratio >= 0.3 and mse_me < mse_mle:
+                print(f"MSE of moment estimate is lower than MLE for {name} with beta/kappa >= 0.3")
+                return False
+            if beta_ratio > 0.5 and mse_me < 5 * mse_mle:
+                print(f"MSE of moment estimate is lower than five times the MLE {name} with beta/kappa > 0.5")
+                return False
 
     print("MSE of ME is higher than 0.65 times the MLE for beta/kappa < 0.3")
     print("MSE of ME is higher than MLE for beta/kappa >= 0.3")
