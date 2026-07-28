@@ -1181,9 +1181,7 @@ def fb8_mle(xs, verbose=False, return_intermediate_values=False, warning='warn',
 
     # callback for keeping track of the values
     intermediate_values = []
-    output_count = 0
     def callback(x):
-        nonlocal output_count
         kx = fb8(*x)
         minusL = -kx.log_likelihood(xs)
         imv = intermediate_values
